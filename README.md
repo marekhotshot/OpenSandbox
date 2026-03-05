@@ -208,21 +208,22 @@ For detailed architecture, see [docs/architecture.md](docs/architecture.md).
 
 This project is open source under the [Apache 2.0 License](LICENSE).
 
-## Roadmap
+## Roadmap [2026.03]
 
 ### SDK
 
-- [ ] **Go SDK** - Go client SDK for sandbox lifecycle management, command execution, and file operations.
+- **Sandbox client connection pool** - Client-side sandbox connection pool management, providing pre-provisioned sandboxes to obtain an environment at X ms.
+- **Go SDK** - Go client SDK for sandbox lifecycle management, command execution, and file operations.
 
 ### Sandbox Runtime
 
-- [ ] **Persistent storage** - Mountable persistent storage for sandboxes (see [Proposal 0003](oseps/0003-volume-and-volumebinding-support.md)).
-- [ ] **Ingress multi-network strategies** - Multi-Kubernetes provisioning and multi-network modes for the Ingress Gateway.
-- [ ] **Local lightweight sandbox** - Lightweight sandbox for AI tools running directly on PCs.
+- **Persistent volumes** - Mountable persistent volumes for sandboxes (see [Proposal 0003](oseps/0003-volume-and-volumebinding-support.md)).
+- **Local lightweight sandbox** - Lightweight sandbox for AI tools running directly on PCs.
+- **Secure Container** - Secure sandbox for AI Agents running inside container.
 
 ### Deployment
 
-- [ ] **Kubernetes Helm** - Helm charts to deploy all components.
+- **Guide** - Deployment guide for self-hosted Kubernetes cluster.
 
 ## Contact and Discussion
 
