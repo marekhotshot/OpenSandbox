@@ -1,0 +1,70 @@
+{
+  "slice": "ultra-plan-10-root-implementation-dirt-quarantine-or-reapply-decision",
+  "result": "remaining_root_dirt_archived_then_removed_from_worktree",
+  "scope": "remaining root implementation/config/test dirt only; no contracts/audits already published, no topology change, no feature delivery, no cloud-dev, no deploy/release",
+  "before": {
+    "root_status_count": 30,
+    "untracked_count": 2,
+    "doctor_verdict": "WARN",
+    "canonical_import": "repos/amof/scripts/amof/__init__.py"
+  },
+  "archive": {
+    "path": "ecosystems/amof-platform/audit/2026-04-26-up10-root-implementation-config-test-dirt-archive.patch",
+    "line_count": 3720,
+    "purpose": "Preserve all remaining root implementation/config/test/assistant deletion changes before restoring root checkout."
+  },
+  "per_file_decisions": [
+    {
+      "paths": ["scripts/amof/**"],
+      "bucket": "root implementation dirt",
+      "decision": "archive_patch_then_discard",
+      "canonical_target": "repos/amof/scripts/**",
+      "reason": "root scripts/amof is non-canonical and hard-fails by guardrail; any wanted implementation must be re-applied to repos/amof intentionally"
+    },
+    {
+      "paths": ["repos/amof-thinking-assistant/** deletions"],
+      "bucket": "assistant deletion residue",
+      "decision": "archive_patch_then_discard",
+      "canonical_target": "none decided",
+      "reason": "large deletion residue in root-tracked assistant path; preserved as patch evidence, restored in worktree pending separate assistant retirement/import decision"
+    },
+    {
+      "paths": [".amof/agent.yaml", "infrastructure/helm/amof-stack/values-cloud-dev.yaml"],
+      "bucket": "config drift",
+      "decision": "archive_patch_then_discard",
+      "canonical_target": "root config/infrastructure only after explicit config slice",
+      "reason": "runtime/config-bearing changes are not safe to carry silently in root dirty state"
+    },
+    {
+      "paths": [".gitignore"],
+      "bucket": "runtime residue ignore",
+      "decision": "reapply_minimal_ignore_then_commit",
+      "canonical_target": "root .gitignore",
+      "reason": "ignoring .amof/*.root-owned-*/ prevents preserved root-owned runtime backup directories from reappearing as operator-visible noise"
+    },
+    {
+      "paths": ["tests/test_runner_local_overrides.py", "tests/test_shell_interruptibility.py"],
+      "bucket": "root tests",
+      "decision": "archive_patch_then_delete_untracked",
+      "canonical_target": "repos/amof/tests/** if later revived",
+      "reason": "untracked root tests are non-canonical; preserved in patch before deletion"
+    }
+  ],
+  "actions_executed": [
+    "Created archive patch containing tracked root diffs and untracked test files.",
+    "Restored tracked root implementation/config/assistant paths to HEAD.",
+    "Deleted archived untracked root test files.",
+    "Reapplied only .gitignore runtime residue ignore for .amof/*.root-owned-*/.",
+    "Did not touch published contracts/audit receipts except adding this new receipt and archive."
+  ],
+  "after": {
+    "root_status_count": 2,
+    "remaining_paths": [
+      ".gitignore",
+      "ecosystems/amof-platform/audit/2026-04-26-up10-root-implementation-config-test-dirt-archive.patch",
+      "ecosystems/amof-platform/audit/2026-04-26-up10-root-implementation-config-test-dirt-decision.json"
+    ],
+    "expected_after_commit_status_count": 0
+  },
+  "next_slice": "ultra-plan-10-close-root-main-helper-secret-ancestry-or-merge-clean-branches"
+}
