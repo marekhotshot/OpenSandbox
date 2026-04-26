@@ -1,0 +1,164 @@
+{
+  "slice": "ultra-plan-10-clean-visible-dirty-state-after-topology-closure",
+  "result": "dirty_state_classified_and_noncanonical_dirs_marked_but_mixed_dirt_not_broad_cleaned",
+  "scope": "post-topology dirty-state inventory and decisions only; no feature delivery, no cloud-dev, no release/promote, no generated-build expansion, no runtime path changes",
+  "precondition": {
+    "split_brain_status": "structurally closed",
+    "canonical_amof_code": "repos/amof",
+    "canonical_ui_code": "repos/amof-ui",
+    "root_role": "wrapper/config/audit surface only"
+  },
+  "root_dirty_census": {
+    "tracked_dirty_count": 30,
+    "untracked_count": 66,
+    "buckets": [
+      {
+        "bucket": "root topology guardrail",
+        "paths": [
+          "scripts/amof.py",
+          "scripts/amof/__init__.py"
+        ],
+        "decision": "land",
+        "resolution": "already committed locally as c882f83 and published via clean OpenSandbox branch feat/UP10-root-wrapper-guardrails"
+      },
+      {
+        "bucket": "active generated-build / director contract docs",
+        "paths": [
+          "contracts/director-delivery-contract.md",
+          "contracts/director-delivery-input.schema.json",
+          "contracts/director-delivery-result.schema.json",
+          "contracts/director-gmd-dev-local-proof-action.md",
+          "contracts/generated-build-admission-policy.md",
+          "contracts/generated-build-admission-policy.schema.json",
+          "contracts/examples/generated-build-admission-*.json",
+          "contracts/INDEX.md",
+          "contracts/README.md"
+        ],
+        "decision": "defer",
+        "resolution": "evidence-bearing docs; not deleted. Some generated-build design docs have already been published through clean branch feat/GBC-DESIGN-1-clean-ancestry. Remaining contract dirt should be landed in a dedicated contracts-publication slice."
+      },
+      {
+        "bucket": "audit receipts",
+        "paths": [
+          "ecosystems/amof-platform/audit/2026-04-25-*.json",
+          "ecosystems/amof-platform/audit/2026-04-26-*.json"
+        ],
+        "decision": "keep",
+        "resolution": "canonical operational evidence. Not broad-committed here because the set spans many prior slices; keep visible until a dedicated audit-publication/archive slice batches them."
+      },
+      {
+        "bucket": "root AMOF implementation dirt",
+        "paths": [
+          "scripts/amof/api/*",
+          "scripts/amof/commands/*",
+          "scripts/amof/orchestrator/*",
+          "scripts/amof/queue/*"
+        ],
+        "decision": "quarantine",
+        "resolution": "root scripts/amof package now hard-fails, so this code is non-executable by default. Do not clean or land from root. Any wanted changes must be re-applied to canonical repos/amof."
+      },
+      {
+        "bucket": "assistant repo deletion residue",
+        "paths": [
+          "repos/amof-thinking-assistant/* deletions"
+        ],
+        "decision": "defer",
+        "resolution": "large deletion set in a root-tracked nested repo path. Not touched here; requires separate assistant-repo retirement/import decision."
+      },
+      {
+        "bucket": "helm/config drift",
+        "paths": [
+          "infrastructure/helm/amof-stack/values-cloud-dev.yaml",
+          ".amof/agent.yaml",
+          ".gitignore"
+        ],
+        "decision": "defer",
+        "resolution": "runtime/config-bearing changes; not safe to batch with dirty-state cleanup."
+      },
+      {
+        "bucket": "root tests",
+        "paths": [
+          "tests/test_runner_local_overrides.py",
+          "tests/test_shell_interruptibility.py"
+        ],
+        "decision": "defer",
+        "resolution": "likely evidence/tests from prior runtime work; should be reviewed against canonical repos/amof test location before landing."
+      }
+    ]
+  },
+  "amof_ui_dirty_census": {
+    "tracked_dirty_files": [
+      "src/app/ecosystems/[name]/page.tsx",
+      "src/app/layout.tsx",
+      "src/components/app-header.tsx",
+      "src/components/app-sidebar.tsx",
+      "src/components/auth-provider.tsx",
+      "src/components/backlog-panel.tsx",
+      "src/components/dashboard-client.tsx",
+      "src/components/ecosystem-journal-page.tsx",
+      "src/hooks/useAmofApi.tsx",
+      "src/hooks/useBacklog.ts"
+    ],
+    "untracked_paths": [
+      "public/",
+      "src/app/favicon.ico/"
+    ],
+    "classification": "multiple mixed UI/runtime slices on main",
+    "decision": "defer",
+    "resolution": "do not stash/discard blindly. Generated-build UI closeout was already isolated and pushed as f961494. Remaining dirty state should move to a dedicated amof-ui dirty-branch preservation slice."
+  },
+  "lanes_classification": [
+    {
+      "path": "_lanes/amof-ui-dashboard-authoritative-dev",
+      "size": "3.0M",
+      "classification": "historical evidence",
+      "decision": "quarantine",
+      "resolution": "marked parent _lanes as non-canonical via README; ignored by git"
+    },
+    {
+      "path": "_lanes/amof-ui-dashboard-source-convergence",
+      "size": "1.9M",
+      "classification": "historical evidence",
+      "decision": "quarantine",
+      "resolution": "marked parent _lanes as non-canonical via README; ignored by git"
+    },
+    {
+      "path": "_lanes/amof-ui-dashboard-tabbed-recovery",
+      "size": "1.1G",
+      "classification": "large historical recovery evidence",
+      "decision": "archive-later",
+      "resolution": "not deleted due evidence size; parent marker clarifies non-active. Needs separate compression/removal decision."
+    },
+    {
+      "path": "_lanes/root-release-convergence",
+      "size": "17M",
+      "classification": "historical release-convergence evidence",
+      "decision": "quarantine",
+      "resolution": "marked parent _lanes as non-canonical via README; ignored by git"
+    }
+  ],
+  "worktrees_classification": {
+    "path": ".amof-worktrees/workspace-ecosystem",
+    "classification": "managed placeholder/non-active worktree set",
+    "decision": "keep",
+    "resolution": "added ignored README marker in .amof-worktrees clarifying non-canonical unless active ticket explicitly targets it"
+  },
+  "cleanup_actions_executed": [
+    "Added ignored _lanes/README.md marker to make _lanes/* visibly non-canonical and non-executable.",
+    "Added ignored .amof-worktrees/README.md marker to clarify active_ticket:null means no worktree is active.",
+    "Did not delete, stash, or broad-clean mixed code/evidence dirt."
+  ],
+  "doctor_after": {
+    "command": "python3 scripts/amof.py doctor",
+    "verdict": "WARN",
+    "canonical_import": "repos/amof/scripts/amof/__init__.py",
+    "warnings": [
+      "repos/amof-ui dirty_count=12",
+      "root workspace dirty_count=98"
+    ],
+    "failures": []
+  },
+  "closure_verdict": "partial",
+  "single_remaining_blocker": "root and repos/amof-ui still contain large mixed dirty state. It is now explicitly classified, and non-canonical dirs are marked, but ambiguity is not fully closed until UI dirt and root audit/contract/code buckets are either landed, archived, or quarantined in dedicated slices.",
+  "next_slice": "ultra-plan-10-preserve-and-quarantine-amof-ui-dirty-main"
+}
