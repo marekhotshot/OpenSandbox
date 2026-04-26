@@ -1,0 +1,107 @@
+{
+  "slice": "ultra-plan-10-kill-splitbrain-topology-and-install-hard-guardrails",
+  "result": "canonical_amof_doctor_promoted_root_wrapper_guard_installed_locally",
+  "scope": "topology census, canonical surface decision, root wrapper/hard-fail guardrails, doctor proof; no cloud-dev, feature delivery, release/promote feature work, generated-build expansion, or UI redesign",
+  "topology_decision": {
+    "canonical_amof_code": "repos/amof",
+    "canonical_ui_code": "repos/amof-ui",
+    "root_workspace_role": "wrapper/config/audit surface only; not an AMOF implementation lane",
+    "root_scripts_amof_py": "delegates via os.execv to repos/amof/scripts/amof.py",
+    "root_scripts_amof_package": "hard-fails on import unless AMOF_ALLOW_LEGACY_ROOT_AMOF_PACKAGE=1 is set for forensic recovery"
+  },
+  "census_summary": {
+    "root": {
+      "path": "/home/hotshot/work/amof-platform",
+      "branch": "main-helper",
+      "head": "bb73e49",
+      "dirty_count_at_proof": 98,
+      "canonical": false,
+      "role": "wrapper/config/audit"
+    },
+    "repos_amof": {
+      "path": "/home/hotshot/work/amof-platform/repos/amof",
+      "branch_at_proof": "feat/UP10-1",
+      "head_at_proof": "3f224c2",
+      "dirty_count_at_proof": 0,
+      "canonical": true
+    },
+    "repos_amof_ui": {
+      "path": "/home/hotshot/work/amof-platform/repos/amof-ui",
+      "branch": "main",
+      "head": "f961494",
+      "dirty_count_at_proof": 12,
+      "canonical": true
+    },
+    "repos_gmd_app": {
+      "path": "/home/hotshot/work/amof-platform/repos/gmd-app",
+      "branch": "main",
+      "head": "c9857ee5",
+      "dirty_count_at_proof": 0,
+      "canonical": "source repo for gmd app, not AMOF platform code"
+    },
+    "_lanes": {
+      "role": "non-canonical historical/reference lanes",
+      "git_roots_detected_in_quick_scan": 0
+    },
+    ".amof-worktrees": {
+      "role": "managed ticket worktrees only",
+      "active_ticket": null
+    },
+    "/app_and_/workspace": {
+      "status": "not present as host paths in this checkout; runtime containers must point to /workspace/repos/amof or /app baked from repos/amof"
+    }
+  },
+  "guardrails_installed": [
+    {
+      "surface": "repos/amof",
+      "change": "new `amof doctor` command reports canonical paths, runtime import source, git branch/head/dirty counts, and PASS/WARN/FAIL",
+      "promoted_main_sha": "42a7353d201fc084b971c76c8a356729e5a603d6"
+    },
+    {
+      "surface": "root scripts/amof.py",
+      "change": "root entrypoint replaced locally with wrapper-only os.execv delegation to repos/amof/scripts/amof.py"
+    },
+    {
+      "surface": "root scripts/amof/__init__.py",
+      "change": "root package hard-fails on import unless AMOF_ALLOW_LEGACY_ROOT_AMOF_PACKAGE=1"
+    }
+  ],
+  "proof": {
+    "canonical_doctor": {
+      "command": "cd repos/amof && python3 scripts/amof.py doctor --json",
+      "verdict": "WARN",
+      "runtime_import_is_canonical": true,
+      "failures": []
+    },
+    "root_wrapper_doctor": {
+      "command": "cd /home/hotshot/work/amof-platform && python3 scripts/amof.py doctor",
+      "verdict": "WARN",
+      "runtime_import_source": "/home/hotshot/work/amof-platform/repos/amof/scripts/amof/__init__.py",
+      "canonical_amof": "/home/hotshot/work/amof-platform/repos/amof"
+    },
+    "root_package_hard_fail": {
+      "command": "PYTHONPATH=/home/hotshot/work/amof-platform/scripts python3 -c 'import amof'",
+      "exit_code": 1,
+      "message_contains": "AMOF topology guardrail: root scripts/amof is non-canonical"
+    }
+  },
+  "dirty_state_decisions": {
+    "repos/amof": "landed bounded doctor guardrail; dirty count zero after commit/promotion",
+    "repos/amof-ui": "intentional keep; existing dirty UI changes unrelated to topology closeout",
+    "root": "intentional keep existing dirty state; only scripts/amof.py, scripts/amof/__init__.py, and this audit receipt are topology tranche files; broad cleanup is deferred",
+    "audit_receipts": "intentional keep in root ecosystems/amof-platform/audit"
+  },
+  "publish": {
+    "repos_amof": {
+      "status": "pushed",
+      "main_sha": "42a7353d201fc084b971c76c8a356729e5a603d6"
+    },
+    "root_wrapper": {
+      "status": "local_commit_only_if_committed; push expected blocked by known OpenSandbox main-helper secret-scanning ancestry unless published via clean branch",
+      "known_external_blocker": "older main-helper commits f9a74b9 and 2cf981a76 contain GitHub PAT-shaped tokens"
+    }
+  },
+  "closure_verdict": "partial",
+  "single_remaining_blocker": "root wrapper/hard-fail guardrail must be published from clean OpenSandbox ancestry or the known main-helper secret-scanning blocker must be resolved. Runtime behavior is structurally guarded locally and repos/amof canonical doctor is promoted.",
+  "next_slice": "ultra-plan-10-publish-root-wrapper-guardrails-via-clean-opensandbox-branch"
+}
