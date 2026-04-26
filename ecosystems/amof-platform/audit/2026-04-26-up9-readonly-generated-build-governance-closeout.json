@@ -1,0 +1,118 @@
+{
+  "slice": "ultra-plan-9-readonly-generated-build-governance-closeout-long-run",
+  "result": "readonly_generated_build_governance_lane_closed",
+  "scope": "read-only generated-build governance closeout; no mutation, no execution from UI, no deploy/release wiring, no cloud-dev, no admission enforcement",
+  "checkpoints": {
+    "CP0_scope_lock": {
+      "verdict": "pass",
+      "in_scope": [
+        "read-only generated-build artifact list/detail UI",
+        "read-only admission-preview display",
+        "truth/safety labels",
+        "browser proof",
+        "bounded UI commit/push"
+      ],
+      "out_of_scope_held": [
+        "mutation endpoints",
+        "generated-build execution from UI",
+        "deploy/release wiring",
+        "admission enforcement",
+        "cloud-dev",
+        "generic cleanup"
+      ]
+    },
+    "CP1_ui_admission_preview_wiring": {
+      "verdict": "pass",
+      "surface": "/generated-builds",
+      "fields_displayed": [
+        "admission_status",
+        "artifact_proof_status",
+        "precedence_decision",
+        "reasons",
+        "missing_prerequisites",
+        "refusal_conditions",
+        "evidence_summary"
+      ]
+    },
+    "CP2_wording_and_safety_hardening": {
+      "verdict": "pass",
+      "labels": [
+        "generated-build only",
+        "not deploy-admitted",
+        "Admission preview is not deployment"
+      ],
+      "forbidden_buttons_absent": [
+        "Build",
+        "Run",
+        "Prove",
+        "Deploy",
+        "Promote",
+        "Release",
+        "Rollback",
+        "Discard"
+      ]
+    },
+    "CP3_browser_proof": {
+      "verdict": "pass",
+      "backend": "http://127.0.0.1:18081/api/v1 reading /tmp/up9-4-store/.amof/generated-builds",
+      "ui": "amof-ui-generated-builds-admission-preview-check via http://127.0.0.1:3021 same-origin proof proxy",
+      "candidate_only": "pass",
+      "existing_build_conflict_refused": "pass",
+      "deploy_admitted_preview": "pass",
+      "artifacts": [
+        "/tmp/up9-11-generated-builds-admission-preview.html",
+        "/tmp/up9-11-generated-builds-admission-preview.png"
+      ]
+    },
+    "CP4_bounded_publish": {
+      "verdict": "pass",
+      "commit": "f961494",
+      "remote": "https://github.com/marekhotshot/amof-ui.git",
+      "branch": "main",
+      "push": "success"
+    },
+    "CP5_closure_verdict": {
+      "verdict": "pass",
+      "readonly_generated_build_governance_lane": "closed",
+      "reason": "Detect/render/build-proof/runtime-proof, local persistence/index, read-only backend list/show, read-only UI list/detail, read-only admission evaluator, read-only backend admission-preview, and read-only UI admission-preview are implemented and proven without mutation/deploy/release wiring."
+    }
+  },
+  "files_committed": [
+    "repos/amof-ui/src/app/generated-builds/page.tsx",
+    "repos/amof-ui/src/components/generated-builds-page.tsx",
+    "repos/amof-ui/src/hooks/useGeneratedBuilds.ts",
+    "repos/amof-ui/src/components/app-sidebar.tsx (generated-build nav hunks only)",
+    "repos/amof-ui/src/components/mobile-nav.tsx"
+  ],
+  "browser_proof_counts": {
+    "candidate_only_context": {
+      "Admission Policy Preview": 1,
+      "candidate_only": 1,
+      "runtime_proven": 7,
+      "no_existing_build_contract": 1,
+      "operator_confirmation": 1,
+      "deploy_pull_reference_confirmation": 1,
+      "source_ref_confirmation": 1,
+      "generated-build only": 2,
+      "not deploy-admitted": 3
+    },
+    "existing_conflict_context": {
+      "refused": 1,
+      "existing_build_wins": 1,
+      "existing_build_contract_present": 1,
+      "existing_build_contract_retirement_decision": 1
+    },
+    "deploy_admitted_preview_context": {
+      "deploy_admitted": 2,
+      "operator_confirmed": 1,
+      "deploy_pull_reference_present": 1,
+      "source_ref_confirmed": 1,
+      "Admission preview is not deployment": 1
+    },
+    "button_texts_observed": "Nav|AMOF MCP\nMCP|Supabase Media|Feedback|DEBUG & LOGS"
+  },
+  "next_slice": {
+    "id": "ultra-plan-9-generated-build-contract-phase-12-admission-candidate-write-design",
+    "summary": "Design the first mutation boundary for promoting a runtime_proven generated-build artifact from evidence-only to candidate_only. This is design-only and must not wire deploy/release."
+  }
+}

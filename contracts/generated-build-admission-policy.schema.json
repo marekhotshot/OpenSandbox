@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://amof.dev/contracts/generated-build-admission-policy.schema.json",
+  "title": "Generated Build Admission Policy Result",
+  "type": "object",
+  "required": [
+    "policy_result_kind",
+    "artifact_ref",
+    "artifact_proof_status",
+    "admission_status",
+    "reasons",
+    "missing_prerequisites",
+    "refusal_conditions",
+    "precedence_decision",
+    "evidence_summary",
+    "evaluated_at"
+  ],
+  "properties": {
+    "policy_result_kind": {
+      "type": "string",
+      "const": "generated_build_admission_policy_result"
+    },
+    "artifact_ref": {
+      "type": "object",
+      "required": ["artifact_path"],
+      "properties": {
+        "artifact_path": { "type": "string" },
+        "repo_path": { "type": "string" },
+        "service": { "type": "string" },
+        "image_digest": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "artifact_proof_status": {
+      "type": "string",
+      "enum": ["refused", "proposed", "build_proven", "runtime_proven"]
+    },
+    "admission_status": {
+      "type": "string",
+      "enum": ["evidence_only", "candidate_only", "deploy_admitted", "refused"]
+    },
+    "reasons": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "missing_prerequisites": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "refusal_conditions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "precedence_decision": {
+      "type": "string",
+      "enum": [
+        "no_existing_build_contract",
+        "existing_build_wins",
+        "generated_build_selected_by_policy",
+        "conflict_unresolved"
+      ]
+    },
+    "evidence_summary": {
+      "type": "object",
+      "required": [
+        "build_contract_kind",
+        "runtime_family",
+        "confidence",
+        "template_id",
+        "has_rendered_path",
+        "has_build_proof",
+        "has_runtime_proof",
+        "liveness_signal"
+      ],
+      "properties": {
+        "build_contract_kind": { "type": "string" },
+        "runtime_family": { "type": "string" },
+        "confidence": { "type": "string" },
+        "template_id": { "type": "string" },
+        "has_rendered_path": { "type": "boolean" },
+        "has_build_proof": { "type": "boolean" },
+        "has_runtime_proof": { "type": "boolean" },
+        "liveness_signal": { "type": ["string", "null"] },
+        "risk_flags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "operator_confirmation": {
+      "type": "object",
+      "properties": {
+        "confirmed": { "type": "boolean" },
+        "confirmed_by": { "type": "string" },
+        "confirmed_at": { "type": "string", "format": "date-time" },
+        "confirmed_image_digest": { "type": "string" },
+        "target_ecosystem": { "type": "string" },
+        "target_service": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "evaluated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "admission_status": { "const": "refused" } }, "required": ["admission_status"] },
+      "then": { "properties": { "refusal_conditions": { "minItems": 1 } } }
+    },
+    {
+      "if": { "properties": { "admission_status": { "const": "deploy_admitted" } }, "required": ["admission_status"] },
+      "then": { "required": ["operator_confirmation"] }
+    }
+  ],
+  "additionalProperties": false
+}

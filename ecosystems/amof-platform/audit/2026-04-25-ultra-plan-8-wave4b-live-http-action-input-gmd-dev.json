@@ -1,0 +1,59 @@
+{
+  "action": "director.gmd_dev_local_proof.v1",
+  "ecosystem": "gmd",
+  "ticket_id": "UP8-GOLDEN-GMD-DEV-LIVE-HTTP-001",
+  "goal": "Run the proven local gmd-dev Director action through the real local AMOF HTTP control surface as a tracked run.",
+  "scope": {
+    "repos": ["gmd-app"],
+    "allowed_paths": [
+      "repos/gmd-app/**",
+      "infrastructure/gitops/gmd/**",
+      "ecosystems/gmd/**"
+    ],
+    "blocked_paths": [
+      "**/.git/**",
+      "**/.env",
+      "**/node_modules/**",
+      "infrastructure/gitops/gmd/applicationset.yaml"
+    ]
+  },
+  "constraints": [
+    "dev-only",
+    "local-only",
+    "no test or prod",
+    "do not touch cloud-dev",
+    "do not touch real cloud production",
+    "do not perform release or promote in this slice",
+    "execute through real local AMOF HTTP control API, not TestClient",
+    "use Argo CD Application gmd-dev",
+    "use ClusterIP frontend readback through local port-forward"
+  ],
+  "target_environment": "dev",
+  "build_mode": "existing_chart_and_upstream_images",
+  "deploy_mode": "live_http_control_api_queued_director_action",
+  "release_intent": {
+    "type": "none",
+    "reason": "Wave 4b proves live HTTP control-plane execution only; release/promote remain deferred."
+  },
+  "readback": {
+    "local_port": 18086,
+    "root_path": "/",
+    "health_path": "/_healthz"
+  },
+  "artifacts": {
+    "result_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-result-gmd-dev.json"
+  },
+  "acceptance_criteria": [
+    "live HTTP control API accepts valid internal-control credential",
+    "live HTTP control API rejects missing internal-control credential",
+    "public API prefix does not accept internal-control credential",
+    "normal AMOF run is created",
+    "run status progresses to terminal truth",
+    "only gmd-dev is targeted",
+    "Argo application gmd-dev is Synced and Healthy",
+    "gmd-dev workload pods are running",
+    "local readback succeeds through ClusterIP frontend port-forward",
+    "structured result is persisted as a run-associated artifact",
+    "release/promote are not attempted"
+  ]
+}

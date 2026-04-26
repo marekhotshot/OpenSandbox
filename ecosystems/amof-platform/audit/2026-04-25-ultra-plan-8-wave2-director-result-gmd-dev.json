@@ -1,0 +1,110 @@
+{
+  "schema_version": "1.0",
+  "ticket_id": "UP8-GOLDEN-GMD-DEV-DIRECTOR-001",
+  "run_ids": {
+    "amof_task": "ultra-plan-8-wave2-gmd-dev-director-run",
+    "director_session": "2026-04-25-wave2-director-gmd-dev",
+    "successful_amof_event_log_session": "20260424-223634",
+    "failed_attempt_sessions": [
+      "20260424-222932",
+      "20260424-223510",
+      "20260424-223620"
+    ],
+    "argocd_revision": "3e061f6acf4325ae38a3b824cfa6503e4f88237d"
+  },
+  "final_status": "pass",
+  "target_environment": "dev",
+  "constraints_verified": {
+    "dev_only": true,
+    "local_only": true,
+    "no_test_or_prod": true,
+    "no_cloud_dev": true,
+    "no_release_promote": true,
+    "source_gitops_files_unmodified": true,
+    "applicationset_runtime_dev_only": true
+  },
+  "substrate_verification": {
+    "k8s_context": "k3d-amof",
+    "applicationset_name": "gmd-environments",
+    "applicationset_elements": [{"environment": "dev"}],
+    "note": "Wave 1 patched the live ApplicationSet runtime to dev-only; source applicationset.yaml (blocked path) was not modified"
+  },
+  "deploy_result": {
+    "application_name": "gmd-dev",
+    "namespace": "gmd-dev",
+    "sync_status": "Synced",
+    "health_status": "Healthy",
+    "revision": "3e061f6acf4325ae38a3b824cfa6503e4f88237d",
+    "operation_message": "successfully synced (all tasks run)",
+    "chart_path": "infrastructure/gitops/gmd/chart",
+    "repo_url": "https://github.com/marekhotshot/amof.git",
+    "target_revision": "main",
+    "workload_summary": {
+      "total_pods": 12,
+      "running_pods": 12,
+      "not_running_pods": 0,
+      "pods": [
+        {"name": "adservice-f6595788d-7595m", "ready": "1/1", "status": "Running"},
+        {"name": "cartservice-5d588b8574-zl8qg", "ready": "1/1", "status": "Running"},
+        {"name": "checkoutservice-db56f59d-vkr52", "ready": "1/1", "status": "Running"},
+        {"name": "currencyservice-56c9bbd9bf-dksk7", "ready": "1/1", "status": "Running"},
+        {"name": "emailservice-5b6d8449d8-gqpt8", "ready": "1/1", "status": "Running"},
+        {"name": "frontend-5794c66c59-9mxwf", "ready": "1/1", "status": "Running"},
+        {"name": "loadgenerator-5f98b46db5-zfwdw", "ready": "1/1", "status": "Running"},
+        {"name": "paymentservice-76fc4556c9-zl9xm", "ready": "1/1", "status": "Running"},
+        {"name": "productcatalogservice-5f687dfcb6-hhvb7", "ready": "1/1", "status": "Running"},
+        {"name": "recommendationservice-66496d6596-64zrz", "ready": "1/1", "status": "Running"},
+        {"name": "redis-cart-75c4b7d7fb-82rt2", "ready": "1/1", "status": "Running"},
+        {"name": "shippingservice-87f74dfbd-bcgbk", "ready": "1/1", "status": "Running"}
+      ],
+      "frontend_service": {
+        "name": "frontend",
+        "type": "ClusterIP",
+        "cluster_ip": "10.43.207.90",
+        "port": "80/TCP"
+      }
+    }
+  },
+  "readback_result": {
+    "method": "kubectl port-forward svc/frontend <local_port>:80 -n gmd-dev",
+    "ports_attempted": [18080, 18081, 18082],
+    "note_18080": "Port 18080 was already occupied by a pre-existing kubectl port-forward (pid 1480827) — confirmed live and serving",
+    "port_used_for_verification": 18082,
+    "probes": [
+      {
+        "url": "http://localhost:18082/",
+        "http_status": 200,
+        "body_summary": "HTML response, DOCTYPE html, Online Boutique frontend"
+      },
+      {
+        "url": "http://localhost:18082/_healthz",
+        "http_status": 200,
+        "body": "ok"
+      }
+    ],
+    "port_forward_stopped": true,
+    "readback_pass": true
+  },
+  "release_promote_attempted": false,
+  "blocker": null,
+  "failure_classification": null,
+  "evidence": {
+    "step_1_contract_confirmed": "Read ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave2-director-input-gmd-dev.json — all fields and constraints verified",
+    "step_2_applicationset_runtime": "kubectl get applicationset gmd-environments -n argocd: elements=[{environment:dev}] only — dev-only constraint satisfied",
+    "step_3_argo_app_status": "kubectl get application gmd-dev -n argocd: SYNC=Synced, HEALTH=Healthy, REVISION=3e061f6acf4325ae38a3b824cfa6503e4f88237d",
+    "step_4_workload_pods": "kubectl get pods -n gmd-dev: 12/12 pods Running 1/1",
+    "step_5_readback": "kubectl port-forward svc/frontend 18082:80 -n gmd-dev; curl / -> HTTP 200 HTML; curl /_healthz -> HTTP 200 'ok'",
+    "step_6_port_forward_stopped": "kill $PF_PID confirmed; port-forward process terminated",
+    "source_gitops_files": "infrastructure/gitops/gmd/applicationset.yaml not modified (blocked path per contract)"
+  },
+  "acceptance_criteria_results": {
+    "director_is_execution_authority": true,
+    "only_gmd_dev_targeted": true,
+    "argo_gmd_dev_synced_and_healthy": true,
+    "gmd_dev_workload_pods_running": true,
+    "local_readback_succeeds": true,
+    "structured_result_recorded": true,
+    "release_promote_not_attempted": true
+  },
+  "timestamp": "2026-04-25T00:00:00Z"
+}

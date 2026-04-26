@@ -1,0 +1,71 @@
+{
+  "slice": "ultra-plan-9-generated-build-contract-phase-10-readonly-admission-policy-evaluator",
+  "result": "read_only_backend_admission_preview_implemented_tested_and_promoted",
+  "scope": "generated-build admission evaluation only; no mutation, no deploy/release wiring, no UI execution, no cloud-dev, no generated-build artifact execution",
+  "implementation_commit": {
+    "branch": "feat/UP9-10",
+    "source_sha": "bc75e03f9190348d8c95728f2d1499fe51cb7da5",
+    "synthesized_main_sha": "0b38efd9764d9c3462a19cd3b3fd6ea54c734d43",
+    "push_succeeded": true
+  },
+  "files_changed": [
+    "scripts/amof/api/routers/generated_build.py",
+    "tests/test_generated_build_api.py"
+  ],
+  "endpoint": {
+    "method": "GET",
+    "paths": [
+      "/api/v1/generated-builds/admission-preview",
+      "/api/v1/control/generated-builds/admission-preview"
+    ],
+    "required_query": ["repo_path"],
+    "optional_query": [
+      "service",
+      "existing_build_present",
+      "existing_build_resolved",
+      "operator_confirmed",
+      "confirmed_by",
+      "deploy_pull_reference_present",
+      "source_ref_confirmed"
+    ],
+    "mutation": false,
+    "artifact_execution": false,
+    "deploy_or_release_admission": false
+  },
+  "proof": {
+    "tests": "56/56 generated-build/backend tests pass",
+    "manual_smoke_against_persisted_python_artifact": {
+      "candidate": {
+        "status_code": 200,
+        "admission_status": "candidate_only",
+        "artifact_proof_status": "runtime_proven",
+        "precedence_decision": "no_existing_build_contract"
+      },
+      "existing_build_conflict": {
+        "status_code": 200,
+        "admission_status": "refused",
+        "artifact_proof_status": "runtime_proven",
+        "precedence_decision": "existing_build_wins",
+        "refusal_conditions": ["existing_build_contract_present"]
+      },
+      "deploy_admitted_with_explicit_context": {
+        "status_code": 200,
+        "admission_status": "deploy_admitted",
+        "artifact_proof_status": "runtime_proven",
+        "missing_prerequisites": []
+      }
+    }
+  },
+  "out_of_scope_held": [
+    "UI changes",
+    "mutation",
+    "deploy/release wiring",
+    "cloud-dev",
+    "generated-build artifact execution",
+    "contract changes"
+  ],
+  "next_slice": {
+    "id": "ultra-plan-9-generated-build-contract-phase-11-minimal-ui-admission-preview-readonly",
+    "summary": "Add read-only UI display of admission-preview result on the generated-build artifact detail page. No mutation, no execution, no deploy/release wiring."
+  }
+}

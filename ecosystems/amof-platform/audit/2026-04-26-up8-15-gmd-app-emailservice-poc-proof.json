@@ -1,0 +1,145 @@
+{
+  "slice": "ultra-plan-8-introduce-first-party-gmd-app-source-build-phase-c-extend-to-second-service",
+  "ticket": "UP8-15",
+  "result": "two_services_built_pushed_and_verified_no_live_behavior_change",
+  "scope": "extend gmd-app source-build PoC from one to two services; no contract flip, no routing, no chart change",
+  "phase_a_script_extension": {
+    "modified_file": "repos/amof/scripts/build-gmd-app.sh",
+    "supported_services_in_dispatch_table": ["frontend", "emailservice"],
+    "rejection_behavior": "exit 2 with explicit message listing the supported services",
+    "service_dispatch_strategy": "explicit per-service entries in SERVICE_DOCKERFILE / SERVICE_CONTEXT associative arrays; no wildcard"
+  },
+  "phase_b_command_builder": {
+    "modified_file": "repos/amof/scripts/amof/api/command_builder.py",
+    "constant": "_GMD_APP_BUILD_SUPPORTED_SERVICES = (\"frontend\", \"emailservice\")",
+    "function_unchanged_signature": "build_gmd_app_lifecycle_build_command(root, image_tag=None, services=['frontend'], no_push=False)",
+    "still_not_routed_in_release_lifecycle_action": true,
+    "ecosystem_build_contract_for_gmd_unchanged": "mirror_upstream"
+  },
+  "tests": {
+    "modified_file": "repos/amof/tests/test_command_builder_runtime.py",
+    "new_tests_added": 2,
+    "new_test_names": [
+      "test_gmd_app_build_supported_services_tuple",
+      "test_gmd_app_build_command_dispatches_emailservice"
+    ],
+    "test_run_result": "11/11 pass (9 pre-existing + 2 new)"
+  },
+  "phase_c_proof": {
+    "gmd_app_head": "c9857ee5",
+    "tag_used": "gmd-dev-c9857ee5",
+    "frontend": {
+      "command_executed": "bash repos/amof/scripts/build-gmd-app.sh --service frontend --tag gmd-dev-c9857ee5",
+      "dockerfile": "repos/gmd-app/src/frontend/Dockerfile",
+      "build_context": "repos/gmd-app/src/frontend",
+      "image_tags_applied": [
+        "localhost:5000/gmd/frontend:gmd-dev-c9857ee5",
+        "host.k3d.internal:5000/gmd/frontend:gmd-dev-c9857ee5"
+      ],
+      "manifest_digest": "sha256:45a9d05ea790d75621d44e9f179a26c222aeb0e31f84b33a15788f3e05b05a9b",
+      "manifest_size_bytes": 856
+    },
+    "emailservice": {
+      "command_executed": "bash repos/amof/scripts/build-gmd-app.sh --service emailservice --tag gmd-dev-c9857ee5",
+      "dockerfile": "repos/gmd-app/src/emailservice/Dockerfile",
+      "build_context": "repos/gmd-app/src/emailservice",
+      "language_runtime": "python:3.14.3-alpine",
+      "image_tags_applied": [
+        "localhost:5000/gmd/emailservice:gmd-dev-c9857ee5",
+        "host.k3d.internal:5000/gmd/emailservice:gmd-dev-c9857ee5"
+      ],
+      "manifest_digest": "sha256:9d979567ad141140fe472dfaebc7ef703efd21a477db2e43385ec3431d89f9aa",
+      "manifest_size_bytes": 856
+    },
+    "registry_proof": {
+      "catalog_includes_gmd_emailservice": true,
+      "catalog_full": [
+        "amof-agent",
+        "amof-assistant",
+        "amof-cluster-builder",
+        "amof-controlplane",
+        "amof-dashboard",
+        "gmd/emailservice",
+        "gmd/frontend",
+        "mirror/dockerhub/library/node",
+        "mirror/dockerhub/library/python",
+        "mirror/local/amof-controlplane-base",
+        "mirror/local/amof-controlplane-deps",
+        "mirror/local/amof-dashboard-deps"
+      ],
+      "tags_for_gmd_frontend": ["gmd-dev-c9857ee5"],
+      "tags_for_gmd_emailservice": ["gmd-dev-c9857ee5"],
+      "frontend_manifest_endpoint_check": "HTTP/1.1 200 OK Content-Length 856 Docker-Content-Digest sha256:45a9d05ea790d75621d44e9f179a26c222aeb0e31f84b33a15788f3e05b05a9b",
+      "emailservice_manifest_endpoint_check": "HTTP/1.1 200 OK Content-Length 856 Docker-Content-Digest sha256:9d979567ad141140fe472dfaebc7ef703efd21a477db2e43385ec3431d89f9aa"
+    }
+  },
+  "live_behavior_unchanged_check": {
+    "gmd_supported_actions": ["deploy", "promote"],
+    "gmd_action_layout_ids": ["deploy", "promote"],
+    "gmd_ecosystem_build_contract_kind": "mirror_upstream",
+    "build_button_in_dashboard": "still hidden"
+  },
+  "commits_landed_to_canonical_main": [
+    {
+      "ticket": "UP8-15",
+      "candidate_branch": "feat/UP8-15",
+      "source_sha": "7487493dfd27f37521636d45187c0f63358698bf",
+      "synthesized_main_sha": "6b86262b77f5eb88bbc7e839c0dba5350dcbbad8",
+      "summary": "feat(gmd-app): extend first-party source-build PoC to emailservice",
+      "files": [
+        "scripts/build-gmd-app.sh",
+        "scripts/amof/api/command_builder.py",
+        "tests/test_command_builder_runtime.py"
+      ]
+    }
+  ],
+  "what_remains_before_chart_integration_lifecycle_dispatch_and_contract_flip": {
+    "remaining_default_first_party_services_to_add_to_dispatch_table": [
+      "adservice",
+      "cartservice (nested context: src/cartservice/src)",
+      "checkoutservice",
+      "currencyservice",
+      "loadgenerator",
+      "paymentservice",
+      "productcatalogservice",
+      "recommendationservice",
+      "shippingservice"
+    ],
+    "optional_service_off_by_default_in_chart": "shoppingassistantservice",
+    "for_chart_integration_minimal": {
+      "approach": "Recommended Option B from UP8-source-boundary audit: add helm.parameters to the dev element of infrastructure/gitops/gmd/applicationset.yaml flipping `images.repository` -> `host.k3d.internal:5000/gmd` and `images.tag` -> the gmd-app source-build tag for `gmd-dev` only. Canonical chart values.yaml stays untouched until all default services are proven.",
+      "blocked_until": "all default first-party services build successfully on the chosen substrate (host or cluster builder)"
+    },
+    "for_lifecycle_dispatch_wiring": {
+      "change_required": "scripts/amof/api/routers/release.py release_lifecycle_action() must branch on name == 'gmd' so action == 'build' calls build_gmd_app_lifecycle_build_command instead of build_lifecycle_build_command",
+      "blocked_until": "the build command can produce the full set of gmd-deployable images, otherwise the dispatched build would always be incomplete"
+    },
+    "for_contract_flip": {
+      "change_required": "_ecosystem_build_contract('gmd') -> source_build with produces / source_repos / build_command metadata; update lifecycle contract test that pins kind == 'mirror_upstream'",
+      "blocked_until": "lifecycle dispatch wiring is in place AND the chart actually consumes the locally-built images, otherwise the unhidden Build button would build images nothing pulls"
+    },
+    "cluster_builder_substrate_decision": {
+      "open_question": "Does the gmd lifecycle build need to run inside the in-cluster builder pod (same path as AMOF platform substrate)?",
+      "if_yes_required_work": "Mirror per-language base images so the builder pod's containerd can pull them: golang:1.26.1-alpine, gcr.io/distroless/static, python:3.14.3-alpine (for emailservice; not the same as the existing python:3.10-slim mirror), mcr.microsoft.com/dotnet/sdk:10.0.100-noble, mcr.microsoft.com/dotnet/runtime-deps:10.0.0-noble-chiseled, plus the Java/Node/etc. bases of the other services.",
+      "if_no": "Host-only builds suffice for local development; production / cloud-dev path remains a separate decision."
+    }
+  },
+  "next_slice": {
+    "id": "ultra-plan-8-introduce-first-party-gmd-app-source-build-phase-d-extend-to-third-service-or-batch",
+    "what_to_implement": [
+      "Pick one more service that exercises a different language stack from frontend (Go) and emailservice (Python). Candidates ordered by rising complexity: currencyservice (Node), shippingservice (Go), recommendationservice (Python), productcatalogservice (Go), checkoutservice (Go), paymentservice (Node), adservice (Java), cartservice (.NET, nested context).",
+      "Add the chosen service to SERVICE_DOCKERFILE / SERVICE_CONTEXT in scripts/build-gmd-app.sh.",
+      "Extend _GMD_APP_BUILD_SUPPORTED_SERVICES in command_builder.py and add focused tests.",
+      "Run the host build for the new service and verify registry proof.",
+      "Still no contract flip, no routing, no chart change."
+    ],
+    "what_to_explicitly_defer": [
+      "All remaining services at once",
+      "Cluster-builder integration",
+      "Contract flip",
+      "Chart integration",
+      "Lifecycle dispatch wiring",
+      "UI changes"
+    ]
+  }
+}

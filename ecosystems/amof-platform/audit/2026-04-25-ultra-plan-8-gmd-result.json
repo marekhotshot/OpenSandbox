@@ -1,0 +1,56 @@
+{
+  "status": "blocked",
+  "ecosystem": "gmd",
+  "ticket_id": "UP8-GOLDEN-GMD-001",
+  "run_id": "cursor-bootstrap-up8-20260425",
+  "stage": "deploy",
+  "changed_refs": {
+    "repos/gmd-app": "c9857ee54fba10486013f15ba6b31411986f530c",
+    "workspace": "10aeec78c0d26dfc45214dd819ded35d7bde9823"
+  },
+  "artifacts": [
+    "contracts/director-delivery-contract.md",
+    "contracts/director-delivery-input.schema.json",
+    "contracts/director-delivery-result.schema.json",
+    "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave0-truth-preflight.json",
+    "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-golden-selection.md",
+    "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-director-input-gmd.json"
+  ],
+  "receipts": {
+    "baseline": "wave0 preflight recorded repo, release, runtime, reset-safety, and drift classifications",
+    "ticket": "not created because deploy prerequisites failed before mutation; ticket_id reserved as UP8-GOLDEN-GMD-001",
+    "build": "helm lint passed; helm template rendered 1200 lines for gmd-dev; source commit c9857ee54fba10486013f15ba6b31411986f530c",
+    "deploy": "kubectl apply -n argocd -f infrastructure/gitops/gmd/applicationset.yaml failed: no matches for kind ApplicationSet in argoproj.io/v1alpha1",
+    "dns": "not attempted; no gmd live host or Cloudflare record is defined/proved",
+    "release": "not attempted; release status is v1.5.0-rc.1 with dirty working tree and live deploy did not pass",
+    "promote": "not attempted; promotion is gated behind live deploy, DNS, and release receipts",
+    "readback": "blocked readback: active local cluster has no Argo applications resource; cloud-dev kubeconfig has no usable contexts"
+  },
+  "failures": [
+    {
+      "code": "ARGO_APPLICATIONSET_CRD_MISSING",
+      "message": "The active Kubernetes context k3d-amof does not have the Argo CD ApplicationSet/Application CRDs required to register gmd-dev/test/prod.",
+      "retryable": true,
+      "owner": "operator"
+    },
+    {
+      "code": "CLOUD_DEV_KUBECONFIG_UNUSABLE",
+      "message": "The expected cloud-dev kubeconfig exists but exposes no usable contexts, so live cloud Argo/DNS verification cannot proceed from this workspace.",
+      "retryable": true,
+      "owner": "operator"
+    },
+    {
+      "code": "GMD_LIVE_URL_CONTRACT_MISSING",
+      "message": "No gmd public hostname, ingress, or Cloudflare DNS receipt exists for the golden dev environment.",
+      "retryable": true,
+      "owner": "director"
+    },
+    {
+      "code": "GMD_LIFECYCLE_DEPLOY_PATH_NOT_FIRST_CLASS",
+      "message": "The current non-demo release lifecycle deploy path is AMOF-stack-oriented; gmd needs an explicit Argo registration/readback path before AMOF can own this golden delivery flow.",
+      "retryable": true,
+      "owner": "director"
+    }
+  ],
+  "next_action": "Provision or point AMOF at a Kubernetes context with Argo CD ApplicationSet support, define the gmd dev live URL/DNS contract, then rerun UP8-GOLDEN-GMD-001 from the preserved Director input."
+}

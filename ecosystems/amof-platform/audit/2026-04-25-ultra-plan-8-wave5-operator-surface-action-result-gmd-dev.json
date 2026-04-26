@@ -1,0 +1,191 @@
+{
+  "schema_version": "1.0",
+  "action": "director.gmd_dev_local_proof.v1",
+  "ticket_id": "UP8-GOLDEN-GMD-DEV-OPERATOR-SURFACE-001",
+  "run_ids": {
+    "cli_action": "director.gmd_dev_local_proof.v1",
+    "argocd_revision": "3e061f6acf4325ae38a3b824cfa6503e4f88237d"
+  },
+  "final_status": "pass",
+  "target_environment": "dev",
+  "constraints_verified": {
+    "dev_only": true,
+    "local_only": true,
+    "no_test_or_prod": true,
+    "no_cloud_dev": true,
+    "no_release_promote": true,
+    "source_gitops_files_unmodified": true,
+    "applicationset_runtime_dev_only": true
+  },
+  "preflights": {
+    "runs_writable": {
+      "ok": true,
+      "detail": "/workspace/.amof/runs is writable"
+    },
+    "sdk_openai": {
+      "ok": true,
+      "detail": "python module openai"
+    },
+    "sdk_anthropic": {
+      "ok": true,
+      "detail": "python module anthropic"
+    },
+    "provider_config": {
+      "ok": true,
+      "detail": "provider config resolved (model_ladder=True)"
+    },
+    "port_available": {
+      "ok": true,
+      "detail": "127.0.0.1:18088 is available"
+    },
+    "kubectl_context": {
+      "ok": true,
+      "detail": "in-cluster:k3d-amof"
+    }
+  },
+  "substrate_verification": {
+    "k8s_context": "in-cluster:k3d-amof",
+    "applicationset_name": "gmd-environments",
+    "applicationset_elements": [
+      {
+        "environment": "dev"
+      }
+    ],
+    "helm_parameters": [
+      {
+        "forceString": false,
+        "name": "frontend.externalService",
+        "value": "false"
+      }
+    ]
+  },
+  "deploy_result": {
+    "application_name": "gmd-dev",
+    "namespace": "gmd-dev",
+    "sync_status": "Synced",
+    "health_status": "Healthy",
+    "revision": "3e061f6acf4325ae38a3b824cfa6503e4f88237d",
+    "operation_message": "successfully synced (all tasks run)",
+    "chart_path": "infrastructure/gitops/gmd/chart",
+    "repo_url": "https://github.com/marekhotshot/amof.git",
+    "target_revision": "main",
+    "workload_summary": {
+      "total_pods": 12,
+      "running_pods": 12,
+      "not_running_pods": 0,
+      "pods": [
+        {
+          "name": "adservice-f6595788d-7595m",
+          "ready": "1/1",
+          "status": "Running"
+        },
+        {
+          "name": "cartservice-5d588b8574-zl8qg",
+          "ready": "1/1",
+          "status": "Running"
+        },
+        {
+          "name": "checkoutservice-db56f59d-vkr52",
+          "ready": "1/1",
+          "status": "Running"
+        },
+        {
+          "name": "currencyservice-56c9bbd9bf-dksk7",
+          "ready": "1/1",
+          "status": "Running"
+        },
+        {
+          "name": "emailservice-5b6d8449d8-gqpt8",
+          "ready": "1/1",
+          "status": "Running"
+        },
+        {
+          "name": "frontend-5794c66c59-9mxwf",
+          "ready": "1/1",
+          "status": "Running"
+        },
+        {
+          "name": "loadgenerator-5f98b46db5-zfwdw",
+          "ready": "1/1",
+          "status": "Running"
+        },
+        {
+          "name": "paymentservice-76fc4556c9-zl9xm",
+          "ready": "1/1",
+          "status": "Running"
+        },
+        {
+          "name": "productcatalogservice-5f687dfcb6-hhvb7",
+          "ready": "1/1",
+          "status": "Running"
+        },
+        {
+          "name": "recommendationservice-66496d6596-64zrz",
+          "ready": "1/1",
+          "status": "Running"
+        },
+        {
+          "name": "redis-cart-75c4b7d7fb-82rt2",
+          "ready": "1/1",
+          "status": "Running"
+        },
+        {
+          "name": "shippingservice-87f74dfbd-bcgbk",
+          "ready": "1/1",
+          "status": "Running"
+        }
+      ],
+      "frontend_service": {
+        "name": "frontend",
+        "type": "ClusterIP",
+        "cluster_ip": "10.43.207.90",
+        "ports": [
+          {
+            "name": "http",
+            "port": 80,
+            "protocol": "TCP",
+            "targetPort": 8080
+          }
+        ]
+      }
+    }
+  },
+  "readback_result": {
+    "method": "kubectl -n gmd-dev port-forward svc/frontend 18088:80",
+    "port_used_for_verification": 18088,
+    "probes": [
+      {
+        "url": "http://127.0.0.1:18088/",
+        "http_status": 200,
+        "content_type": "text/html; charset=utf-8",
+        "body_summary": "HTML response"
+      },
+      {
+        "url": "http://127.0.0.1:18088/_healthz",
+        "http_status": 200,
+        "content_type": "text/plain; charset=utf-8",
+        "body": "ok"
+      }
+    ],
+    "port_forward_log": "/tmp/gmd-dev-port-forward-c19d4w9f.log",
+    "port_forward_stopped": true,
+    "readback_pass": true
+  },
+  "release_promote_attempted": false,
+  "blocker": null,
+  "failure_classification": null,
+  "evidence": {
+    "input_contract": "/workspace/ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-input-gmd-dev.json",
+    "result_path": "/workspace/ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-result-gmd-dev.json",
+    "generated_at": "2026-04-25T00:05:06.725108+00:00"
+  },
+  "acceptance_criteria_results": {
+    "first_class_action": true,
+    "only_gmd_dev_targeted": true,
+    "argo_gmd_dev_synced_and_healthy": true,
+    "gmd_dev_workload_pods_running": true,
+    "local_readback_succeeds": true,
+    "structured_result_recorded": true,
+    "release_promote_not_attempted": true
+  }
+}

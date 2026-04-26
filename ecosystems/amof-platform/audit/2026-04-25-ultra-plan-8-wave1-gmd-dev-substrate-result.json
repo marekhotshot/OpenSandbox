@@ -1,0 +1,91 @@
+{
+  "program": "Ultra Plan 8 Golden Delivery Baseline",
+  "slice": "ultra-plan-8-wave1-gmd-deploy-substrate-proof",
+  "generated_at": "2026-04-25T00:24:00+02:00",
+  "scope_confirmation": {
+    "cluster_context": "k3d-amof",
+    "target": "local gmd-dev only",
+    "cloud_prod_touched": false,
+    "cloud_dev_touched": false,
+    "real_cloud_production_touched": false
+  },
+  "chosen_canonical_deploy_target": {
+    "target": "local k3d gmd-dev",
+    "hard_reason": "local k3d is the only reachable cluster context from this workspace; cloud-dev kubeconfig previously exposed no usable contexts. The first golden proof needs an executable substrate, not a simultaneous local/cloud choice."
+  },
+  "blocker_classification": [
+    {
+      "blocker": "gmd-prod generated in local ApplicationSet",
+      "cause": "the original ApplicationSet generated dev, test, and prod Applications on one local k3d node",
+      "classification": "defer_to_later_local_prod_slice",
+      "action": "removed from local ApplicationSet generator and deleted local gmd-prod Application/namespace"
+    },
+    {
+      "blocker": "gmd-test generated in local ApplicationSet",
+      "cause": "test added the same local substrate pressure and an additional frontend LoadBalancer",
+      "classification": "ignore_for_dev_only_first_proof",
+      "action": "removed from local ApplicationSet generator and deleted local gmd-test Application/namespace"
+    },
+    {
+      "blocker": "0/1 nodes are available: free ports unavailable",
+      "cause": "each gmd environment created a frontend-external LoadBalancer service; k3s service-lb tried to claim the same host port on the single local node",
+      "classification": "must_fix_now",
+      "action": "patched the local ApplicationSet template with helm parameter frontend.externalService=false; dev readback uses ClusterIP plus port-forward"
+    },
+    {
+      "blocker": "secret argocd-redis not found",
+      "cause": "transient partial Argo CD bootstrap ordering during install before the redis secret/pod settled",
+      "classification": "ignore_for_dev_only_first_proof",
+      "action": "verified all Argo CD pods are now Running, including argocd-redis"
+    },
+    {
+      "blocker": "Cloudflare/DNS live URL",
+      "cause": "local k3d proof has no public hostname contract",
+      "classification": "defer",
+      "action": "used truthful local live readback via port-forward; public DNS remains for the cloud-dev proof"
+    }
+  ],
+  "runtime_changes": [
+    "Installed Argo CD into local k3d with server-side apply after client-side CRD annotation limit blocked ApplicationSet CRD creation.",
+    "Created local argocd repo secret for https://github.com/marekhotshot/amof.git from available Git token.",
+    "Applied gmd ApplicationSet locally.",
+    "Patched local ApplicationSet to generate only dev.",
+    "Patched local ApplicationSet Helm parameters to set frontend.externalService=false.",
+    "Deleted local gmd-test and gmd-prod Applications and namespaces.",
+    "Verified only gmd-dev remains."
+  ],
+  "golden_flow_result": {
+    "status": "pass_to_local_live_readback",
+    "release_promote_attempted": false,
+    "release_promote_reason": "release/promote are gated until deploy and live readback pass; this slice stops at local deploy/readback by request",
+    "argocd_application": {
+      "name": "gmd-dev",
+      "sync_status": "Synced",
+      "health_status": "Healthy",
+      "revision": "3e061f6acf4325ae38a3b824cfa6503e4f88237d"
+    },
+    "namespace": "gmd-dev",
+    "workload_readback": {
+      "pods_running": 12,
+      "pods_total": 12
+    },
+    "live_readback": {
+      "method": "kubectl port-forward svc/frontend 18080:80",
+      "root_url": "http://127.0.0.1:18080/",
+      "root_status": 200,
+      "health_url": "http://127.0.0.1:18080/_healthz",
+      "health_status": 200,
+      "health_body": "ok"
+    }
+  },
+  "next_slice": {
+    "id": "ultra-plan-8-wave2-gmd-dev-director-run",
+    "goal": "Route the proven local gmd-dev deploy/readback path through the Director delivery contract instead of manual kubectl steps, preserving the same dev-only scope.",
+    "explicitly_deferred": [
+      "local gmd-prod",
+      "local gmd-test unless needed",
+      "cloud-dev DNS/public URL",
+      "release/promote"
+    ]
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "slice": "hide-build-when-ecosystem-build-contract-missing-and-introduce-minimal-ecosystem-build-contract",
+  "ticket": "UP8-13",
+  "result": "build_action_truthfully_gated_by_ecosystem_contract_proven_against_live_api",
+  "lane": "ecosystem build intent truth + minimal contract model",
+  "phase_a_immediate_truth_fix": {
+    "goal": "Hide Build when the ecosystem build contract is missing.",
+    "applied": [
+      "Added `build_visible_by_contract = (kind == 'source_build')` gate in `_lifecycle_capabilities`",
+      "Replaced `build_enabled` with `build_visible = build_enabled AND build_visible_by_contract` everywhere the build action is conditionally surfaced",
+      "Result for `gmd`: `supported_actions=['deploy', 'promote']`, `action_layout` excludes `build`, `action_copy` excludes `build`",
+      "API endpoint `release/lifecycle/build` for `gmd` now returns 409 with contract-aware reason",
+      "API endpoint `release/builds` for `gmd` returns `{builds: []}`"
+    ]
+  },
+  "phase_b_minimal_build_contract_model": {
+    "goal": "Introduce minimal ecosystem build contract shape with three execution-oriented kinds.",
+    "shape": {
+      "fields": {
+        "kind": "one of: 'source_build' | 'mirror_upstream' | 'unsupported'",
+        "produces": "list[str] of image names produced by the build (empty unless source_build)",
+        "source_repos": "list[str] of repos that the build reads from (source_build only)",
+        "build_command": "string explaining what the build invokes (source_build only)",
+        "upstream": "object with project / delivered_via / chart (mirror_upstream only)",
+        "note": "human-readable explanation of the contract for the operator"
+      },
+      "kinds": {
+        "source_build": "AMOF runs a real first-party build for this ecosystem's images. Lifecycle Build action is supported.",
+        "mirror_upstream": "Ecosystem deploys upstream-provided images via Argo CD or similar. No AMOF-driven build. Build action hidden.",
+        "unsupported": "No build path of any kind is wired today. Build action hidden."
+      }
+    },
+    "surfaced_at": "lifecycle_capabilities.ecosystem_build_contract",
+    "backwards_compat": "lifecycle_capabilities.build_target_truth retained as a derived projection so existing UI clients keep working."
+  },
+  "phase_c_apply_to_gmd": {
+    "classification": {
+      "amof-platform": "source_build (controlplane/agent/dashboard from repos/amof + repos/amof-ui)",
+      "demo-microsaas": "source_build (still shares the AMOF platform build path)",
+      "gmd": "mirror_upstream (deploys upstream googlecloudplatform/microservices-demo via Argo CD)",
+      "default_for_unknown": "unsupported"
+    },
+    "live_api_proof": {
+      "controlplane_image_running": "host.k3d.internal:5000/amof-controlplane:up8-13-contract-20260425",
+      "controlplane_source_commit": "4932e8c8997f4c9be3db14751d8c61578f858b6c",
+      "gmd_overview_supported_actions": ["deploy", "promote"],
+      "gmd_overview_action_layout_ids": ["deploy", "promote"],
+      "gmd_overview_action_copy_keys": ["deploy", "promote"],
+      "gmd_overview_ecosystem_build_contract": {
+        "kind": "mirror_upstream",
+        "produces": [],
+        "upstream": {
+          "project": "googlecloudplatform/microservices-demo",
+          "delivered_via": "Argo CD ApplicationSet at infrastructure/gitops/gmd/applicationset.yaml",
+          "chart": "infrastructure/gitops/gmd/chart/"
+        },
+        "note": "gmd deploys upstream googlecloudplatform/microservices-demo images via Argo CD. There is no first-party gmd-app build path in AMOF today, so Build is hidden."
+      },
+      "gmd_post_build_response_status": 409,
+      "gmd_post_build_response_detail": "Lifecycle action 'build' is not supported for gmd. Supported actions: deploy, promote. Build is hidden because ecosystem 'gmd' has build contract 'mirror_upstream'. Build is only surfaced for ecosystems whose contract kind is 'source_build'.",
+      "amof_platform_supported_actions": ["build", "deploy", "promote"],
+      "amof_platform_contract_kind": "source_build",
+      "gmd_release_builds_endpoint": "{builds: []}",
+      "amof_platform_release_builds_count": 2
+    }
+  },
+  "commits_landed_to_canonical_main": [
+    {
+      "ticket": "UP8-13",
+      "candidate_branch": "feat/UP8-13",
+      "source_sha": "98675d2a8885fe500b5ed406b7672e5fba83b7a7",
+      "synthesized_main_sha": "4932e8c8997f4c9be3db14751d8c61578f858b6c",
+      "summary": "feat(lifecycle): introduce minimal ecosystem build contract; hide Build when not source_build",
+      "files": [
+        "scripts/amof/api/routers/release.py",
+        "tests/test_release_lifecycle_contract.py"
+      ]
+    }
+  ],
+  "tests": {
+    "new_contract_tests_added": 7,
+    "test_release_lifecycle_contract_pass": "74/74 (excluding the pre-existing main-failure test_release_lifecycle_build_enqueues_structured_build_metadata)"
+  },
+  "phase_d_next_step_for_gmd_source_build": {
+    "what_is_required_to_move_gmd_to_source_build": [
+      "Add a first-party gmd-app build script (e.g. scripts/build-gmd-app.sh) that produces gmd-app image(s) from a source repo declared in ecosystems/gmd/ecosystem.yaml",
+      "Register a per-ecosystem build command in scripts/amof/api/command_builder.py (e.g. build_gmd_lifecycle_build_command)",
+      "Wire the dispatcher in scripts/amof/api/routers/release.py release_lifecycle_action() to pick the per-ecosystem build command when name == 'gmd'",
+      "Update _ecosystem_build_contract('gmd') to return kind='source_build' with the produced image names, source repo paths, and the new build command reference",
+      "Update infrastructure/gitops/gmd/chart values to use the locally-built gmd-app image(s) instead of upstream microservices-demo references",
+      "Decide image registry strategy (host.k3d.internal:5000 mirror vs ghcr.io)"
+    ],
+    "what_this_slice_intentionally_did_not_do": [
+      "invent a downstream gmd-app build script",
+      "design a per-ecosystem image registry convention",
+      "modify infrastructure/gitops/gmd/chart values",
+      "touch the gmd-app upstream repo"
+    ]
+  }
+}

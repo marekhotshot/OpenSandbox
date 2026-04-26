@@ -1,0 +1,95 @@
+{
+  "slice": "ultra-plan-9-generated-build-contract-phase-5-read-only-backend-surfacing",
+  "ticket": "UP9-5",
+  "result": "read_only_backend_endpoints_implemented_tested_and_promoted_to_main",
+  "scope": "read-only backend surfacing for local generated-build artifact store; no UI, no deploy/release wiring, no cloud-dev, no mutation endpoints, no non-local storage",
+  "implementation_commit": {
+    "branch": "feat/UP9-5",
+    "source_sha": "cefbca940c74b5837b9c55d76948de3851f2732a",
+    "subject": "feat(generated-build): expose persisted artifacts through read-only API",
+    "promote_main_dry_run": "pass",
+    "promote_main_push": "pass",
+    "synthesized_main_sha": "627b844bae2efaa16650aa95237ab3bd54f6b615"
+  },
+  "files_changed": [
+    "scripts/amof/api/main.py",
+    "scripts/amof/api/routers/generated_build.py",
+    "tests/test_generated_build_api.py"
+  ],
+  "backend_behavior": {
+    "list_endpoint": {
+      "method": "GET",
+      "paths": [
+        "/api/v1/generated-builds",
+        "/api/v1/control/generated-builds"
+      ],
+      "source": ".amof/generated-builds/index.json",
+      "mutation": false
+    },
+    "show_endpoint": {
+      "method": "GET",
+      "paths": [
+        "/api/v1/generated-builds/artifact?repo_path=<path>&service=<name>",
+        "/api/v1/control/generated-builds/artifact?repo_path=<path>&service=<name>"
+      ],
+      "source": ".amof/generated-builds/<repo-id>/<service-or-root>/artifact.json",
+      "mutation": false,
+      "missing_behavior": "404 Generated-build artifact not found"
+    },
+    "status_truth": "Endpoints return stored artifacts/index rows exactly; they do not upgrade or downgrade refused/proposed/build_proven/runtime_proven status and do not imply deployability."
+  },
+  "tests": {
+    "command": "PYTHONPATH=scripts .venv/bin/python -m pytest tests/test_generated_build_api.py tests/test_generated_build_detector.py tests/test_command_builder_runtime.py -q",
+    "result": "45 passed, 1 existing pydantic deprecation warning",
+    "new_tests": [
+      "GET /api/v1/generated-builds lists local index rows",
+      "GET /api/v1/generated-builds/artifact returns exact stored artifact status and proof fields",
+      "GET /api/v1/generated-builds/artifact returns 404 for missing artifact"
+    ]
+  },
+  "manual_proof": {
+    "store_root": "/tmp/up9-4-store/.amof/generated-builds",
+    "api_smoke": {
+      "list_status_code": 200,
+      "list_count": 3,
+      "rows": [
+        {
+          "repo_id": "go",
+          "service": "go",
+          "runtime_family": "go",
+          "status": "runtime_proven",
+          "show_status_code": 200,
+          "show_liveness_signal": "port_open"
+        },
+        {
+          "repo_id": "node",
+          "service": "node",
+          "runtime_family": "node",
+          "status": "runtime_proven",
+          "show_status_code": 200,
+          "show_liveness_signal": "port_open"
+        },
+        {
+          "repo_id": "python",
+          "service": "python",
+          "runtime_family": "python",
+          "status": "runtime_proven",
+          "show_status_code": 200,
+          "show_liveness_signal": "port_open"
+        }
+      ]
+    }
+  },
+  "out_of_scope_held": [
+    "UI surfacing",
+    "deploy/release wiring or admission",
+    "mutation endpoints",
+    "cloud-dev",
+    "non-local storage",
+    "new generated-build proof behavior"
+  ],
+  "next_slice": {
+    "id": "ultra-plan-9-generated-build-contract-phase-6-minimal-ui-readonly-surface",
+    "summary": "Add a read-only operator surface that lists and shows generated-build artifacts, preserving status truth and making deploy/release non-admission explicit. No mutation and no lifecycle wiring."
+  }
+}

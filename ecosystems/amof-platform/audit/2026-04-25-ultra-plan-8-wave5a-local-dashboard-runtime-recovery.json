@@ -1,0 +1,38 @@
+{
+  "slice": "ultra-plan-8-wave5a-local-dashboard-runtime-recovery",
+  "result": "recovered",
+  "last_known_good": {
+    "dashboard_image": "host.k3d.internal:5000/amof-dashboard:local",
+    "deployment": "amof-amof-control-plane-dashboard",
+    "namespace": "amof-system",
+    "proof": "dashboard pod amof-amof-control-plane-dashboard-b47d7f7-mzz5g running before failed wave5 image rollout"
+  },
+  "auth_env_recovery": {
+    "classification": "local controlplane env posture regression",
+    "cause": "Wave 4d proof enabled AMOF_AUTH_ENABLED and internal-control auth on the in-cluster controlplane; local dashboard auth shell then showed Platform login unavailable for the local proof path.",
+    "restored": {
+      "AMOF_AUTH_ENABLED": "false",
+      "AMOF_INTERNAL_CONTROL_AUTH_ENABLED": "false",
+      "AMOF_INTERNAL_CONTROL_ALLOW_STEP_UP_ACTIONS": "false"
+    }
+  },
+  "registry_regression": {
+    "classification": "registry transport/name mismatch",
+    "host_k3d_internal_failure": "containerd attempted HTTPS to host.k3d.internal:5000 and got an HTTP registry response",
+    "k3d_registry_failure": "containerd attempted HTTP to k3d-amof-registry:5000 but the node could not resolve k3d-amof-registry",
+    "working_pull_policy_path": "import image into k3d node under host.k3d.internal:5000 tag, then deploy with imagePullPolicy IfNotPresent",
+    "proven_image": "host.k3d.internal:5000/amof-dashboard:up8-wave5-gmd-dev-operator-20260425015322",
+    "proof": "test pod reported image already present on machine and ran image-present-ok"
+  },
+  "recovery_actions": [
+    "Rolled dashboard deployment back to host.k3d.internal:5000/amof-dashboard:local",
+    "Restored local controlplane auth env to auth-disabled local posture",
+    "Verified /api/v1/auth/session reports auth_enabled=false and console permissions true",
+    "Verified / and /runs return HTTP 200",
+    "Proved future Wave 5 image can run after k3d image import under host.k3d.internal tag"
+  ],
+  "wave5_resume": {
+    "can_resume": true,
+    "required_delivery_step": "Before redeploying the Wave 5 dashboard image, run k3d image import for host.k3d.internal:5000/amof-dashboard:<tag> -c amof, then roll the deployment to that tag with IfNotPresent."
+  }
+}

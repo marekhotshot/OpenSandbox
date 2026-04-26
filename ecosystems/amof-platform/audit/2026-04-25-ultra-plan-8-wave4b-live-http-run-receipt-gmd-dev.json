@@ -1,0 +1,574 @@
+{
+  "live_http_endpoint": "POST http://127.0.0.1:18085/api/v1/control/ecosystems/gmd/actions/director/gmd-dev-local-proof",
+  "auth_checks": {
+    "missing_credential": {
+      "status_code": 401,
+      "body": {
+        "detail": {
+          "code": "auth_required",
+          "message": "Your AMOF session is missing or expired. Sign in again to continue."
+        }
+      }
+    },
+    "wrong_credential": {
+      "status_code": 401,
+      "body": {
+        "detail": {
+          "code": "internal_control_auth_invalid",
+          "message": "Internal control credential is invalid for this control-plane deployment."
+        }
+      }
+    },
+    "public_prefix_with_internal_credential": {
+      "status_code": 401,
+      "body": {
+        "detail": {
+          "code": "auth_required",
+          "message": "Your AMOF session is missing or expired. Sign in again to continue."
+        }
+      }
+    },
+    "control_prefix_with_valid_credential": {
+      "status_code": 200,
+      "body": {
+        "task_id": "3e013673-35c3-4d16-a6db-1dd43ba4052a",
+        "run_id": "3e013673-35c3-4d16-a6db-1dd43ba4052a",
+        "status": "queued",
+        "action": "director.gmd_dev_local_proof.v1",
+        "target_environment": "dev",
+        "input_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-input-gmd-dev.json",
+        "result_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-result-gmd-dev.json",
+        "request_id": "up8-wave4b-live-http-proof-001"
+      }
+    }
+  },
+  "status_history": [
+    {
+      "run_id": "3e013673-35c3-4d16-a6db-1dd43ba4052a",
+      "ecosystem": "gmd",
+      "action": "director-action/gmd-dev-local-proof",
+      "status": "success",
+      "created_at": "2026-04-24T23:12:06.133384Z",
+      "started_at": "2026-04-24T23:12:06.136302Z",
+      "finished_at": "2026-04-24T23:12:06.660449Z",
+      "exit_code": 0,
+      "terminal": true,
+      "last_event_at": "2026-04-24T23:12:06.659723Z",
+      "last_event_type": "lifecycle_action_completed",
+      "last_message": "Lifecycle action completed"
+    }
+  ],
+  "terminal_status": {
+    "run_id": "3e013673-35c3-4d16-a6db-1dd43ba4052a",
+    "ecosystem": "gmd",
+    "action": "director-action/gmd-dev-local-proof",
+    "status": "success",
+    "created_at": "2026-04-24T23:12:06.133384Z",
+    "started_at": "2026-04-24T23:12:06.136302Z",
+    "finished_at": "2026-04-24T23:12:06.660449Z",
+    "exit_code": 0,
+    "terminal": true,
+    "last_event_at": "2026-04-24T23:12:06.659723Z",
+    "last_event_type": "lifecycle_action_completed",
+    "last_message": "Lifecycle action completed"
+  },
+  "run_detail": {
+    "run_id": "3e013673-35c3-4d16-a6db-1dd43ba4052a",
+    "ecosystem": "gmd",
+    "action": "director-action/gmd-dev-local-proof",
+    "command": [
+      "/home/hotshot/work/amof-platform/.venv/bin/python",
+      "/home/hotshot/work/amof-platform/scripts/amof.py",
+      "-e",
+      "gmd",
+      "director-action",
+      "gmd-dev-local-proof",
+      "--input",
+      "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-input-gmd-dev.json",
+      "--output",
+      "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-result-gmd-dev.json",
+      "--local-port",
+      "18086"
+    ],
+    "status": "success",
+    "created_at": "2026-04-24T23:12:06.133384Z",
+    "started_at": "2026-04-24T23:12:06.136302Z",
+    "finished_at": "2026-04-24T23:12:06.660449Z",
+    "exit_code": 0,
+    "session_id": null,
+    "session_state": null,
+    "session_message": null,
+    "session_has_telemetry": false,
+    "session_has_messages": false,
+    "loop_state": {
+      "run_id": "3e013673-35c3-4d16-a6db-1dd43ba4052a",
+      "task_id": "3e013673-35c3-4d16-a6db-1dd43ba4052a",
+      "queue_state": "done",
+      "loop_state": "completed",
+      "loop_step": 1,
+      "current_goal": "['/home/hotshot/work/amof-platform/.venv/bin/python', '/home/hotshot/work/amof-platform/scripts/amof.py', '-e', 'gmd', 'director-action', 'gmd-dev-local-proof', '--input', 'ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-input-gmd-dev.json', '--output', 'ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-result-gmd-dev.json', '--local-port', '18086']",
+      "decision": "DONE",
+      "stop_reason": "done",
+      "cancel_requested": false,
+      "steps": [],
+      "latest_evidence": {
+        "director_action": "director.gmd_dev_local_proof.v1",
+        "director_action_status": "completed",
+        "environment_id": "dev",
+        "target_environment": "dev",
+        "summary": "Director action director.gmd_dev_local_proof.v1 completed for dev",
+        "result": "success",
+        "ticket_id": "UP8-GOLDEN-GMD-DEV-LIVE-HTTP-001",
+        "input_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-input-gmd-dev.json",
+        "result_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-result-gmd-dev.json",
+        "local_only": true,
+        "cloud_dev": false,
+        "release_promote": false,
+        "request_id": "up8-wave4b-live-http-proof-001",
+        "started_at": "2026-04-24T23:12:06.136302Z",
+        "finished_at": "2026-04-24T23:12:06.660449Z",
+        "exit_code": 0
+      },
+      "last_result_summary": "Director action director.gmd_dev_local_proof.v1 completed for dev",
+      "last_persist_attempt_at": "2026-04-24T23:12:06.661142Z",
+      "persistence_error_count": 0,
+      "persistence_store_status": "healthy",
+      "persistence_warning_active": false,
+      "persistence_warning": null,
+      "last_persisted_at": "2026-04-24T23:12:06.661142Z"
+    },
+    "retention": {
+      "visibility": "visible",
+      "archived": false,
+      "archived_at": null,
+      "archive_reason": null,
+      "seeded_example": false,
+      "canonical_history": false,
+      "label": null
+    },
+    "latest_evidence": {
+      "director_action": "director.gmd_dev_local_proof.v1",
+      "director_action_status": "completed",
+      "environment_id": "dev",
+      "target_environment": "dev",
+      "summary": "Director action director.gmd_dev_local_proof.v1 completed for dev",
+      "result": "success",
+      "ticket_id": "UP8-GOLDEN-GMD-DEV-LIVE-HTTP-001",
+      "input_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-input-gmd-dev.json",
+      "result_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-result-gmd-dev.json",
+      "local_only": true,
+      "cloud_dev": false,
+      "release_promote": false,
+      "request_id": "up8-wave4b-live-http-proof-001",
+      "started_at": "2026-04-24T23:12:06.136302Z",
+      "finished_at": "2026-04-24T23:12:06.660449Z",
+      "exit_code": 0
+    },
+    "latest_decision": "DONE",
+    "latest_summary": "Director action director.gmd_dev_local_proof.v1 completed for dev",
+    "terminal_condition": null,
+    "blocker": null,
+    "blocker_summary": null,
+    "materialization_mode": null,
+    "promotion_applied": null,
+    "scratch_artifact_paths": [],
+    "canonical_write_targets": [],
+    "promotion_evidence": [],
+    "pause_mode": null,
+    "required_choice": null,
+    "forced_choices": [],
+    "handoff": {},
+    "runtime_mode": null,
+    "batch_id": null,
+    "batch_state": null,
+    "batch_cursor": null,
+    "current_item_id": null,
+    "current_child_run_id": null,
+    "child_run_ids": [],
+    "completed_items": [],
+    "persistence_store_status": "healthy",
+    "persistence_warning_active": false,
+    "persistence_warning": null,
+    "last_persistence_error": null,
+    "last_persistence_error_at": null,
+    "last_persisted_at": "2026-04-24T23:12:06.661142Z",
+    "persistence_error_count": 0,
+    "runtime_merkle_root": {
+      "family": "runtime",
+      "hash": "81dabb62709c00cb",
+      "item_count": 8,
+      "updated_at": "2026-04-24T23:12:06.660449Z",
+      "child_hashes": {
+        "cancel_requested": "fcbcf165908dd18a",
+        "decision": "94630a03a897be3c",
+        "loop_state": "7093fda846e50b26",
+        "loop_step": "6b86b273ff34fce1",
+        "queue_state": "58bf5b5478e5d1fb",
+        "run_present": "b5bea41b6c623f7c",
+        "stop_reason": "58bf5b5478e5d1fb",
+        "summary": "a76f54b6188b3ea0"
+      }
+    },
+    "artifact_merkle_root": {
+      "family": "artifact",
+      "hash": "4e2b155c0756d8b5",
+      "item_count": 1,
+      "updated_at": "2026-04-24T23:12:06.660449Z",
+      "child_hashes": {
+        "artifacts_present": "fcbcf165908dd18a"
+      }
+    },
+    "agent_merkle_root": {
+      "family": "agent",
+      "hash": "5db75756f43689a3",
+      "item_count": 2,
+      "updated_at": "2026-04-24T23:12:06.660449Z",
+      "child_hashes": {
+        "action": "87e7abf9f13782fd",
+        "agent_present": "b5bea41b6c623f7c"
+      }
+    },
+    "pipeline_merkle_root": {
+      "family": "pipeline",
+      "hash": "06f861e9cf319bb4",
+      "item_count": 8,
+      "updated_at": "2026-04-24T23:12:06.660449Z",
+      "child_hashes": {
+        "ecosystem": "16632c3a1a298aed",
+        "exit_code": "5feceb66ffc86f38",
+        "finished_at": "29548f1a6146f189",
+        "queue_state": "58bf5b5478e5d1fb",
+        "run_present": "b5bea41b6c623f7c",
+        "started_at": "d90fafc82964effb",
+        "status": "68e7a69974a64106",
+        "task_id": "4f87d2b108694e31"
+      }
+    },
+    "stop_boundary_requested": false,
+    "stop_boundary_phase": null,
+    "stop_boundary_step": null,
+    "stop_boundary_honored": null,
+    "stop_boundary_decision": null,
+    "stop_boundary_summary": null,
+    "stop_boundary_stop_reason": null,
+    "logs": [
+      "{",
+      "  \"action\": \"director.gmd_dev_local_proof.v1\",",
+      "  \"final_status\": \"pass\",",
+      "  \"result_path\": \"/home/hotshot/work/amof-platform/ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-result-gmd-dev.json\",",
+      "  \"blocker\": null",
+      "}"
+    ],
+    "events": [
+      {
+        "timestamp": "2026-04-24T23:12:06.133721Z",
+        "level": "info",
+        "type": "lifecycle_action_queued",
+        "message": "Lifecycle action queued: gmd-dev-local-proof",
+        "run_id": "3e013673-35c3-4d16-a6db-1dd43ba4052a",
+        "payload": {
+          "action": "gmd-dev-local-proof",
+          "director_action": "director.gmd_dev_local_proof.v1",
+          "environment_id": "dev",
+          "stage_id": "dev",
+          "target_environment": "dev",
+          "ticket_id": "UP8-GOLDEN-GMD-DEV-LIVE-HTTP-001",
+          "input_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-input-gmd-dev.json",
+          "result_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-result-gmd-dev.json",
+          "local_only": true,
+          "cloud_dev": false,
+          "release_promote": false,
+          "request_id": "up8-wave4b-live-http-proof-001",
+          "lifecycle_action": "gmd-dev-local-proof",
+          "status": "queued"
+        }
+      },
+      {
+        "timestamp": "2026-04-24T23:12:06.136962Z",
+        "level": "info",
+        "type": "lifecycle_action_started",
+        "message": "Lifecycle action started",
+        "run_id": "3e013673-35c3-4d16-a6db-1dd43ba4052a",
+        "payload": {
+          "action": "gmd-dev-local-proof",
+          "director_action": "director.gmd_dev_local_proof.v1",
+          "environment_id": "dev",
+          "stage_id": "dev",
+          "target_environment": "dev",
+          "ticket_id": "UP8-GOLDEN-GMD-DEV-LIVE-HTTP-001",
+          "input_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-input-gmd-dev.json",
+          "result_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-result-gmd-dev.json",
+          "local_only": true,
+          "cloud_dev": false,
+          "release_promote": false,
+          "request_id": "up8-wave4b-live-http-proof-001",
+          "lifecycle_action": "gmd-dev-local-proof",
+          "status": "started"
+        }
+      },
+      {
+        "timestamp": "2026-04-24T23:12:06.647062Z",
+        "level": "info",
+        "type": "log",
+        "message": "{",
+        "run_id": "3e013673-35c3-4d16-a6db-1dd43ba4052a",
+        "payload": null
+      },
+      {
+        "timestamp": "2026-04-24T23:12:06.648506Z",
+        "level": "info",
+        "type": "log",
+        "message": "  \"action\": \"director.gmd_dev_local_proof.v1\",",
+        "run_id": "3e013673-35c3-4d16-a6db-1dd43ba4052a",
+        "payload": null
+      },
+      {
+        "timestamp": "2026-04-24T23:12:06.652215Z",
+        "level": "info",
+        "type": "log",
+        "message": "  \"final_status\": \"pass\",",
+        "run_id": "3e013673-35c3-4d16-a6db-1dd43ba4052a",
+        "payload": null
+      },
+      {
+        "timestamp": "2026-04-24T23:12:06.653145Z",
+        "level": "info",
+        "type": "log",
+        "message": "  \"result_path\": \"/home/hotshot/work/amof-platform/ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-result-gmd-dev.json\",",
+        "run_id": "3e013673-35c3-4d16-a6db-1dd43ba4052a",
+        "payload": null
+      },
+      {
+        "timestamp": "2026-04-24T23:12:06.653966Z",
+        "level": "info",
+        "type": "log",
+        "message": "  \"blocker\": null",
+        "run_id": "3e013673-35c3-4d16-a6db-1dd43ba4052a",
+        "payload": null
+      },
+      {
+        "timestamp": "2026-04-24T23:12:06.654900Z",
+        "level": "info",
+        "type": "log",
+        "message": "}",
+        "run_id": "3e013673-35c3-4d16-a6db-1dd43ba4052a",
+        "payload": null
+      },
+      {
+        "timestamp": "2026-04-24T23:12:06.659723Z",
+        "level": "info",
+        "type": "lifecycle_action_completed",
+        "message": "Lifecycle action completed",
+        "run_id": "3e013673-35c3-4d16-a6db-1dd43ba4052a",
+        "payload": {
+          "action": "gmd-dev-local-proof",
+          "director_action": "director.gmd_dev_local_proof.v1",
+          "environment_id": "dev",
+          "stage_id": "dev",
+          "target_environment": "dev",
+          "ticket_id": "UP8-GOLDEN-GMD-DEV-LIVE-HTTP-001",
+          "input_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-input-gmd-dev.json",
+          "result_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-result-gmd-dev.json",
+          "local_only": true,
+          "cloud_dev": false,
+          "release_promote": false,
+          "request_id": "up8-wave4b-live-http-proof-001",
+          "lifecycle_action": "gmd-dev-local-proof",
+          "status": "completed"
+        }
+      }
+    ]
+  },
+  "result_artifact_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-result-gmd-dev.json",
+  "result_artifact": {
+    "schema_version": "1.0",
+    "action": "director.gmd_dev_local_proof.v1",
+    "ticket_id": "UP8-GOLDEN-GMD-DEV-LIVE-HTTP-001",
+    "run_ids": {
+      "cli_action": "director.gmd_dev_local_proof.v1",
+      "argocd_revision": "3e061f6acf4325ae38a3b824cfa6503e4f88237d"
+    },
+    "final_status": "pass",
+    "target_environment": "dev",
+    "constraints_verified": {
+      "dev_only": true,
+      "local_only": true,
+      "no_test_or_prod": true,
+      "no_cloud_dev": true,
+      "no_release_promote": true,
+      "source_gitops_files_unmodified": true,
+      "applicationset_runtime_dev_only": true
+    },
+    "preflights": {
+      "runs_writable": {
+        "ok": true,
+        "detail": "/home/hotshot/work/amof-platform/.amof/runs is writable"
+      },
+      "sdk_openai": {
+        "ok": true,
+        "detail": "python module openai"
+      },
+      "sdk_anthropic": {
+        "ok": true,
+        "detail": "python module anthropic"
+      },
+      "provider_config": {
+        "ok": true,
+        "detail": "provider config resolved (model_ladder=True)"
+      },
+      "port_available": {
+        "ok": true,
+        "detail": "127.0.0.1:18086 is available"
+      },
+      "kubectl_context": {
+        "ok": true,
+        "detail": "k3d-amof"
+      }
+    },
+    "substrate_verification": {
+      "k8s_context": "k3d-amof",
+      "applicationset_name": "gmd-environments",
+      "applicationset_elements": [
+        {
+          "environment": "dev"
+        }
+      ],
+      "helm_parameters": [
+        {
+          "forceString": false,
+          "name": "frontend.externalService",
+          "value": "false"
+        }
+      ]
+    },
+    "deploy_result": {
+      "application_name": "gmd-dev",
+      "namespace": "gmd-dev",
+      "sync_status": "Synced",
+      "health_status": "Healthy",
+      "revision": "3e061f6acf4325ae38a3b824cfa6503e4f88237d",
+      "operation_message": "successfully synced (all tasks run)",
+      "chart_path": "infrastructure/gitops/gmd/chart",
+      "repo_url": "https://github.com/marekhotshot/amof.git",
+      "target_revision": "main",
+      "workload_summary": {
+        "total_pods": 12,
+        "running_pods": 12,
+        "not_running_pods": 0,
+        "pods": [
+          {
+            "name": "adservice-f6595788d-7595m",
+            "ready": "1/1",
+            "status": "Running"
+          },
+          {
+            "name": "cartservice-5d588b8574-zl8qg",
+            "ready": "1/1",
+            "status": "Running"
+          },
+          {
+            "name": "checkoutservice-db56f59d-vkr52",
+            "ready": "1/1",
+            "status": "Running"
+          },
+          {
+            "name": "currencyservice-56c9bbd9bf-dksk7",
+            "ready": "1/1",
+            "status": "Running"
+          },
+          {
+            "name": "emailservice-5b6d8449d8-gqpt8",
+            "ready": "1/1",
+            "status": "Running"
+          },
+          {
+            "name": "frontend-5794c66c59-9mxwf",
+            "ready": "1/1",
+            "status": "Running"
+          },
+          {
+            "name": "loadgenerator-5f98b46db5-zfwdw",
+            "ready": "1/1",
+            "status": "Running"
+          },
+          {
+            "name": "paymentservice-76fc4556c9-zl9xm",
+            "ready": "1/1",
+            "status": "Running"
+          },
+          {
+            "name": "productcatalogservice-5f687dfcb6-hhvb7",
+            "ready": "1/1",
+            "status": "Running"
+          },
+          {
+            "name": "recommendationservice-66496d6596-64zrz",
+            "ready": "1/1",
+            "status": "Running"
+          },
+          {
+            "name": "redis-cart-75c4b7d7fb-82rt2",
+            "ready": "1/1",
+            "status": "Running"
+          },
+          {
+            "name": "shippingservice-87f74dfbd-bcgbk",
+            "ready": "1/1",
+            "status": "Running"
+          }
+        ],
+        "frontend_service": {
+          "name": "frontend",
+          "type": "ClusterIP",
+          "cluster_ip": "10.43.207.90",
+          "ports": [
+            {
+              "name": "http",
+              "port": 80,
+              "protocol": "TCP",
+              "targetPort": 8080
+            }
+          ]
+        }
+      }
+    },
+    "readback_result": {
+      "method": "kubectl -n gmd-dev port-forward svc/frontend 18086:80",
+      "port_used_for_verification": 18086,
+      "probes": [
+        {
+          "url": "http://127.0.0.1:18086/",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "body_summary": "HTML response"
+        },
+        {
+          "url": "http://127.0.0.1:18086/_healthz",
+          "http_status": 200,
+          "content_type": "text/plain; charset=utf-8",
+          "body": "ok"
+        }
+      ],
+      "port_forward_log": "/tmp/gmd-dev-port-forward-kw8qn4pc.log",
+      "port_forward_stopped": true,
+      "readback_pass": true
+    },
+    "release_promote_attempted": false,
+    "blocker": null,
+    "failure_classification": null,
+    "evidence": {
+      "input_contract": "/home/hotshot/work/amof-platform/ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-input-gmd-dev.json",
+      "result_path": "/home/hotshot/work/amof-platform/ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-result-gmd-dev.json",
+      "generated_at": "2026-04-24T23:12:06.646338+00:00"
+    },
+    "acceptance_criteria_results": {
+      "first_class_action": true,
+      "only_gmd_dev_targeted": true,
+      "argo_gmd_dev_synced_and_healthy": true,
+      "gmd_dev_workload_pods_running": true,
+      "local_readback_succeeds": true,
+      "structured_result_recorded": true,
+      "release_promote_not_attempted": true
+    }
+  }
+}

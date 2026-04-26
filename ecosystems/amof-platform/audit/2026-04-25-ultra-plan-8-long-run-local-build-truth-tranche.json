@@ -1,0 +1,129 @@
+{
+  "slice": "ultra-plan-8-long-run-local-build-truth-tranche",
+  "result": "lifecycle_build_succeeds_end_to_end_first_time_in_tranche",
+  "lane": "LOCAL BUILD TRUTH for gmd",
+  "workstream_a_gmd_build_intent_truth": {
+    "trace": {
+      "ecosystem": "gmd",
+      "lifecycle_action": "release/lifecycle/build",
+      "delegates_to_script": "scripts/build-cloud-images.sh (via run-cluster-build.sh for cluster backend)",
+      "produces_images": [
+        "amof-controlplane",
+        "amof-agent",
+        "amof-dashboard",
+        "amof-assistant (opt-in only)"
+      ],
+      "produces_gmd_app_image": false,
+      "downstream_gmd_app_build_contract_present": false,
+      "gmd_app_delivery_path": "infrastructure/gitops/gmd/applicationset.yaml -> Argo CD chart at infrastructure/gitops/gmd/chart/ pointing at upstream googlecloudplatform/microservices-demo images"
+    },
+    "decision": "Current behavior is intended platform-build behavior. There is no missing downstream gmd-app build contract waiting to be wired. The misleading bit is the action label 'Build images' which read as 'build the gmd app' from the gmd context.",
+    "smallest_truthful_fix_applied": {
+      "added_helper": "_build_target_truth(name)",
+      "surfaced_field": "lifecycle_capabilities.build_target_truth",
+      "label_change_for_non_amof_platform_ecosystems": "'Build images' -> 'Build AMOF platform images'",
+      "activity_summary_suffix": " (AMOF platform substrate)",
+      "amof_platform_label_unchanged": true
+    },
+    "intentionally_not_done": [
+      "invent a new downstream gmd-app build framework",
+      "wire any nonexistent gmd-app build script"
+    ]
+  },
+  "workstream_b_local_builder_hardening": {
+    "previous_state_at_tranche_start": {
+      "controlplane_base_split": "landed (UP8-7 / c94e962)",
+      "controlplane_python_dep_split": "landed (UP8-7 / 20fada5)",
+      "agent_image": "fails on python:3.11-slim Docker Hub DNS",
+      "dashboard_image": "fails on node:20-alpine Docker Hub DNS"
+    },
+    "fixes_landed_in_tranche": [
+      "Mirror python:3.11-slim and node:20-alpine to local registry under mirror/dockerhub/library/",
+      "Generic rewrite_dockerhub_base_for_local_builder helper",
+      "Agent Dockerfile thin-rewrite for local builder (FROM amof-controlplane-deps; drop dead `pip install kubernetes`)",
+      "Dashboard Dockerfile thin-rewrite for local builder (FROM prebuilt amof-dashboard-deps; runner stage from mirrored node:20-alpine)",
+      "Prebuilt amof-dashboard-deps:local-node20-lock-26cc673a5e6c image built and pushed to local mirror",
+      "Assistant build made strictly opt-in even when Dockerfile present (matches existing comment; protects local happy path)",
+      "Cluster-build wrapper set -e bug fixed so successful builds no longer report failure"
+    ],
+    "lifecycle_build_progression": {
+      "before_tranche": "fails on agent image (python:3.11-slim DNS)",
+      "after_UP8_8": "fails on agent image (FROM mirror succeeds, pip install fails)",
+      "after_UP8_9": "fails on dashboard image (npm ci fails)",
+      "after_UP8_10_local_assistant_appears": "fails on assistant image (npm ci fails)",
+      "after_UP8_11": "all 3 platform images built, assistant skipped, but wrapper exits 1 due to set -e bug",
+      "after_UP8_12_with_hot_patched_wrapper": "lifecycle build SUCCESS, exit_code=0, lifecycle_status=completed"
+    }
+  },
+  "commits_landed_to_canonical_main": [
+    {
+      "ticket": "UP8-8",
+      "candidate_branch": "feat/UP8-8",
+      "source_sha": "c20d74a8d4f51d5dfbd21af05ab809f7afc538ac",
+      "synthesized_main_sha": "a7f0c55e24061823c0838ca79355b1b3363dd549",
+      "summary": "rewrite agent and dashboard Dockerhub bases for local builder; clarify build action truth",
+      "files": [
+        "scripts/amof/api/routers/release.py",
+        "scripts/build-cloud-images.sh",
+        "tests/test_release_lifecycle_contract.py"
+      ]
+    },
+    {
+      "ticket": "UP8-9",
+      "candidate_branch": "feat/UP8-9",
+      "source_sha": "d3d1238c7910eaebf60024f3607148ee4993ae0b",
+      "synthesized_main_sha": "f08223ebafbf4b8a9aa693960b8a862b54af8492",
+      "summary": "rewrite agent Dockerfile to thin form on local builder",
+      "files": ["scripts/build-cloud-images.sh"]
+    },
+    {
+      "ticket": "UP8-10",
+      "candidate_branch": "feat/UP8-10",
+      "source_sha": "2f649d54e487bd3955adcde7fb935d90b327ce8c",
+      "synthesized_main_sha": "6658d91845fe0b60b41ad9e661296d016ff18b76",
+      "summary": "rewrite dashboard Dockerfile to thin form on local builder",
+      "files": ["scripts/build-cloud-images.sh"]
+    },
+    {
+      "ticket": "UP8-11",
+      "candidate_branch": "feat/UP8-11",
+      "source_sha": "e1180a38735fbb9926f052ea5599cefd6753f1fd",
+      "synthesized_main_sha": "9846e68358efb6b768b6e21bc6229d11a9440363",
+      "summary": "make amof-assistant build strictly opt-in even when Dockerfile present",
+      "files": ["scripts/build-cloud-images.sh"]
+    },
+    {
+      "ticket": "UP8-12",
+      "candidate_branch": "feat/UP8-12",
+      "source_sha": "00bc721a1a10ac7e49ee68e431ac9fc3923d26e8",
+      "synthesized_main_sha": "2afb980da3ee278bf26624adc0a5c0d1bffc4071",
+      "summary": "prevent cluster-build wrapper from exiting on still-running poll (set -e bug)",
+      "files": ["scripts/run-cluster-build.sh"]
+    }
+  ],
+  "successful_lifecycle_build_proof": {
+    "run_id": "b1fcfab0-a771-4292-a7d8-b5f1837bdb01",
+    "ecosystem": "gmd",
+    "environment": "dev",
+    "image_tag": "up8-lr-build-truth-final2-20260425",
+    "source_commit": "2afb980da3ee278bf26624adc0a5c0d1bffc4071",
+    "status": "success",
+    "exit_code": 0,
+    "lifecycle_status": "completed",
+    "images": [
+      {"name": "amof-controlplane", "built": true, "skipped": false},
+      {"name": "amof-agent", "built": true, "skipped": false},
+      {"name": "amof-dashboard", "built": true, "skipped": false},
+      {"name": "amof-assistant", "built": false, "skipped": true, "skip_reason": "opt-in"}
+    ],
+    "finished_at": "2026-04-25T22:29:47.925116Z",
+    "note_on_runtime_image_alignment": "Wrapper fix landed in canonical main as 2afb980 but the live in-cluster controlplane image is still pre-fix. The successful end-to-end run was achieved by hot-patching /app/scripts/run-cluster-build.sh in the running pod with the new file. Future controlplane image builds will bake in the fix; the deploy-time alignment is out of scope for this build-truth tranche."
+  },
+  "truth_projection": {
+    "gmd_build_intent_truth": "release/lifecycle/build for the gmd ecosystem builds the AMOF platform images (controlplane + agent + dashboard, optional assistant). It does not build any gmd-app image. The action label and capabilities now state this explicitly via build_target_truth.",
+    "platform_builder_readiness": "READY. The local k3d cluster builder can build amof-controlplane, amof-agent, and amof-dashboard end-to-end without any Docker Hub, PyPI, or npm registry access at build time. The previously reported lifecycle_build_failed surface for successful builds was caused by a wrapper set -e bug that is now fixed in canonical main and proven in a live run via hot-patch.",
+    "downstream_gmd_app_build_availability": "NOT SUPPORTED. No gmd-app build script, Dockerfile-on-AMOF-side, or contract exists. The gmd ecosystem deploys upstream-provided googlecloudplatform/microservices-demo images via Argo CD ApplicationSet. Adding a gmd-app build path would be a new subsystem and is outside this lane."
+  },
+  "next_blocker": "Operational deploy: roll the new amof-controlplane image (which contains the wrapper set -e fix) into the live cluster so future builds report truthfully without hot-patch. This is operational deploy work, not source-truth work.",
+  "next_slice": "ultra-plan-8-deploy-up8-12-controlplane-image-and-redeploy"
+}

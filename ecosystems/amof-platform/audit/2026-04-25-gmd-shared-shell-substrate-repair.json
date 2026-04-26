@@ -1,0 +1,138 @@
+{
+  "slice": "restore-local-shared-shell-checkout-truth-for-gmd-build-path",
+  "result": "substrate_repaired_build_next_blocker_found",
+  "shared_shell_blockers_before": [
+    {
+      "path": "/workspace/repos/amof",
+      "classification": [
+        "detached HEAD",
+        "dirty",
+        "stale canonical ref",
+        "git safe.directory missing"
+      ],
+      "observed": "detached at 3e061f6 with local Director action drift and dirty backend files"
+    },
+    {
+      "path": "/workspace/repos/gmd-app",
+      "classification": [
+        "missing"
+      ],
+      "observed": "directory absent under /workspace/repos"
+    },
+    {
+      "path": "/workspace/repos/amof-ui",
+      "classification": [
+        "dirty",
+        "stale canonical ref"
+      ],
+      "observed": "main at 8ec20cd with unrelated local UI dirt; build path consumes amof-ui provenance"
+    }
+  ],
+  "repair_actions": [
+    "Replaced /workspace/repos/amof with clean GitHub main clone at f295d3b6337fffb73c19c43fde94485c78bfae2e (v1.5.0-rc.3).",
+    "Restored /workspace/repos/gmd-app from clean main clone at c9857ee54fba10486013f15ba6b31411986f530c.",
+    "Replaced /workspace/repos/amof-ui with clean GitHub main clone at 72f22f5c74b9bcfd1adfeaa81cc49a4ee5e01a8d using tar stream to preserve bracketed Next.js paths.",
+    "Added git safe.directory entries in the controlplane pod for the shared shell repos."
+  ],
+  "post_repair_refs": {
+    "amof": "f295d3b6337fffb73c19c43fde94485c78bfae2e",
+    "amof_ui": "72f22f5c74b9bcfd1adfeaa81cc49a4ee5e01a8d",
+    "gmd_app": "c9857ee54fba10486013f15ba6b31411986f530c"
+  },
+  "build_retry": {
+    "run_id": "3ba3a245-ff0d-4193-aaaa-0b80a61a3890",
+    "status": "failed",
+    "exit_code": 1,
+    "latest_evidence": {
+      "lifecycle_action": "build",
+      "lifecycle_status": "failed",
+      "environment_id": "dev",
+      "stage_id": "dev",
+      "build_backend": "cluster",
+      "source_mode": "canonical",
+      "source_branch": "main",
+      "source_commit": "f295d3b6337fffb73c19c43fde94485c78bfae2e",
+      "amof_ref": "main",
+      "amof_commit": "f295d3b6337fffb73c19c43fde94485c78bfae2e",
+      "amof_ui_ref": "main",
+      "amof_ui_commit": "72f22f5c74b9bcfd1adfeaa81cc49a4ee5e01a8d",
+      "builder": "cluster",
+      "sources": [
+        {
+          "repo": "amof",
+          "branch": "main",
+          "commit": "f295d3b6337fffb73c19c43fde94485c78bfae2e"
+        },
+        {
+          "repo": "amof-ui",
+          "branch": "main",
+          "commit": "72f22f5c74b9bcfd1adfeaa81cc49a4ee5e01a8d"
+        },
+        {
+          "repo": "amof-assistant",
+          "branch": null,
+          "commit": null
+        }
+      ],
+      "images": [
+        {
+          "name": "amof-controlplane",
+          "repository": null,
+          "tag": "up8-gmd-provenance-retry2-20260425",
+          "image": null,
+          "built": true,
+          "skipped": false
+        },
+        {
+          "name": "amof-agent",
+          "repository": null,
+          "tag": "up8-gmd-provenance-retry2-20260425",
+          "image": null,
+          "built": true,
+          "skipped": false
+        },
+        {
+          "name": "amof-dashboard",
+          "repository": null,
+          "tag": "up8-gmd-provenance-retry2-20260425",
+          "image": null,
+          "built": true,
+          "skipped": false
+        },
+        {
+          "name": "amof-assistant",
+          "repository": null,
+          "tag": "up8-gmd-provenance-retry2-20260425",
+          "image": null,
+          "built": false,
+          "skipped": true,
+          "skip_reason": "Assistant build is opt-in (set AMOF_REQUIRE_ASSISTANT=1 to enable). Not part of the cloud-dev happy path."
+        }
+      ],
+      "no_push": true,
+      "started_at": "2026-04-25T20:34:02.515843Z",
+      "finished_at": "2026-04-25T20:34:05.297893Z",
+      "summary": "Lifecycle build failed for dev",
+      "result": "failed",
+      "exit_code": 1,
+      "blocker": "lifecycle_build_failed",
+      "blocker_summary": "Lifecycle build failed for dev"
+    },
+    "provenance_result": "passed: build reached detached worktree preparation for amof and amof-ui canonical main refs",
+    "next_blocker": {
+      "classification": "cluster builder network/DNS or base-image mirror blocker",
+      "message": "Docker build failed resolving docker.io/library/python:3.10-slim via cluster DNS 10.43.0.10: server misbehaving",
+      "not_app_bug": true,
+      "not_shared_checkout_truth": true
+    }
+  },
+  "environment_vs_shell_truth": {
+    "gmd_dev_runtime": "truthful healthy runtime: Argo gmd-dev can be Synced/Healthy from the GitOps chart and already-pulled upstream images without /workspace/repos/gmd-app existing.",
+    "shared_shell": "build/provenance substrate: image build and candidate paths inspect /workspace/repos/* and can fail even while gmd-dev runtime stays healthy.",
+    "ui_behavior": "Environments runtime health is truthful for deployed Argo state. It is missing a separate projection if it implies build readiness without surfacing shared-shell checkout/provenance state."
+  },
+  "deferred_or_untouched": [
+    "active ticket worktrees were inventoried only; no ticket worktrees modified",
+    "no cloud-dev/test/prod/DNS/release/UI changes"
+  ]
+}

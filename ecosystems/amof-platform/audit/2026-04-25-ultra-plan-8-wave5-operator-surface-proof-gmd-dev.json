@@ -1,0 +1,443 @@
+{
+  "surface": "DashboardSlides Local gmd-dev proof card",
+  "trigger_endpoint": "POST /api/v1/control/ecosystems/gmd/actions/director/gmd-dev-local-proof",
+  "run_id": "9ee69b1d-dfb2-4fd6-88da-9a0bbefe30c2",
+  "accepted": {
+    "task_id": "9ee69b1d-dfb2-4fd6-88da-9a0bbefe30c2",
+    "run_id": "9ee69b1d-dfb2-4fd6-88da-9a0bbefe30c2",
+    "status": "queued",
+    "action": "director.gmd_dev_local_proof.v1",
+    "target_environment": "dev",
+    "input_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-input-gmd-dev.json",
+    "result_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-result-gmd-dev.json",
+    "request_id": "up8-wave5-operator-surface-proof-001"
+  },
+  "terminal_run_detail": {
+    "run_id": "9ee69b1d-dfb2-4fd6-88da-9a0bbefe30c2",
+    "ecosystem": "gmd",
+    "action": "director-action/gmd-dev-local-proof",
+    "command": [
+      "/usr/local/bin/python",
+      "/workspace/scripts/amof.py",
+      "-e",
+      "gmd",
+      "director-action",
+      "gmd-dev-local-proof",
+      "--input",
+      "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-input-gmd-dev.json",
+      "--output",
+      "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-result-gmd-dev.json",
+      "--local-port",
+      "18088"
+    ],
+    "status": "success",
+    "created_at": "2026-04-25T00:05:05.587640Z",
+    "started_at": "2026-04-25T00:05:05.742285Z",
+    "finished_at": "2026-04-25T00:05:06.816784Z",
+    "exit_code": 0,
+    "session_id": null,
+    "session_state": null,
+    "session_message": null,
+    "session_has_telemetry": false,
+    "session_has_messages": false,
+    "loop_state": {
+      "run_id": "9ee69b1d-dfb2-4fd6-88da-9a0bbefe30c2",
+      "task_id": "9ee69b1d-dfb2-4fd6-88da-9a0bbefe30c2",
+      "queue_state": "done",
+      "loop_state": "completed",
+      "loop_step": 1,
+      "current_goal": "['/usr/local/bin/python', '/workspace/scripts/amof.py', '-e', 'gmd', 'director-action', 'gmd-dev-local-proof', '--input', 'ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-input-gmd-dev.json', '--output', 'ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-result-gmd-dev.json', '--local-port', '18088']",
+      "decision": "DONE",
+      "stop_reason": "done",
+      "cancel_requested": false,
+      "steps": [],
+      "latest_evidence": {
+        "director_action": "director.gmd_dev_local_proof.v1",
+        "director_action_status": "completed",
+        "environment_id": "dev",
+        "target_environment": "dev",
+        "summary": "Director action director.gmd_dev_local_proof.v1 completed for dev",
+        "result": "success",
+        "ticket_id": "UP8-GOLDEN-GMD-DEV-OPERATOR-SURFACE-001",
+        "input_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-input-gmd-dev.json",
+        "result_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-result-gmd-dev.json",
+        "local_only": true,
+        "cloud_dev": false,
+        "release_promote": false,
+        "request_id": "up8-wave5-operator-surface-proof-001",
+        "started_at": "2026-04-25T00:05:05.742285Z",
+        "finished_at": "2026-04-25T00:05:06.816784Z",
+        "exit_code": 0,
+        "director_result": {
+          "final_status": "pass",
+          "result_path": "/workspace/ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-result-gmd-dev.json",
+          "deploy_result": {
+            "sync_status": "Synced",
+            "health_status": "Healthy",
+            "revision": "3e061f6acf4325ae38a3b824cfa6503e4f88237d",
+            "total_pods": 12,
+            "running_pods": 12,
+            "not_running_pods": 0
+          },
+          "readback_result": {
+            "readback_pass": true,
+            "probes": [
+              {
+                "url": "http://127.0.0.1:18088/",
+                "http_status": 200,
+                "body": null,
+                "body_summary": "HTML response"
+              },
+              {
+                "url": "http://127.0.0.1:18088/_healthz",
+                "http_status": 200,
+                "body": "ok",
+                "body_summary": null
+              }
+            ]
+          },
+          "release_promote_attempted": false,
+          "blocker": null,
+          "failure_classification": null
+        },
+        "director_final_status": "pass"
+      },
+      "last_result_summary": "Director action director.gmd_dev_local_proof.v1 completed for dev",
+      "last_persist_attempt_at": "2026-04-25T00:05:06.819609Z",
+      "persistence_error_count": 0,
+      "persistence_store_status": "healthy",
+      "persistence_warning_active": false,
+      "persistence_warning": null,
+      "last_persisted_at": "2026-04-25T00:05:06.819609Z"
+    },
+    "retention": {
+      "visibility": "visible",
+      "archived": false,
+      "archived_at": null,
+      "archive_reason": null,
+      "seeded_example": false,
+      "canonical_history": false,
+      "label": null
+    },
+    "latest_evidence": {
+      "director_action": "director.gmd_dev_local_proof.v1",
+      "director_action_status": "completed",
+      "environment_id": "dev",
+      "target_environment": "dev",
+      "summary": "Director action director.gmd_dev_local_proof.v1 completed for dev",
+      "result": "success",
+      "ticket_id": "UP8-GOLDEN-GMD-DEV-OPERATOR-SURFACE-001",
+      "input_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-input-gmd-dev.json",
+      "result_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-result-gmd-dev.json",
+      "local_only": true,
+      "cloud_dev": false,
+      "release_promote": false,
+      "request_id": "up8-wave5-operator-surface-proof-001",
+      "started_at": "2026-04-25T00:05:05.742285Z",
+      "finished_at": "2026-04-25T00:05:06.816784Z",
+      "exit_code": 0,
+      "director_result": {
+        "final_status": "pass",
+        "result_path": "/workspace/ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-result-gmd-dev.json",
+        "deploy_result": {
+          "sync_status": "Synced",
+          "health_status": "Healthy",
+          "revision": "3e061f6acf4325ae38a3b824cfa6503e4f88237d",
+          "total_pods": 12,
+          "running_pods": 12,
+          "not_running_pods": 0
+        },
+        "readback_result": {
+          "readback_pass": true,
+          "probes": [
+            {
+              "url": "http://127.0.0.1:18088/",
+              "http_status": 200,
+              "body": null,
+              "body_summary": "HTML response"
+            },
+            {
+              "url": "http://127.0.0.1:18088/_healthz",
+              "http_status": 200,
+              "body": "ok",
+              "body_summary": null
+            }
+          ]
+        },
+        "release_promote_attempted": false,
+        "blocker": null,
+        "failure_classification": null
+      },
+      "director_final_status": "pass"
+    },
+    "latest_decision": "DONE",
+    "latest_summary": "Director action director.gmd_dev_local_proof.v1 completed for dev",
+    "terminal_condition": null,
+    "blocker": null,
+    "blocker_summary": null,
+    "materialization_mode": null,
+    "promotion_applied": null,
+    "scratch_artifact_paths": [],
+    "canonical_write_targets": [],
+    "promotion_evidence": [],
+    "pause_mode": null,
+    "required_choice": null,
+    "forced_choices": [],
+    "handoff": {},
+    "runtime_mode": null,
+    "batch_id": null,
+    "batch_state": null,
+    "batch_cursor": null,
+    "current_item_id": null,
+    "current_child_run_id": null,
+    "child_run_ids": [],
+    "completed_items": [],
+    "persistence_store_status": "healthy",
+    "persistence_warning_active": false,
+    "persistence_warning": null,
+    "last_persistence_error": null,
+    "last_persistence_error_at": null,
+    "last_persisted_at": "2026-04-25T00:05:06.819609Z",
+    "persistence_error_count": 0,
+    "runtime_merkle_root": {
+      "family": "runtime",
+      "hash": "81dabb62709c00cb",
+      "item_count": 8,
+      "updated_at": "2026-04-25T00:05:06.816784Z",
+      "child_hashes": {
+        "cancel_requested": "fcbcf165908dd18a",
+        "decision": "94630a03a897be3c",
+        "loop_state": "7093fda846e50b26",
+        "loop_step": "6b86b273ff34fce1",
+        "queue_state": "58bf5b5478e5d1fb",
+        "run_present": "b5bea41b6c623f7c",
+        "stop_reason": "58bf5b5478e5d1fb",
+        "summary": "a76f54b6188b3ea0"
+      }
+    },
+    "artifact_merkle_root": {
+      "family": "artifact",
+      "hash": "4e2b155c0756d8b5",
+      "item_count": 1,
+      "updated_at": "2026-04-25T00:05:06.816784Z",
+      "child_hashes": {
+        "artifacts_present": "fcbcf165908dd18a"
+      }
+    },
+    "agent_merkle_root": {
+      "family": "agent",
+      "hash": "5db75756f43689a3",
+      "item_count": 2,
+      "updated_at": "2026-04-25T00:05:06.816784Z",
+      "child_hashes": {
+        "action": "87e7abf9f13782fd",
+        "agent_present": "b5bea41b6c623f7c"
+      }
+    },
+    "pipeline_merkle_root": {
+      "family": "pipeline",
+      "hash": "7d81e33015c2f933",
+      "item_count": 8,
+      "updated_at": "2026-04-25T00:05:06.816784Z",
+      "child_hashes": {
+        "ecosystem": "16632c3a1a298aed",
+        "exit_code": "5feceb66ffc86f38",
+        "finished_at": "57ff37fa1bb43a5a",
+        "queue_state": "58bf5b5478e5d1fb",
+        "run_present": "b5bea41b6c623f7c",
+        "started_at": "fd1f7b061c20826f",
+        "status": "68e7a69974a64106",
+        "task_id": "4d9cca0c55e82d50"
+      }
+    },
+    "stop_boundary_requested": false,
+    "stop_boundary_phase": null,
+    "stop_boundary_step": null,
+    "stop_boundary_honored": null,
+    "stop_boundary_decision": null,
+    "stop_boundary_summary": null,
+    "stop_boundary_stop_reason": null,
+    "logs": [
+      "{",
+      "  \"action\": \"director.gmd_dev_local_proof.v1\",",
+      "  \"final_status\": \"pass\",",
+      "  \"result_path\": \"/workspace/ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-result-gmd-dev.json\",",
+      "  \"blocker\": null",
+      "}"
+    ],
+    "events": [
+      {
+        "timestamp": "2026-04-25T00:05:05.607906Z",
+        "level": "info",
+        "type": "lifecycle_action_queued",
+        "message": "Lifecycle action queued: gmd-dev-local-proof",
+        "run_id": "9ee69b1d-dfb2-4fd6-88da-9a0bbefe30c2",
+        "payload": {
+          "action": "gmd-dev-local-proof",
+          "director_action": "director.gmd_dev_local_proof.v1",
+          "environment_id": "dev",
+          "stage_id": "dev",
+          "target_environment": "dev",
+          "ticket_id": "UP8-GOLDEN-GMD-DEV-OPERATOR-SURFACE-001",
+          "input_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-input-gmd-dev.json",
+          "result_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-result-gmd-dev.json",
+          "local_only": true,
+          "cloud_dev": false,
+          "release_promote": false,
+          "request_id": "up8-wave5-operator-surface-proof-001",
+          "lifecycle_action": "gmd-dev-local-proof",
+          "status": "queued"
+        }
+      },
+      {
+        "timestamp": "2026-04-25T00:05:05.749073Z",
+        "level": "info",
+        "type": "lifecycle_action_started",
+        "message": "Lifecycle action started",
+        "run_id": "9ee69b1d-dfb2-4fd6-88da-9a0bbefe30c2",
+        "payload": {
+          "action": "gmd-dev-local-proof",
+          "director_action": "director.gmd_dev_local_proof.v1",
+          "environment_id": "dev",
+          "stage_id": "dev",
+          "target_environment": "dev",
+          "ticket_id": "UP8-GOLDEN-GMD-DEV-OPERATOR-SURFACE-001",
+          "input_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-input-gmd-dev.json",
+          "result_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-result-gmd-dev.json",
+          "local_only": true,
+          "cloud_dev": false,
+          "release_promote": false,
+          "request_id": "up8-wave5-operator-surface-proof-001",
+          "lifecycle_action": "gmd-dev-local-proof",
+          "status": "started"
+        }
+      },
+      {
+        "timestamp": "2026-04-25T00:05:06.726674Z",
+        "level": "info",
+        "type": "log",
+        "message": "{",
+        "run_id": "9ee69b1d-dfb2-4fd6-88da-9a0bbefe30c2",
+        "payload": null
+      },
+      {
+        "timestamp": "2026-04-25T00:05:06.745080Z",
+        "level": "info",
+        "type": "log",
+        "message": "  \"action\": \"director.gmd_dev_local_proof.v1\",",
+        "run_id": "9ee69b1d-dfb2-4fd6-88da-9a0bbefe30c2",
+        "payload": null
+      },
+      {
+        "timestamp": "2026-04-25T00:05:06.780160Z",
+        "level": "info",
+        "type": "log",
+        "message": "  \"final_status\": \"pass\",",
+        "run_id": "9ee69b1d-dfb2-4fd6-88da-9a0bbefe30c2",
+        "payload": null
+      },
+      {
+        "timestamp": "2026-04-25T00:05:06.785912Z",
+        "level": "info",
+        "type": "log",
+        "message": "  \"result_path\": \"/workspace/ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-result-gmd-dev.json\",",
+        "run_id": "9ee69b1d-dfb2-4fd6-88da-9a0bbefe30c2",
+        "payload": null
+      },
+      {
+        "timestamp": "2026-04-25T00:05:06.788669Z",
+        "level": "info",
+        "type": "log",
+        "message": "  \"blocker\": null",
+        "run_id": "9ee69b1d-dfb2-4fd6-88da-9a0bbefe30c2",
+        "payload": null
+      },
+      {
+        "timestamp": "2026-04-25T00:05:06.795726Z",
+        "level": "info",
+        "type": "log",
+        "message": "}",
+        "run_id": "9ee69b1d-dfb2-4fd6-88da-9a0bbefe30c2",
+        "payload": null
+      },
+      {
+        "timestamp": "2026-04-25T00:05:06.814357Z",
+        "level": "info",
+        "type": "lifecycle_action_completed",
+        "message": "Lifecycle action completed",
+        "run_id": "9ee69b1d-dfb2-4fd6-88da-9a0bbefe30c2",
+        "payload": {
+          "action": "gmd-dev-local-proof",
+          "director_action": "director.gmd_dev_local_proof.v1",
+          "environment_id": "dev",
+          "stage_id": "dev",
+          "target_environment": "dev",
+          "ticket_id": "UP8-GOLDEN-GMD-DEV-OPERATOR-SURFACE-001",
+          "input_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-input-gmd-dev.json",
+          "result_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-result-gmd-dev.json",
+          "local_only": true,
+          "cloud_dev": false,
+          "release_promote": false,
+          "request_id": "up8-wave5-operator-surface-proof-001",
+          "lifecycle_action": "gmd-dev-local-proof",
+          "status": "completed"
+        }
+      }
+    ]
+  },
+  "runs_list_contains_run": true,
+  "result_artifact_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-result-gmd-dev.json",
+  "result_artifact": null,
+  "latest_evidence_director_result": {
+    "final_status": "pass",
+    "result_path": "/workspace/ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-result-gmd-dev.json",
+    "deploy_result": {
+      "sync_status": "Synced",
+      "health_status": "Healthy",
+      "revision": "3e061f6acf4325ae38a3b824cfa6503e4f88237d",
+      "total_pods": 12,
+      "running_pods": 12,
+      "not_running_pods": 0
+    },
+    "readback_result": {
+      "readback_pass": true,
+      "probes": [
+        {
+          "url": "http://127.0.0.1:18088/",
+          "http_status": 200,
+          "body": null,
+          "body_summary": "HTML response"
+        },
+        {
+          "url": "http://127.0.0.1:18088/_healthz",
+          "http_status": 200,
+          "body": "ok",
+          "body_summary": null
+        }
+      ]
+    },
+    "release_promote_attempted": false,
+    "blocker": null,
+    "failure_classification": null
+  },
+  "ui_summary_values": {
+    "status": "success",
+    "argo": "Synced / Healthy",
+    "pods": "12/12",
+    "root_status": 200,
+    "health_status": 200
+  },
+  "ui_bundle_verification": {
+    "dashboard_url": "http://amof.localhost:8081/",
+    "html_status": 200,
+    "html_contains_client_card_text": false,
+    "client_chunk": "/_next/static/chunks/app/page-49192608e99ec89a.js",
+    "client_chunk_contains": [
+      "Local gmd-dev proof",
+      "Run local dev proof",
+      "Internal control credential",
+      "director/gmd-dev-local-proof"
+    ],
+    "note": "DashboardSlides is a client component; card strings are in the deployed client chunk, not the server-rendered HTML shell."
+  }
+}

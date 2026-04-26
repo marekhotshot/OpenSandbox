@@ -1,0 +1,44 @@
+{
+  "policy_result_kind": "generated_build_admission_policy_result",
+  "artifact_ref": {
+    "artifact_path": ".amof/generated-builds/example-api/api/artifact.json",
+    "repo_path": "/workspace/repos/example-api",
+    "service": "api",
+    "image_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "artifact_proof_status": "runtime_proven",
+  "admission_status": "deploy_admitted",
+  "reasons": [
+    "runtime_proven",
+    "template_rendered",
+    "image_digest_recorded",
+    "first_wave_runtime_family",
+    "operator_confirmed",
+    "deploy_pull_reference_present",
+    "source_ref_confirmed",
+    "existing_build_precedence_resolved"
+  ],
+  "missing_prerequisites": [],
+  "refusal_conditions": [],
+  "precedence_decision": "generated_build_selected_by_policy",
+  "evidence_summary": {
+    "build_contract_kind": "generated",
+    "runtime_family": "go",
+    "confidence": "accepted",
+    "template_id": "go-stdlib-distroless-v1",
+    "has_rendered_path": true,
+    "has_build_proof": true,
+    "has_runtime_proof": true,
+    "liveness_signal": "port_open",
+    "risk_flags": []
+  },
+  "operator_confirmation": {
+    "confirmed": true,
+    "confirmed_by": "operator@example.com",
+    "confirmed_at": "2026-04-26T18:27:00Z",
+    "confirmed_image_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "target_ecosystem": "example-api",
+    "target_service": "api"
+  },
+  "evaluated_at": "2026-04-26T18:28:00Z"
+}

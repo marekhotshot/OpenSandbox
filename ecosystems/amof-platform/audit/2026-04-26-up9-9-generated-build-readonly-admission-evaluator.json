@@ -1,0 +1,78 @@
+{
+  "slice": "ultra-plan-9-generated-build-contract-phase-9-readonly-admission-policy-evaluator",
+  "result": "read_only_admission_policy_evaluator_implemented_tested_and_promoted",
+  "scope": "generated-build admission evaluation only; no mutation, no deploy/release wiring, no UI execution, no cloud-dev, no generated-build artifact execution",
+  "implementation_commit": {
+    "branch": "feat/UP9-9",
+    "source_sha": "4b2b9fed3264639618df413ab1cbb2c866d1b26a",
+    "synthesized_main_sha": "60c1c249ed53d19f4d549ec70a8234143e512f7c",
+    "push_succeeded": true
+  },
+  "files_changed": [
+    "scripts/amof.py",
+    "scripts/amof/cli.py",
+    "scripts/amof/generated_build/__init__.py",
+    "scripts/amof/generated_build/__main__.py",
+    "scripts/amof/generated_build/admission.py",
+    "tests/test_generated_build_detector.py"
+  ],
+  "evaluator": {
+    "function": "evaluate_admission(artifact, artifact_path=None, context=None)",
+    "side_effect_free": true,
+    "outputs_schema": "contracts/generated-build-admission-policy.schema.json",
+    "default_runtime_proven_result": "candidate_only",
+    "existing_build_conflict_result": "refused with precedence_decision=existing_build_wins",
+    "deploy_admitted_requires": [
+      "operator_confirmation.confirmed",
+      "operator_confirmation.confirmed_image_digest matches build_proof.image_digest",
+      "deploy_pull_reference_present",
+      "source_ref_confirmed"
+    ]
+  },
+  "readonly_surface": {
+    "cli": "amof generated-build admission-preview <repo_path> [--service name]",
+    "context_flags": [
+      "--existing-build-present",
+      "--existing-build-resolved",
+      "--operator-confirmed",
+      "--confirmed-by",
+      "--deploy-pull-reference-present",
+      "--source-ref-confirmed"
+    ],
+    "no_backend_endpoint_added": true,
+    "no_ui_added": true
+  },
+  "proof": {
+    "tests": "49/49 generated-build tests pass",
+    "manual_cli_smoke_against_persisted_python_artifact": {
+      "candidate": {
+        "exit_code": 0,
+        "admission_status": "candidate_only",
+        "precedence_decision": "no_existing_build_contract"
+      },
+      "existing_build_conflict": {
+        "exit_code": 2,
+        "admission_status": "refused",
+        "precedence_decision": "existing_build_wins",
+        "refusal_conditions": ["existing_build_contract_present"]
+      },
+      "deploy_admitted_with_explicit_context": {
+        "exit_code": 0,
+        "admission_status": "deploy_admitted",
+        "missing_prerequisites": []
+      }
+    }
+  },
+  "out_of_scope_held": [
+    "mutation endpoints",
+    "deploy/release wiring",
+    "UI execution",
+    "cloud-dev",
+    "generated-build artifact execution",
+    "contract changes"
+  ],
+  "next_slice": {
+    "id": "ultra-plan-9-generated-build-contract-phase-10-readonly-admission-preview-backend",
+    "summary": "Expose the admission evaluator through a read-only backend preview endpoint next to generated-builds list/show. No mutation, no UI change, no deploy/release wiring."
+  }
+}

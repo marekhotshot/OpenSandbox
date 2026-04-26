@@ -1,0 +1,145 @@
+{
+  "slice": "ultra-plan-8-introduce-first-party-gmd-app-source-build-phase-a-contract-and-source-boundary",
+  "result": "boundary_defined_no_code_changes_required",
+  "scope": "contract / source boundary only; no broad framework yet",
+  "current_truth": {
+    "ecosystem_contract_kind": "mirror_upstream",
+    "build_action_visible": false,
+    "controlplane_image_running": "host.k3d.internal:5000/amof-controlplane:up8-13-contract-20260425",
+    "controlplane_source_commit": "4932e8c8997f4c9be3db14751d8c61578f858b6c"
+  },
+  "source_truth": {
+    "repo_present": true,
+    "host_path": "repos/gmd-app",
+    "remote_url": "https://github.com/marekhotshot/google-microservices-demo.git",
+    "branch": "main",
+    "head": "c9857ee5",
+    "size_on_disk_mb": 48,
+    "first_party_services_with_dockerfile": [
+      {"name": "adservice", "dockerfile": "src/adservice/Dockerfile"},
+      {"name": "cartservice", "dockerfile": "src/cartservice/src/Dockerfile", "context_note": "nested context: src/cartservice/src"},
+      {"name": "checkoutservice", "dockerfile": "src/checkoutservice/Dockerfile"},
+      {"name": "currencyservice", "dockerfile": "src/currencyservice/Dockerfile"},
+      {"name": "emailservice", "dockerfile": "src/emailservice/Dockerfile"},
+      {"name": "frontend", "dockerfile": "src/frontend/Dockerfile"},
+      {"name": "loadgenerator", "dockerfile": "src/loadgenerator/Dockerfile"},
+      {"name": "paymentservice", "dockerfile": "src/paymentservice/Dockerfile"},
+      {"name": "productcatalogservice", "dockerfile": "src/productcatalogservice/Dockerfile"},
+      {"name": "recommendationservice", "dockerfile": "src/recommendationservice/Dockerfile"},
+      {"name": "shippingservice", "dockerfile": "src/shippingservice/Dockerfile"},
+      {"name": "shoppingassistantservice", "dockerfile": "src/shoppingassistantservice/Dockerfile", "chart_default": "create: false"}
+    ],
+    "canonical_build_spec_in_source": "skaffold.yaml (skaffold/v3) declares 11 services in `app` config + loadgenerator in its own dependent config; cartservice has nested context src/cartservice/src",
+    "no_amof_side_dockerfile_or_build_script_present": true,
+    "no_amof_side_gmd_app_command_in_command_builder": true,
+    "no_amof_side_gmd_app_dispatch_in_release_lifecycle_action": true
+  },
+  "image_outputs_required": {
+    "first_party_image_names": [
+      "adservice",
+      "cartservice",
+      "checkoutservice",
+      "currencyservice",
+      "emailservice",
+      "frontend",
+      "loadgenerator",
+      "paymentservice",
+      "productcatalogservice",
+      "recommendationservice",
+      "shippingservice",
+      "shoppingassistantservice (chart-default disabled)"
+    ],
+    "third_party_unchanged": [
+      "redis:alpine (cart database; chart default `cartDatabase.inClusterRedis.publicRepository: true` keeps Docker Hub reference)"
+    ],
+    "local_registry_target_proposal": {
+      "host_push_alias": "localhost:5000/gmd",
+      "in_cluster_pull_alias": "host.k3d.internal:5000/gmd",
+      "builder_pull_alias": "172.18.0.1:5000/gmd",
+      "rationale": "Mirrors the existing AMOF platform substrate convention (host.k3d.internal:5000/amof-controlplane and friends). The `/gmd` namespace prefix keeps gmd-app images cleanly separated from AMOF platform images in the same local registry."
+    },
+    "tag_convention_proposal": {
+      "kind": "git-commit-short or explicit lifecycle image_tag",
+      "examples": [
+        "gmd-dev-c9857ee",
+        "up8-gmd-app-{ymdhm}"
+      ],
+      "rationale": "Matches the lifecycle build_lifecycle_build_command tag pattern (uses image_tag from request body, default dev-YYYYMMDD-HHMM)."
+    },
+    "full_image_reference_examples": [
+      "host.k3d.internal:5000/gmd/frontend:gmd-dev-c9857ee",
+      "host.k3d.internal:5000/gmd/cartservice:gmd-dev-c9857ee",
+      "host.k3d.internal:5000/gmd/loadgenerator:gmd-dev-c9857ee"
+    ]
+  },
+  "chart_integration_points": {
+    "image_reference_template_pattern": "image: {{ .Values.images.repository }}/{{ .Values.<service>.name }}:{{ .Values.images.tag | default .Chart.AppVersion }}",
+    "current_values": {
+      "images.repository": "us-central1-docker.pkg.dev/google-samples/microservices-demo",
+      "images.tag": "\"\" (defaults to chart appVersion v0.10.5)"
+    },
+    "minimal_switch_required": [
+      {
+        "field": "images.repository",
+        "from": "us-central1-docker.pkg.dev/google-samples/microservices-demo",
+        "to": "host.k3d.internal:5000/gmd"
+      },
+      {
+        "field": "images.tag",
+        "from": "\"\" (chart appVersion v0.10.5)",
+        "to": "the gmd-app source-build tag (e.g. gmd-dev-c9857ee)"
+      }
+    ],
+    "redis_unaffected": "cartDatabase.inClusterRedis.publicRepository defaults true; redis image stays on Docker Hub `redis:alpine@sha256:...`",
+    "templates_using_images_repository": [
+      "templates/adservice.yaml:72",
+      "templates/cartservice.yaml:76",
+      "templates/cartservice.yaml:257 (redis fallback when publicRepository=false; out of scope for first-party switch)",
+      "templates/checkoutservice.yaml:71",
+      "templates/currencyservice.yaml:72",
+      "templates/emailservice.yaml:72",
+      "templates/frontend.yaml:73",
+      "templates/loadgenerator.yaml:109",
+      "templates/paymentservice.yaml:72",
+      "templates/productcatalogservice.yaml:72",
+      "templates/recommendationservice.yaml:72",
+      "templates/shippingservice.yaml:71"
+    ],
+    "applicationset_integration_options": [
+      "Option A (smallest): edit infrastructure/gitops/gmd/chart/values.yaml in place to point at host.k3d.internal:5000/gmd. Affects all environments equally (dev/test/prod). Simplest to land.",
+      "Option B (per-env): add `helm.parameters` to applicationset.yaml template `[{name: images.repository, value: ...}, {name: images.tag, value: ...}]` so dev can flip independently of test/prod.",
+      "Option C (per-env values files): add `infrastructure/gitops/gmd/chart/values-dev.yaml` referenced via `helm.valueFiles`. More structure, more surface area."
+    ],
+    "recommended_for_dev_only_first_proof": "Option B (per-env helm.parameters in applicationset.yaml for the `dev` element only) so the boundary is environment-scoped and reversible without touching the canonical chart values. Option A is fine if the goal is to wipe upstream entirely from the local k3d substrate."
+  },
+  "no_implementation_in_this_slice": {
+    "no_build_script_added": true,
+    "no_command_builder_dispatch_added": true,
+    "no_chart_values_changed": true,
+    "no_ecosystem_build_contract_change": true,
+    "rationale": "Per task scope: contract/source-boundary only. Implementation is gated to a follow-up slice once the boundary is approved."
+  },
+  "smallest_next_implementation_slice": {
+    "slice_id": "ultra-plan-8-introduce-first-party-gmd-app-source-build-phase-b-frontend-only-poc",
+    "what_to_implement": [
+      "Add scripts/build-gmd-app.sh that takes (--service <name>, --tag <tag>, --no-push) and builds ONE service (frontend) using the canonical Dockerfile at repos/gmd-app/src/frontend/Dockerfile, tagged host.k3d.internal:5000/gmd/frontend:<tag>",
+      "Re-use existing local registry mirror conventions and the cluster builder substrate proven by UP8-7..UP8-12; do NOT introduce a new builder",
+      "Wire one new command_builder.py entry build_gmd_app_lifecycle_build_command(root, image_tag, services=['frontend'], no_push=True) that returns (argv, cwd) targeting the new script",
+      "Dispatch in release_lifecycle_action() when name == 'gmd' and action == 'build'; do not yet flip the gmd contract — keep the dispatch path inactive at the API level",
+      "Run the script directly on host once to prove the frontend builds and the image lands in localhost:5000/gmd/frontend:<tag>"
+    ],
+    "what_to_explicitly_defer": [
+      "Flipping _ecosystem_build_contract('gmd') from mirror_upstream to source_build (would unhide Build button before the build path is complete)",
+      "Building the other 10 services",
+      "Touching infrastructure/gitops/gmd/chart values or applicationset.yaml",
+      "Mirroring per-language base images (golang:1.26.1-alpine, mcr.microsoft.com/dotnet/sdk, etc.) for the cluster builder pod — host-only build is enough for the PoC; cluster-builder hardening for gmd-app is a separate later slice",
+      "Any UI changes"
+    ],
+    "exit_criteria": [
+      "host.k3d.internal:5000/gmd/frontend:<tag> exists in the local registry catalog",
+      "scripts/build-gmd-app.sh exists and is executable on host",
+      "command_builder.py has build_gmd_app_lifecycle_build_command (unit-testable but not yet routed)",
+      "No live behavior change for gmd in the dashboard"
+    ]
+  }
+}

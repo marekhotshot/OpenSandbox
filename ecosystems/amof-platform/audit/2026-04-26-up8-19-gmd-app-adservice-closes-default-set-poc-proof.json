@@ -1,0 +1,168 @@
+{
+  "slice": "ultra-plan-8-introduce-first-party-gmd-app-source-build-phase-g-add-adservice-java-last-default-blocker",
+  "ticket": "UP8-19",
+  "result": "adservice_built_pushed_and_verified_chart_default_first_party_set_complete_no_live_behavior_change",
+  "scope": "add adservice (Java) as the last chart-default first-party service to gmd-app source-build PoC; no contract flip, no routing, no chart change, no shoppingassistantservice work",
+  "phase_a_script_extension": {
+    "modified_file": "repos/amof/scripts/build-gmd-app.sh",
+    "newly_supported_service": "adservice",
+    "supported_services_in_dispatch_table_total": [
+      "frontend",
+      "emailservice",
+      "currencyservice",
+      "shippingservice",
+      "productcatalogservice",
+      "checkoutservice",
+      "recommendationservice",
+      "paymentservice",
+      "loadgenerator",
+      "cartservice",
+      "adservice"
+    ],
+    "all_eleven_chart_default_first_party_services_now_in_dispatch_table": true,
+    "header_comment_updated_to_state_default_set_complete": true
+  },
+  "phase_b_command_builder": {
+    "modified_file": "repos/amof/scripts/amof/api/command_builder.py",
+    "constant_now_lists_eleven_services_in_pinned_order": true,
+    "function_unchanged_signature": "build_gmd_app_lifecycle_build_command(root, image_tag=None, services=['frontend'], no_push=False)",
+    "still_not_routed_in_release_lifecycle_action": true,
+    "ecosystem_build_contract_for_gmd_unchanged": "mirror_upstream"
+  },
+  "tests": {
+    "modified_file": "repos/amof/tests/test_command_builder_runtime.py",
+    "new_tests_added": 1,
+    "new_test_names": ["test_gmd_app_build_command_dispatches_adservice"],
+    "updated_existing_tests": [
+      "test_gmd_app_build_supported_services_tuple now pins all eleven entries with adservice last",
+      "test_gmd_app_build_command_still_rejects_known_deferred_services now only asserts shoppingassistantservice (the lone remaining intentionally unsupported chart-relevant service)",
+      "test_gmd_app_build_command_rejects_unsupported_service negative example switched from adservice to shoppingassistantservice"
+    ],
+    "test_run_result": "17/17 pass (16 pre-existing + 1 new)"
+  },
+  "phase_c_proof": {
+    "gmd_app_head": "c9857ee5",
+    "tag_used": "gmd-dev-c9857ee5",
+    "adservice": {
+      "command_executed": "bash repos/amof/scripts/build-gmd-app.sh --service adservice --tag gmd-dev-c9857ee5",
+      "dockerfile": "repos/gmd-app/src/adservice/Dockerfile",
+      "build_context": "repos/gmd-app/src/adservice",
+      "language_runtime": "eclipse-temurin:24.0.2_12-jdk-noble builder + (chart deploys distroless runtime; second stage from upstream Dockerfile)",
+      "image_tags_applied": [
+        "localhost:5000/gmd/adservice:gmd-dev-c9857ee5",
+        "host.k3d.internal:5000/gmd/adservice:gmd-dev-c9857ee5"
+      ],
+      "manifest_digest": "sha256:391deb423e49eb02101114e3607c0186b3f48c17f76ff255427d438d564b5b86",
+      "manifest_size_bytes": 856,
+      "wall_time_seconds_approx": 75
+    },
+    "registry_proof": {
+      "catalog_includes_gmd_adservice": true,
+      "catalog_full": [
+        "amof-agent",
+        "amof-assistant",
+        "amof-cluster-builder",
+        "amof-controlplane",
+        "amof-dashboard",
+        "gmd/adservice",
+        "gmd/cartservice",
+        "gmd/checkoutservice",
+        "gmd/currencyservice",
+        "gmd/emailservice",
+        "gmd/frontend",
+        "gmd/loadgenerator",
+        "gmd/paymentservice",
+        "gmd/productcatalogservice",
+        "gmd/recommendationservice",
+        "gmd/shippingservice",
+        "mirror/dockerhub/library/node",
+        "mirror/dockerhub/library/python",
+        "mirror/local/amof-controlplane-base",
+        "mirror/local/amof-controlplane-deps",
+        "mirror/local/amof-dashboard-deps"
+      ],
+      "tags_for_gmd_adservice": ["gmd-dev-c9857ee5"],
+      "adservice_manifest_endpoint_check": "HTTP/1.1 200 OK Content-Length 856 Docker-Content-Digest sha256:391deb423e49eb02101114e3607c0186b3f48c17f76ff255427d438d564b5b86"
+    },
+    "all_eleven_first_party_chart_default_services_present_in_local_registry_at_tag_gmd_dev_c9857ee5": true
+  },
+  "live_behavior_unchanged_check": {
+    "gmd_supported_actions": ["deploy", "promote"],
+    "gmd_action_layout_ids": ["deploy", "promote"],
+    "gmd_ecosystem_build_contract_kind": "mirror_upstream",
+    "build_button_in_dashboard": "still hidden"
+  },
+  "commits_landed_to_canonical_main": [
+    {
+      "ticket": "UP8-19",
+      "candidate_branch": "feat/UP8-19",
+      "source_sha": "63d390c421a7ca00942752b929bea486e7442e92",
+      "synthesized_main_sha": "0f157755e9509694937c0fb9a9d090e7dcc296d6",
+      "summary": "feat(gmd-app): add adservice (Java) — closes chart-default first-party set",
+      "files": [
+        "scripts/build-gmd-app.sh",
+        "scripts/amof/api/command_builder.py",
+        "tests/test_command_builder_runtime.py"
+      ]
+    }
+  ],
+  "first_party_default_services_coverage": {
+    "supported_in_dispatch_table_count": 11,
+    "supported_services": [
+      "frontend",
+      "emailservice",
+      "currencyservice",
+      "shippingservice",
+      "productcatalogservice",
+      "checkoutservice",
+      "recommendationservice",
+      "paymentservice",
+      "loadgenerator",
+      "cartservice",
+      "adservice"
+    ],
+    "remaining_default_blockers_count": 0,
+    "remaining_optional_off_by_default": ["shoppingassistantservice"],
+    "default_set_coverage_complete": true
+  },
+  "what_remains_before_chart_integration_lifecycle_dispatch_and_contract_flip": {
+    "summary": "All 11 chart-default first-party services build first-party. The path to flipping `gmd` to source_build now reduces to: (1) extract shared runtime build primitives so the script can be invoked over the dispatch table from one entry point, (2) wire lifecycle dispatch, (3) flip the chart, (4) flip the contract.",
+    "for_chart_integration_minimal": {
+      "approach": "Recommended Option B from UP8-source-boundary audit: add helm.parameters to the dev element of infrastructure/gitops/gmd/applicationset.yaml flipping `images.repository` -> `host.k3d.internal:5000/gmd` and `images.tag` -> the gmd-app source-build tag for `gmd-dev` only.",
+      "blocked_until": "lifecycle build can produce all 11 images in one invocation (currently it produces them one at a time)"
+    },
+    "for_lifecycle_dispatch_wiring": {
+      "change_required": "scripts/amof/api/routers/release.py release_lifecycle_action() must branch on name == 'gmd' so action == 'build' iterates the dispatch table once per service. Either invoke the script once per service in the dispatcher, or first extract a small `build-all-gmd-app.sh` (or `--all` flag) that fans out internally.",
+      "blocked_until": "shared build-all primitive exists OR the dispatcher learns to iterate"
+    },
+    "for_contract_flip": {
+      "change_required": "_ecosystem_build_contract('gmd') -> source_build with produces / source_repos / build_command metadata; update lifecycle contract test that pins kind == 'mirror_upstream'",
+      "blocked_until": "lifecycle dispatch wiring is in place AND the chart actually consumes the locally-built images"
+    },
+    "cluster_builder_substrate_decision": {
+      "open_question": "Does the gmd lifecycle build need to run inside the in-cluster builder pod (same path as AMOF platform substrate)?",
+      "if_yes_required_work_to_unblock_cluster_builder": "Mirror per-language base images so the builder pod's containerd can pull them: golang:1.26.1-alpine, gcr.io/distroless/static, python:3.14.3-alpine, node:20.20.1-alpine, alpine:3.23.3, mcr.microsoft.com/dotnet/sdk:10.0.100-noble, mcr.microsoft.com/dotnet/runtime-deps:10.0.0-noble-chiseled, eclipse-temurin:24.0.2_12-jdk-noble.",
+      "if_no": "Host-only builds suffice for local development; production / cloud-dev substrate remains a separate decision."
+    }
+  },
+  "next_slice": {
+    "id": "ultra-plan-8-introduce-first-party-gmd-app-source-build-phase-h-extract-shared-runtime-build-all-primitive",
+    "rationale": "With every default service buildable individually, the next leverage point is a single entry that produces the full chart-default image set in one invocation, so the lifecycle dispatcher does not need to iterate, and so the chart-integration / contract-flip work has one stable upstream call.",
+    "what_to_implement": [
+      "Add a `--all` flag (or `--all-defaults`) to `scripts/build-gmd-app.sh` that loops over the existing SERVICE_DOCKERFILE map and builds every default service in sequence with the same tag. Keep the explicit single-`--service` path unchanged.",
+      "Update the inline help and rejection messages.",
+      "Extend `build_gmd_app_lifecycle_build_command` with an `all=True` mode that emits the new flag instead of `--service <name>`. Keep the existing services= path unchanged for unit-testable per-service dispatch.",
+      "Add focused unit tests for the new `--all` argv shape and for at least one service being skipped via an explicit deny-list parameter (so shoppingassistantservice can stay opt-in).",
+      "Run the host build with `--all` once to verify all 11 images are produced under the same tag and present in the local registry.",
+      "Still no contract flip, no routing, no chart change, no UI change."
+    ],
+    "what_to_explicitly_defer": [
+      "Cluster-builder integration",
+      "Lifecycle dispatch wiring (this slice only adds the upstream entry point; routing is the slice after)",
+      "Contract flip",
+      "Chart integration (Option B helm.parameters in applicationset.yaml)",
+      "shoppingassistantservice (opt-in)",
+      "UI changes"
+    ]
+  }
+}

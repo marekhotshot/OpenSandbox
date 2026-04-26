@@ -1,0 +1,141 @@
+{
+  "slice": "extract-shared-runtime-build-primitives-from-gmd-first-party-build-poc",
+  "ticket": "UP8-20",
+  "result": "design_landed_with_one_tiny_safe_extraction_no_broad_framework",
+  "scope": "architecture extraction from the gmd-app source-build PoC + one tiny safe in-script refactor; no broad framework, no contract flip, no chart or routing changes",
+  "honest_finding": {
+    "summary": "The gmd-app PoC proved that no per-language shell-level branching is needed. Each upstream Dockerfile already encapsulates its own runtime family. Our shell script's one true shared primitive is `build one image from a Dockerfile + context, tag with both registry aliases, push`. Above that, only a small (service -> dockerfile-relpath, context-relpath) map and substrate registry env vars are per-ecosystem.",
+    "implication": "A `runtime build primitive per family` (build_go, build_node, build_python, build_dotnet, build_java) would be net-negative complexity: it would re-implement what each Dockerfile already does. The minimal honest primitive is one function, not one per family."
+  },
+  "shared_runtime_primitives_identified": {
+    "primitive_count": 1,
+    "primitives": [
+      {
+        "name": "build_one_image",
+        "purpose": "Build one container image from a Dockerfile and a build context, tag it with both a host push alias and an in-cluster pull alias, optionally push to the host alias.",
+        "inputs": [
+          "dockerfile_path (absolute)",
+          "context_path (absolute)",
+          "push_image (e.g. localhost:5000/<ns>/<svc>:<tag>)",
+          "pull_image (e.g. host.k3d.internal:5000/<ns>/<svc>:<tag>)",
+          "no_push (0 = push, 1 = skip push)"
+        ],
+        "covers_runtime_families": [
+          "Go (frontend, shippingservice, productcatalogservice, checkoutservice)",
+          "Python (emailservice, recommendationservice, loadgenerator)",
+          "Node (currencyservice, paymentservice)",
+          ".NET (cartservice, nested context)",
+          "Java (adservice)"
+        ],
+        "where_runtime_specific_logic_actually_lives": "in the upstream Dockerfile of each service (e.g. repos/gmd-app/src/<service>/Dockerfile). Not in our shell."
+      }
+    ],
+    "rejected_primitives_and_why": [
+      {
+        "rejected": "build_go / build_node / build_python / build_dotnet / build_java per-family wrappers",
+        "why": "Each gmd-app Dockerfile already implements its own multi-stage flow with its own base image and language tooling. Wrapping per-family in shell would duplicate Dockerfile content."
+      },
+      {
+        "rejected": "skaffold-equivalent declarative driver",
+        "why": "Premature framework. The current explicit (service -> dockerfile, context) map is reviewable and small; introducing skaffold parity now would solve a problem we do not have."
+      }
+    ]
+  },
+  "thin_ecosystem_mapping_model": {
+    "shape": {
+      "ecosystem_id": "string (e.g. 'gmd')",
+      "source_root": "filesystem path to the ecosystem's app source repo (e.g. repos/gmd-app)",
+      "registry_namespace": "string image namespace prefix (e.g. 'gmd')",
+      "service_dockerfile": {
+        "<service_name>": "<source_root>-relative path to the service Dockerfile"
+      },
+      "service_context": {
+        "<service_name>": "<source_root>-relative path to the service build context"
+      }
+    },
+    "deliberately_omitted_fields": [
+      "per-service language/runtime — encapsulated in the Dockerfile",
+      "per-service base-image mirroring policy — substrate-level concern",
+      "per-service build-args — can be added when a real second-ecosystem need appears",
+      "per-service multi-tag promotion policy — release-layer concern, not build-layer"
+    ]
+  },
+  "per_substrate_layer": {
+    "shape": {
+      "push_registry": "where docker push goes (e.g. 'localhost:5000' for local k3d)",
+      "pull_registry": "image alias used in the tag so in-cluster pulls resolve (e.g. 'host.k3d.internal:5000' for local k3d)"
+    },
+    "current_defaults_in_build_gmd_app_sh": {
+      "AMOF_GMD_APP_PUSH_REGISTRY": "localhost:5000",
+      "AMOF_GMD_APP_PULL_REGISTRY": "host.k3d.internal:5000",
+      "AMOF_GMD_APP_REGISTRY_NAMESPACE": "gmd"
+    },
+    "future_substrates_decision_open": ["cloud-dev (likely ghcr.io)", "cloud-prod (TBD)"]
+  },
+  "smallest_refactor_path": {
+    "step_1_landed_in_this_slice": {
+      "what": "Extract the inline docker-build-and-push body in build-gmd-app.sh into a shell function `build_one_image(dockerfile_path, context_path, push_image, pull_image, no_push)`. Pure refactor — same observable behavior. Plus an explicit header comment block naming the three layers (shared primitive / per-ecosystem mapping / per-substrate registry).",
+      "verified_by": "Re-running `bash repos/amof/scripts/build-gmd-app.sh --service frontend --tag gmd-dev-c9857ee5` after the refactor: image rebuilt cleanly, pushed to localhost:5000/gmd/frontend:gmd-dev-c9857ee5 with the canonical pull alias baked in. 17/17 command_builder runtime tests still pass."
+    },
+    "step_2_when_a_second_ecosystem_appears": {
+      "what": "Copy build-gmd-app.sh to build-<other>-app.sh, swap SERVICE_DOCKERFILE / SERVICE_CONTEXT and the AMOF_<OTHER>_APP_* env defaults. Keep build_one_image identical between the two scripts.",
+      "blocked_until": "second ecosystem materialises. Until then, premature."
+    },
+    "step_3_when_two_scripts_agree": {
+      "what": "Once two ecosystem build scripts have *identical* `build_one_image` byte-for-byte, hoist it into a shared shell library at `repos/amof/scripts/lib/build_one_image.sh` and `source` it from both. This is the right time to extract because there are two real callers, not a hypothetical one.",
+      "blocked_until": "step 2 has happened and the two functions provably agree."
+    },
+    "step_4_substrate_unification_with_amof_platform_build": {
+      "what": "The sibling `build-cloud-images.sh` already has its own `build_image()` for the AMOF platform substrate. It runs in-cluster (containerd, supports `type=image,name=...,push=true` direct-push without a separate `docker push`). Reconciling the two `build_one_image` shapes would require either: (a) substrate-aware switching inside the function, or (b) keeping two siblings indefinitely. (a) is real framework work and should only be considered after step 3 produces concrete pressure for it.",
+      "blocked_until": "step 3 lands and a concrete need to share between AMOF platform builds and ecosystem app builds emerges. Until then, keep the two siblings."
+    }
+  },
+  "tiny_extraction_decision": {
+    "extraction_done_in_this_slice": "Yes — `build_one_image` shell function inside `repos/amof/scripts/build-gmd-app.sh` only. One file changed.",
+    "extraction_explicitly_deferred": [
+      "Cross-script extraction into a shared lib (no second consumer yet).",
+      "Substrate reconciliation with build-cloud-images.sh (different substrate).",
+      "Any python-level wrapper (command_builder.build_gmd_app_lifecycle_build_command stays as it is)."
+    ]
+  },
+  "live_behavior_unchanged_check": {
+    "gmd_supported_actions": ["deploy", "promote"],
+    "gmd_ecosystem_build_contract_kind": "mirror_upstream",
+    "build_button_in_dashboard": "still hidden",
+    "frontend_image_rebuild_after_refactor": {
+      "command_executed": "bash repos/amof/scripts/build-gmd-app.sh --service frontend --tag gmd-dev-c9857ee5",
+      "manifest_digest_after_refactor": "sha256:d0e1fd9c7c558afb327c8daa0e86052b611e466178b7a5f935ea5429814f821c",
+      "pushed_alias": "localhost:5000/gmd/frontend:gmd-dev-c9857ee5",
+      "in_cluster_alias": "host.k3d.internal:5000/gmd/frontend:gmd-dev-c9857ee5"
+    }
+  },
+  "commits_landed_to_canonical_main": [
+    {
+      "ticket": "UP8-20",
+      "candidate_branch": "feat/UP8-20",
+      "source_sha": "794d670a1e27d668fce3fed4c3e3ea3bb3d8c0d6",
+      "synthesized_main_sha": "1a36c395c139c44b402385997f2217d1ce19bba6",
+      "summary": "refactor(gmd-app): extract build_one_image primitive + document layered model",
+      "files": ["scripts/build-gmd-app.sh"]
+    }
+  ],
+  "next_slice": {
+    "id": "ultra-plan-8-introduce-first-party-gmd-app-source-build-phase-h-extract-shared-runtime-build-all-primitive",
+    "rationale": "The architecture is now documented and the per-image primitive is extracted. The next leverage point on the path to flipping `gmd` to source_build is the `--all` (or `--all-defaults`) flag on the script + an `all=True` mode on `build_gmd_app_lifecycle_build_command`. That gives the lifecycle dispatcher a single upstream call that produces the full chart-default image set and unblocks the remaining chart-integration / lifecycle-dispatch / contract-flip slices.",
+    "what_to_implement": [
+      "Add `--all` flag to scripts/build-gmd-app.sh that loops over SERVICE_DOCKERFILE in dispatch order and invokes `build_one_image` for every default service with the same --tag. Honor an `--except <name>` flag to keep shoppingassistantservice opt-in.",
+      "Extend `build_gmd_app_lifecycle_build_command` with an `all=True` mode that emits the new flag instead of `--service <name>`.",
+      "Add focused unit tests for the new `--all` argv shape and the deny-list behavior.",
+      "Run the host build with `--all` once to verify all 11 images land in the local registry under the same tag."
+    ],
+    "what_to_explicitly_defer": [
+      "Cross-script extraction of build_one_image into a shared shell lib (deferred until a second downstream ecosystem exists)",
+      "Substrate reconciliation with build-cloud-images.sh",
+      "Lifecycle dispatch wiring (the slice after)",
+      "Contract flip",
+      "Chart integration",
+      "shoppingassistantservice opt-in path",
+      "UI changes"
+    ]
+  }
+}

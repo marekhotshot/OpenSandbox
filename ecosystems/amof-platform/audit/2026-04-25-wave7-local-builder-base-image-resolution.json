@@ -1,0 +1,117 @@
+{
+  "slice": "ultra-plan-8-wave7-local-cluster-builder-base-image-resolution",
+  "result": "partial_pass_next_blocker_found",
+  "diagnosis": {
+    "node_dns": "registry-1.docker.io returns SERVFAIL via Docker/k3d node resolver; CoreDNS service is running but external Docker Hub DNS is unreliable from cluster/node path",
+    "builder_pod_dns": "ClusterFirst DNS could not resolve host.k3d.internal; builder originally failed on registry-1.docker.io and then on host.k3d.internal",
+    "local_registry_reachability": "node can reach existing registry over http://172.18.0.1:5000; python:3.10-slim mirror is present at /v2/mirror/dockerhub/library/python/tags/list",
+    "failure_class": "builder substrate DNS/registry resolution, not AMOF source truth or gmd app bug"
+  },
+  "fix_chosen": {
+    "approach": "local registry mirror plus local-build base image rewrite and builder BuildKit insecure registry config",
+    "why": "keeps fix local-only and builder-specific; avoids broad CoreDNS/network surgery",
+    "base_image_mirror": "172.18.0.1:5000/mirror/dockerhub/library/python:3.10-slim",
+    "files_patched_runtime": [
+      "/workspace/repos/amof/scripts/build-cloud-images.sh",
+      "cluster-builder image wrapper /usr/local/bin/docker"
+    ],
+    "builder_image": "host.k3d.internal:5000/amof-cluster-builder:up8-wave7-builder-buildkit-host-20260425224728"
+  },
+  "retry_result": {
+    "run_id": "b4a883f0-17dd-4e09-923a-860c9cc81d48",
+    "status": "failed",
+    "exit_code": 1,
+    "latest_evidence": {
+      "lifecycle_action": "build",
+      "lifecycle_status": "failed",
+      "environment_id": "dev",
+      "stage_id": "dev",
+      "build_backend": "cluster",
+      "source_mode": "canonical",
+      "source_branch": "main",
+      "source_commit": "f295d3b6337fffb73c19c43fde94485c78bfae2e",
+      "amof_ref": "main",
+      "amof_commit": "f295d3b6337fffb73c19c43fde94485c78bfae2e",
+      "amof_ui_ref": "main",
+      "amof_ui_commit": "72f22f5c74b9bcfd1adfeaa81cc49a4ee5e01a8d",
+      "builder": "cluster",
+      "sources": [
+        {
+          "repo": "amof",
+          "branch": "main",
+          "commit": "f295d3b6337fffb73c19c43fde94485c78bfae2e"
+        },
+        {
+          "repo": "amof-ui",
+          "branch": "main",
+          "commit": "72f22f5c74b9bcfd1adfeaa81cc49a4ee5e01a8d"
+        },
+        {
+          "repo": "amof-assistant",
+          "branch": null,
+          "commit": null
+        }
+      ],
+      "images": [
+        {
+          "name": "amof-controlplane",
+          "repository": null,
+          "tag": "up8-gmd-base-mirror-final-20260425",
+          "image": null,
+          "built": true,
+          "skipped": false
+        },
+        {
+          "name": "amof-agent",
+          "repository": null,
+          "tag": "up8-gmd-base-mirror-final-20260425",
+          "image": null,
+          "built": true,
+          "skipped": false
+        },
+        {
+          "name": "amof-dashboard",
+          "repository": null,
+          "tag": "up8-gmd-base-mirror-final-20260425",
+          "image": null,
+          "built": true,
+          "skipped": false
+        },
+        {
+          "name": "amof-assistant",
+          "repository": null,
+          "tag": "up8-gmd-base-mirror-final-20260425",
+          "image": null,
+          "built": false,
+          "skipped": true,
+          "skip_reason": "Assistant build is opt-in (set AMOF_REQUIRE_ASSISTANT=1 to enable). Not part of the cloud-dev happy path."
+        }
+      ],
+      "no_push": true,
+      "started_at": "2026-04-25T20:48:58.284369Z",
+      "finished_at": "2026-04-25T20:49:11.739775Z",
+      "summary": "Lifecycle build failed for dev",
+      "result": "failed",
+      "exit_code": 1,
+      "blocker": "lifecycle_build_failed",
+      "blocker_summary": "Lifecycle build failed for dev"
+    },
+    "base_image_resolution": "restored: build loaded metadata and layers for 172.18.0.1:5000/mirror/dockerhub/library/python:3.10-slim",
+    "new_blocker": {
+      "classification": "builder outbound package repository DNS/network blocker",
+      "message": "apt-get update cannot resolve deb.debian.org, so curl/git packages cannot be installed in the controlplane image build",
+      "not_source_truth": true,
+      "not_base_image_resolution": true
+    }
+  },
+  "environment_truth": {
+    "runtime_healthy_remains_truthful": "gmd-dev Argo/runtime health can remain healthy independently of builder substrate readiness",
+    "projection_recommendation": "later UI should distinguish runtime healthy from build substrate ready/not ready"
+  },
+  "deferred": [
+    "cloud-dev",
+    "release/promote",
+    "UI redesign",
+    "general DNS cleanup"
+  ]
+}

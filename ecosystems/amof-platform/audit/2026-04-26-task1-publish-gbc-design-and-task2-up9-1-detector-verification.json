@@ -1,0 +1,109 @@
+{
+  "slice_pair": [
+    "isolate-and-fix-github-secret-scanning-push-blocker-for-generated-build-contract-tranche",
+    "ultra-plan-9-generated-build-contract-phase-1-detector-prototype-python-only"
+  ],
+  "result": "task_1_blocker_isolated_and_design_tranche_published_clean; task_2_already_landed_upstream_verified_clean",
+  "task_1": {
+    "phase_a_blocker_isolation": {
+      "tranche_diff_clean": true,
+      "tranche_commit_inspected": "bb73e49",
+      "tranche_commit_files": [
+        "contracts/INDEX.md",
+        "contracts/examples/generated-build-contract-go-stdlib.example.json",
+        "contracts/examples/generated-build-contract-node-express.example.json",
+        "contracts/examples/generated-build-contract-polyglot-refused.example.json",
+        "contracts/examples/generated-build-contract-python-fastapi.example.json",
+        "contracts/generated-build-contract.md",
+        "contracts/generated-build-contract.schema.json",
+        "contracts/generated-build-runtime-detector-matrix.md",
+        "ecosystems/amof-platform/audit/2026-04-26-generated-build-contract-design-tranche-cp0-cp7.json"
+      ],
+      "tranche_secret_pattern_scan_result": "no GitHub PAT (ghp_/gho_/ghs_/github_pat_), no OpenAI/Anthropic style key, no AWS access key (AKIA...), no PEM/key block",
+      "blocker_classification": "pre-existing ancestry",
+      "secret_bearing_commits_in_origin_main_to_bb73e49_range": [
+        {"sha": "f9a74b9475f06ca3106062a25f40de011875dc97", "subject": "chore(workspace): pin demo deploy to parityruntime3 and reset runtime state", "matched_pattern_kind": "ghp_*"},
+        {"sha": "2cf981a76ded81def5c3e3a79a4488f3298ab782", "subject": "v1.4.8", "matched_pattern_kind": "ghp_*"}
+      ],
+      "secret_classification": "pre-existing GitHub PAT-shaped tokens in older main-helper history; not introduced by this slice"
+    },
+    "phase_b_clean_publication_path": {
+      "approach": "Cherry-pick bb73e49 onto a fresh branch off origin/main; drop contracts/INDEX.md from the cherry-pick because origin/main has no contracts/ directory and the index would dangle-link other unpublished contract files",
+      "fresh_branch_name": "feat/GBC-DESIGN-1-clean-ancestry",
+      "fresh_branch_base_commit": "origin/main HEAD at the time of branching",
+      "files_published": [
+        "contracts/examples/generated-build-contract-go-stdlib.example.json",
+        "contracts/examples/generated-build-contract-node-express.example.json",
+        "contracts/examples/generated-build-contract-polyglot-refused.example.json",
+        "contracts/examples/generated-build-contract-python-fastapi.example.json",
+        "contracts/generated-build-contract.md",
+        "contracts/generated-build-contract.schema.json",
+        "contracts/generated-build-runtime-detector-matrix.md",
+        "ecosystems/amof-platform/audit/2026-04-26-generated-build-contract-design-tranche-cp0-cp7.json"
+      ],
+      "files_intentionally_dropped_from_publish": [
+        "contracts/INDEX.md (would dangle-link unpublished prior contracts; can land in a follow-up once the rest of contracts/ is published)"
+      ],
+      "fresh_branch_head_commit": "f32e56e",
+      "push_result": "success",
+      "remote_url": "https://github.com/marekhotshot/OpenSandbox.git",
+      "pr_ready_url": "https://github.com/marekhotshot/OpenSandbox/pull/new/feat/GBC-DESIGN-1-clean-ancestry"
+    },
+    "phase_c_residual_blocker_handling": {
+      "needed": false,
+      "reason": "Phase B succeeded: clean cherry-pick branch pushed without secret-scanning rejection."
+    }
+  },
+  "task_2": {
+    "status": "already_landed_upstream",
+    "upstream_commit": "4b757e4979c2efba1d4d00fccc30e9716f82f02d",
+    "upstream_subject": "chore(promote-main): promote UP9-1 candidate bundle",
+    "upstream_landed_via": "amof promote-main from feat/UP9-1 source-sha 66a24691d98d194b75a2b22c7c660e82295d628f",
+    "files_present_in_upstream_commit": [
+      "scripts/amof/generated_build/__init__.py",
+      "scripts/amof/generated_build/__main__.py",
+      "scripts/amof/generated_build/detector.py",
+      "tests/test_generated_build_detector.py"
+    ],
+    "behaviors_verified_in_this_session": {
+      "entry_point_exists": "scripts/amof/generated_build/detector.py exposes detect_runtime(repo_root: Path) -> dict",
+      "package_exports_match_design": "__init__.py re-exports detect_runtime + SUPPORTED_FAMILIES + per-family hard-signal tuples",
+      "cli_exists_read_only": "python -m amof.generated_build detect <repo_path> works; never writes files; never invokes docker",
+      "scope_matches_design": "Python end-to-end + non-python families refuse with runtime_family_not_in_first_wave + polyglot refuses + empty repo refuses + existing Dockerfile pre-emption",
+      "test_run_result": "12/12 tests pass in tests/test_generated_build_detector.py",
+      "live_smoke_existing_build_preempt": "python -m amof.generated_build detect repos/amof -> status: refused, refusal_reason: existing_build_contract_present, risk_flags includes Dockerfile.controlplane (exit 2)",
+      "live_smoke_empty_repo": "python -m amof.generated_build detect /tmp/smoke-empty -> status: refused, refusal_reason: no_runtime_signal (exit 2)",
+      "live_smoke_python_fastapi": "Built fixture with pyproject.toml(deps=fastapi,uvicorn) + app.py -> runtime_family=python, confidence=accepted, template=python-uvicorn-distroless-v1, inferred_port=8000, entrypoint='uvicorn app:app --host 0.0.0.0 --port 8000', status=proposed (exit 0)",
+      "live_artifact_validates_against_canonical_schema": "yes — jsonschema.validate against contracts/generated-build-contract.schema.json passes for the live smoke artifact"
+    },
+    "no_new_commits_authored_in_this_session_for_task_2": true,
+    "rationale": "Same idempotent precedent as the previous repeated UP8-14 message: when the requested implementation is already on canonical main, re-issuing the slice would create a duplicate commit. Verifying the upstream code against the task's required behaviors is the right action."
+  },
+  "live_behavior_unchanged_check": {
+    "gmd_supported_actions": ["deploy", "promote"],
+    "gmd_ecosystem_build_contract_kind": "mirror_upstream",
+    "build_button_in_dashboard": "still hidden",
+    "lifecycle_dispatcher_for_gmd_unchanged": true,
+    "no_chart_changes": true,
+    "no_ui_changes": true,
+    "detector_is_pure_read_only": true
+  },
+  "out_of_scope_held_throughout": [
+    "generated-build template rendering",
+    "build proof / runtime proof execution",
+    "API/UI surfacing of generated artifacts",
+    "Integration with build_gmd_app_lifecycle_build_command",
+    "Node and Go family implementations",
+    "Cloud-dev, release/promote, deploy wiring",
+    "UI redesign, generic cleanup",
+    "Rewriting OpenSandbox main-helper history to remove the pre-existing PAT-bearing commits"
+  ],
+  "open_followups_observed_but_not_acted_on": [
+    {
+      "id": "FOLLOWUP-OPENSANDBOX-MAIN-HELPER-PAT-ANCESTRY",
+      "summary": "Two pre-existing OpenSandbox commits in main-helper ancestry (f9a74b9, 2cf981a76) carry GitHub PATs in their diff. They are not in any tranche shipped through GBC-DESIGN-1 / UP9-1, and they live behind the secret-scanning gate. Cleaning them up is its own slice (history rewrite or scoped revert) and is out-of-scope for both tasks here.",
+      "kind": "external blocker for any future push of main-helper as-is; not a blocker for the published feat/GBC-DESIGN-1-clean-ancestry branch"
+    }
+  ],
+  "next_slice_recommendation": "ultra-plan-9-generated-build-contract-phase-2-template-rendering-python-only — generate the python-uvicorn-distroless-v1 Dockerfile from a detector artifact, write it to .amof/generated-builds/<repo>/<service>/Dockerfile, and update the artifact's dockerfile_template.rendered_path. No build proof yet; the proof ladder still tops out at proposed. Other families remain refused. UI/API still untouched."
+}
