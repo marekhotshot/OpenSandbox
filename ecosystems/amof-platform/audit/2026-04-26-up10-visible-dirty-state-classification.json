@@ -104,8 +104,8 @@
       "src/app/favicon.ico/"
     ],
     "classification": "multiple mixed UI/runtime slices on main",
-    "decision": "defer",
-    "resolution": "do not stash/discard blindly. Generated-build UI closeout was already isolated and pushed as f961494. Remaining dirty state should move to a dedicated amof-ui dirty-branch preservation slice."
+    "decision": "preserve on feature branch",
+    "resolution": "preserved full dirty-on-main UI state on feat/UP10-amof-ui-dirty-preservation as commit 692025e and pushed it to amof-ui remote; returned local main checkout to clean f961494. Generated-build UI closeout remains on main as f961494."
   },
   "lanes_classification": [
     {
@@ -146,19 +146,26 @@
   "cleanup_actions_executed": [
     "Added ignored _lanes/README.md marker to make _lanes/* visibly non-canonical and non-executable.",
     "Added ignored .amof-worktrees/README.md marker to clarify active_ticket:null means no worktree is active.",
-    "Did not delete, stash, or broad-clean mixed code/evidence dirt."
+    "Preserved repos/amof-ui dirty-on-main state to feat/UP10-amof-ui-dirty-preservation and returned repos/amof-ui main to a clean checkout.",
+    "Did not delete, stash, or broad-clean mixed root code/evidence dirt."
   ],
   "doctor_after": {
     "command": "python3 scripts/amof.py doctor",
     "verdict": "WARN",
     "canonical_import": "repos/amof/scripts/amof/__init__.py",
     "warnings": [
-      "repos/amof-ui dirty_count=12",
-      "root workspace dirty_count=98"
+      "root workspace dirty_count=96"
     ],
     "failures": []
   },
+  "amof_ui_preservation": {
+    "branch": "feat/UP10-amof-ui-dirty-preservation",
+    "commit": "692025e",
+    "push": "success",
+    "pr_url": "https://github.com/marekhotshot/amof-ui/pull/new/feat/UP10-amof-ui-dirty-preservation",
+    "main_after": "clean at f961494, matching origin/main"
+  },
   "closure_verdict": "partial",
-  "single_remaining_blocker": "root and repos/amof-ui still contain large mixed dirty state. It is now explicitly classified, and non-canonical dirs are marked, but ambiguity is not fully closed until UI dirt and root audit/contract/code buckets are either landed, archived, or quarantined in dedicated slices.",
-  "next_slice": "ultra-plan-10-preserve-and-quarantine-amof-ui-dirty-main"
+  "single_remaining_blocker": "root workspace still contains large mixed dirty state (contracts/audits/root implementation dirt/config drift). repos/amof-ui dirty-on-main ambiguity is closed.",
+  "next_slice": "ultra-plan-10-root-dirty-contracts-and-audit-publication-batch"
 }
