@@ -1,0 +1,224 @@
+{
+  "slice": "ultra-plan-8-introduce-first-party-gmd-app-source-build-phase-e-batch-remaining-easy-default-services",
+  "ticket": "UP8-17",
+  "result": "six_services_built_pushed_and_verified_no_live_behavior_change",
+  "scope": "batch-add 6 easy default services to gmd-app source-build PoC; no contract flip, no routing, no chart change, no hard-runtime services",
+  "phase_a_script_extension": {
+    "modified_file": "repos/amof/scripts/build-gmd-app.sh",
+    "newly_supported_services": [
+      "shippingservice",
+      "productcatalogservice",
+      "checkoutservice",
+      "recommendationservice",
+      "paymentservice",
+      "loadgenerator"
+    ],
+    "supported_services_in_dispatch_table_total": [
+      "frontend",
+      "emailservice",
+      "currencyservice",
+      "shippingservice",
+      "productcatalogservice",
+      "checkoutservice",
+      "recommendationservice",
+      "paymentservice",
+      "loadgenerator"
+    ],
+    "service_dispatch_strategy": "explicit per-service entries in SERVICE_DOCKERFILE / SERVICE_CONTEXT associative arrays; no wildcard",
+    "all_six_have_flat_top_level_dockerfile_at_src_<service>_dockerfile": true
+  },
+  "phase_b_command_builder": {
+    "modified_file": "repos/amof/scripts/amof/api/command_builder.py",
+    "constant_now_lists_nine_services_in_pinned_order": true,
+    "function_unchanged_signature": "build_gmd_app_lifecycle_build_command(root, image_tag=None, services=['frontend'], no_push=False)",
+    "still_not_routed_in_release_lifecycle_action": true,
+    "ecosystem_build_contract_for_gmd_unchanged": "mirror_upstream"
+  },
+  "tests": {
+    "modified_file": "repos/amof/tests/test_command_builder_runtime.py",
+    "new_tests_added": 2,
+    "new_test_names": [
+      "test_gmd_app_build_command_dispatches_each_easy_default_service",
+      "test_gmd_app_build_command_still_rejects_known_deferred_services"
+    ],
+    "updated_existing_test": "test_gmd_app_build_supported_services_tuple now pins all nine entries in dispatch order",
+    "test_run_result": "14/14 pass (12 pre-existing + 2 new)"
+  },
+  "phase_c_proof": {
+    "gmd_app_head": "c9857ee5",
+    "tag_used": "gmd-dev-c9857ee5",
+    "batch_runner": "/tmp/run-batch.sh",
+    "batch_total_wall_time_s": 555,
+    "per_service_results": [
+      {
+        "service": "shippingservice",
+        "language": "Go",
+        "status": "OK",
+        "manifest_digest": "sha256:4d1f3a7fb5e70520231625eadae4d91b1c286dd4d56bbce44cdc76298900ab09",
+        "image_tags_applied": [
+          "localhost:5000/gmd/shippingservice:gmd-dev-c9857ee5",
+          "host.k3d.internal:5000/gmd/shippingservice:gmd-dev-c9857ee5"
+        ]
+      },
+      {
+        "service": "productcatalogservice",
+        "language": "Go",
+        "status": "OK",
+        "manifest_digest": "sha256:27e06ce864b1ba3cabb92758786e4f380dbcd542448b0c738139b532bc67a641",
+        "image_tags_applied": [
+          "localhost:5000/gmd/productcatalogservice:gmd-dev-c9857ee5",
+          "host.k3d.internal:5000/gmd/productcatalogservice:gmd-dev-c9857ee5"
+        ]
+      },
+      {
+        "service": "checkoutservice",
+        "language": "Go",
+        "status": "OK",
+        "manifest_digest": "sha256:a4082568878868035c31c64bc614897ce249501a439f76e766292aef7ebcf848",
+        "image_tags_applied": [
+          "localhost:5000/gmd/checkoutservice:gmd-dev-c9857ee5",
+          "host.k3d.internal:5000/gmd/checkoutservice:gmd-dev-c9857ee5"
+        ]
+      },
+      {
+        "service": "recommendationservice",
+        "language": "Python",
+        "status": "OK",
+        "manifest_digest": "sha256:d726a99867d93149c984362bb5486ad5e05e0427983cfda42bdef72a93cfd398",
+        "image_tags_applied": [
+          "localhost:5000/gmd/recommendationservice:gmd-dev-c9857ee5",
+          "host.k3d.internal:5000/gmd/recommendationservice:gmd-dev-c9857ee5"
+        ]
+      },
+      {
+        "service": "paymentservice",
+        "language": "Node",
+        "status": "OK",
+        "manifest_digest": "sha256:365345d04aa54817d31f005dde627975b96fb1f555cfe0379fd2d21ac053900e",
+        "image_tags_applied": [
+          "localhost:5000/gmd/paymentservice:gmd-dev-c9857ee5",
+          "host.k3d.internal:5000/gmd/paymentservice:gmd-dev-c9857ee5"
+        ]
+      },
+      {
+        "service": "loadgenerator",
+        "language": "Python",
+        "status": "OK",
+        "manifest_digest": "sha256:2af975d061c05dc46f142a76f21415cbef72bcb5334cd6e5db6a8ee19af32ad1",
+        "image_tags_applied": [
+          "localhost:5000/gmd/loadgenerator:gmd-dev-c9857ee5",
+          "host.k3d.internal:5000/gmd/loadgenerator:gmd-dev-c9857ee5"
+        ]
+      }
+    ],
+    "registry_proof": {
+      "catalog_includes_all_nine_first_party_gmd_services": true,
+      "catalog_full": [
+        "amof-agent",
+        "amof-assistant",
+        "amof-cluster-builder",
+        "amof-controlplane",
+        "amof-dashboard",
+        "gmd/checkoutservice",
+        "gmd/currencyservice",
+        "gmd/emailservice",
+        "gmd/frontend",
+        "gmd/loadgenerator",
+        "gmd/paymentservice",
+        "gmd/productcatalogservice",
+        "gmd/recommendationservice",
+        "gmd/shippingservice",
+        "mirror/dockerhub/library/node",
+        "mirror/dockerhub/library/python",
+        "mirror/local/amof-controlplane-base",
+        "mirror/local/amof-controlplane-deps",
+        "mirror/local/amof-dashboard-deps"
+      ]
+    }
+  },
+  "live_behavior_unchanged_check": {
+    "gmd_supported_actions": ["deploy", "promote"],
+    "gmd_action_layout_ids": ["deploy", "promote"],
+    "gmd_ecosystem_build_contract_kind": "mirror_upstream",
+    "build_button_in_dashboard": "still hidden"
+  },
+  "commits_landed_to_canonical_main": [
+    {
+      "ticket": "UP8-17",
+      "candidate_branch": "feat/UP8-17",
+      "source_sha": "19a970a390447b9823f64201833a05fb47e2041a",
+      "synthesized_main_sha": "8b105722957c77e8e695250633e0e28d5cf8d60d",
+      "summary": "feat(gmd-app): batch-add 6 easy default services to source-build PoC",
+      "files": [
+        "scripts/build-gmd-app.sh",
+        "scripts/amof/api/command_builder.py",
+        "tests/test_command_builder_runtime.py"
+      ]
+    }
+  ],
+  "first_party_default_services_coverage": {
+    "supported_in_dispatch_table_count": 9,
+    "supported_services": [
+      "frontend",
+      "emailservice",
+      "currencyservice",
+      "shippingservice",
+      "productcatalogservice",
+      "checkoutservice",
+      "recommendationservice",
+      "paymentservice",
+      "loadgenerator"
+    ],
+    "remaining_default_blockers_count": 2,
+    "remaining_default_blockers": [
+      "adservice (Java)",
+      "cartservice (.NET, nested context: src/cartservice/src)"
+    ],
+    "remaining_optional_off_by_default": ["shoppingassistantservice"]
+  },
+  "what_remains_before_chart_integration_lifecycle_dispatch_and_contract_flip": {
+    "summary": "Only adservice and cartservice are left as default blockers. Once those land in the dispatch table, the dispatcher already has all 11 chart-default first-party services available.",
+    "for_remaining_two_services": {
+      "adservice": "Java toolchain (Gradle/JDK distroless). Adds a new substrate base set (eclipse-temurin or equivalent JDK + JRE) to whatever cluster-builder mirror is chosen.",
+      "cartservice": ".NET 10 toolchain with NESTED context `src/cartservice/src`. Requires either a per-service `context_relpath` override (already supported by the SERVICE_CONTEXT map) or skaffold-parity dockerfile path. The mirror set is `mcr.microsoft.com/dotnet/sdk:10.0.100-noble` and `mcr.microsoft.com/dotnet/runtime-deps:10.0.0-noble-chiseled`."
+    },
+    "for_chart_integration_minimal": {
+      "approach": "Recommended Option B from UP8-source-boundary audit: add helm.parameters to the dev element of infrastructure/gitops/gmd/applicationset.yaml flipping `images.repository` -> `host.k3d.internal:5000/gmd` and `images.tag` -> the gmd-app source-build tag for `gmd-dev` only.",
+      "blocked_until": "all 11 default first-party services build successfully on the chosen substrate. After UP8-17, 9/11 are covered."
+    },
+    "for_lifecycle_dispatch_wiring": {
+      "change_required": "scripts/amof/api/routers/release.py release_lifecycle_action() must branch on name == 'gmd' so action == 'build' calls build_gmd_app_lifecycle_build_command instead of build_lifecycle_build_command. Ideally with an iterator over the dispatch table for the full chart-default set.",
+      "blocked_until": "the command can produce the full set of chart-default gmd-deployable images, otherwise dispatched builds would always be incomplete"
+    },
+    "for_contract_flip": {
+      "change_required": "_ecosystem_build_contract('gmd') -> source_build with produces / source_repos / build_command metadata; update the lifecycle contract test that pins kind == 'mirror_upstream'",
+      "blocked_until": "lifecycle dispatch wiring is in place AND the chart actually consumes the locally-built images"
+    },
+    "cluster_builder_substrate_decision": {
+      "open_question": "Does the gmd lifecycle build need to run inside the in-cluster builder pod (same path as AMOF platform substrate)?",
+      "if_yes_required_work_after_full_service_set": "Mirror per-language base images so the builder pod's containerd can pull them: golang:1.26.1-alpine, gcr.io/distroless/static, python:3.14.3-alpine, node:20.20.1-alpine, alpine:3.23.3, plus the Java base for adservice and the .NET bases for cartservice.",
+      "if_no": "Host-only builds suffice for local development; production / cloud-dev substrate remains a separate decision."
+    }
+  },
+  "next_slice_options": [
+    {
+      "id": "ultra-plan-8-introduce-first-party-gmd-app-source-build-phase-f-add-adservice-java",
+      "what_to_implement": [
+        "Add adservice (Java) to scripts/build-gmd-app.sh dispatch table.",
+        "Update _GMD_APP_BUILD_SUPPORTED_SERVICES and add focused test.",
+        "Run host build for adservice and verify registry proof.",
+        "Still no contract flip, no routing, no chart change."
+      ]
+    },
+    {
+      "id": "ultra-plan-8-introduce-first-party-gmd-app-source-build-phase-f-add-cartservice-dotnet-nested-context",
+      "what_to_implement": [
+        "Add cartservice (.NET) to scripts/build-gmd-app.sh dispatch table with the nested context `src/cartservice/src` (already representable via the SERVICE_CONTEXT map).",
+        "Update _GMD_APP_BUILD_SUPPORTED_SERVICES and add focused test that pins the nested-context behavior.",
+        "Run host build for cartservice and verify registry proof.",
+        "Still no contract flip, no routing, no chart change."
+      ]
+    }
+  ],
+  "next_slice_recommendation": "Either; both are last-default-blockers. cartservice is preferred next because it exercises the nested-context branch of the dispatch table (already structurally supported via SERVICE_CONTEXT) before adservice introduces the largest new substrate footprint (Java)."
+}

@@ -1,0 +1,81 @@
+{
+  "slice": "ultra-plan-9-generated-build-contract-phase-8-readonly-artifact-admission-policy-design",
+  "result": "admission_policy_designed_with_schema_and_examples_no_behavior_wired",
+  "scope": "policy/design only; no deploy/release wiring, no UI execution, no cloud-dev, no mutation endpoints, no generated-build artifact execution",
+  "artifacts_created": [
+    "contracts/generated-build-admission-policy.md",
+    "contracts/generated-build-admission-policy.schema.json",
+    "contracts/examples/generated-build-admission-candidate-only.example.json",
+    "contracts/examples/generated-build-admission-existing-build-refused.example.json",
+    "contracts/examples/generated-build-admission-deploy-admitted.example.json"
+  ],
+  "artifacts_modified": [
+    "contracts/INDEX.md"
+  ],
+  "status_model": {
+    "proof_status_axis": ["refused", "proposed", "build_proven", "runtime_proven"],
+    "admission_status_axis": ["evidence_only", "candidate_only", "deploy_admitted", "refused"],
+    "valid_combinations": {
+      "evidence_only": ["refused", "proposed", "build_proven", "runtime_proven"],
+      "candidate_only": ["runtime_proven"],
+      "deploy_admitted": ["runtime_proven"],
+      "refused": ["refused", "proposed", "build_proven", "runtime_proven"]
+    },
+    "invalid_examples": [
+      "proposed + candidate_only",
+      "build_proven + candidate_only",
+      "refused + candidate_only",
+      "proposed + deploy_admitted",
+      "build_proven + deploy_admitted",
+      "refused + deploy_admitted"
+    ]
+  },
+  "candidate_criteria": [
+    "artifact validates against generated-build-contract.schema.json",
+    "build_contract_kind == generated",
+    "artifact.status == runtime_proven",
+    "confidence == accepted",
+    "runtime_family is admission-enabled",
+    "known template id and rendered_path exists",
+    "concrete image output exists",
+    "build_proof.image_digest exists and is valid sha256",
+    "runtime_proof.liveness_signal exists",
+    "existing-build precedence evaluated and does not reject generated lane",
+    "no blocking risk flags"
+  ],
+  "deploy_admitted_additional_criteria": [
+    "explicit operator confirmation exists",
+    "operator confirmation names artifact digest",
+    "target ecosystem/service recorded",
+    "deploy-pull image reference present for target substrate",
+    "existing-build precedence resolved",
+    "artifact is persisted in local generated-build index",
+    "source repo/ref confirmed",
+    "no blocking risk flags"
+  ],
+  "precedence": {
+    "default": "existing-build contracts win",
+    "generated_with_existing_present": "refused with precedence_decision=existing_build_wins",
+    "operator_requested_generated_anyway": "surface the conflict and continue refusing until separate conflict-resolution policy retires/rejects the existing build contract"
+  },
+  "schema_validation": {
+    "schema": "contracts/generated-build-admission-policy.schema.json",
+    "examples_validated": [
+      "contracts/examples/generated-build-admission-candidate-only.example.json",
+      "contracts/examples/generated-build-admission-existing-build-refused.example.json",
+      "contracts/examples/generated-build-admission-deploy-admitted.example.json"
+    ],
+    "result": "3/3 examples valid"
+  },
+  "out_of_scope_held": [
+    "policy evaluator implementation",
+    "backend/UI mutation endpoints",
+    "deploy/release wiring",
+    "cloud-dev",
+    "generated-build execution from UI"
+  ],
+  "next_slice": {
+    "id": "ultra-plan-9-generated-build-contract-phase-9-readonly-admission-policy-evaluator",
+    "summary": "Implement a pure/read-only admission policy evaluator function plus CLI/API read-only preview. It should read a stored artifact, return a policy result, and not mutate artifact status or wire deploy/release."
+  }
+}

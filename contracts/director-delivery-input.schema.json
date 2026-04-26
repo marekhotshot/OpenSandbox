@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://amof.dev/contracts/director-delivery-input.schema.json",
+  "title": "DirectorDeliveryInput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ecosystem",
+    "ticket_id",
+    "goal",
+    "scope",
+    "constraints",
+    "target_environment",
+    "build_mode",
+    "deploy_mode",
+    "release_intent",
+    "acceptance_criteria"
+  ],
+  "properties": {
+    "ecosystem": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ticket_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "goal": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repos", "allowed_paths"],
+      "properties": {
+        "repos": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "allowed_paths": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "blocked_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "constraints": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "target_environment": {
+      "type": "string",
+      "minLength": 1
+    },
+    "build_mode": {
+      "type": "string",
+      "minLength": 1
+    },
+    "deploy_mode": {
+      "type": "string",
+      "minLength": 1
+    },
+    "release_intent": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "component": {
+          "type": "string"
+        }
+      }
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

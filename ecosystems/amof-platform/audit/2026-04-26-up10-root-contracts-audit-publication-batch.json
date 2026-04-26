@@ -1,0 +1,74 @@
+{
+  "slice": "ultra-plan-10-root-dirty-contracts-and-audit-publication-batch",
+  "result": "contracts_and_audit_evidence_published_as_bounded_batch",
+  "scope": "root contracts/docs and audit evidence only; no runtime topology changes, no feature delivery, no deploy/release, no cloud-dev, no generated-build expansion, no root implementation dirt",
+  "before": {
+    "root_status_count": 96,
+    "root_untracked_count": 66,
+    "contracts_dirty": [
+      "contracts/INDEX.md",
+      "contracts/README.md",
+      "contracts/director-delivery-contract.md",
+      "contracts/director-delivery-input.schema.json",
+      "contracts/director-delivery-result.schema.json",
+      "contracts/director-gmd-dev-local-proof-action.md",
+      "contracts/generated-build-admission-policy.md",
+      "contracts/generated-build-admission-policy.schema.json",
+      "contracts/examples/generated-build-admission-*.json"
+    ],
+    "audit_receipt_count": 55
+  },
+  "decisions": {
+    "contracts_docs": {
+      "decision": "publish now",
+      "reason": "bounded canonical contract set for Director delivery, gmd-dev action, generated-build admission policy, and index/readme updates"
+    },
+    "audit_receipts": {
+      "decision": "publish now",
+      "reason": "bounded evidence batch for Ultra Plan 8/9 generated-build/read-only-governance/topology work; keeping as untracked root dirt creates operator ambiguity"
+    },
+    "root_implementation_dirt": {
+      "decision": "untouched/quarantined",
+      "reason": "root scripts/amof is non-canonical and hard-fails by guardrail; wanted logic must be reapplied to repos/amof"
+    },
+    "assistant_deletion_residue": {
+      "decision": "defer",
+      "reason": "requires separate assistant repo retirement/import decision"
+    },
+    "config_drift": {
+      "decision": "defer",
+      "reason": "runtime/config-bearing changes are not part of this publication batch"
+    },
+    "root_tests": {
+      "decision": "defer",
+      "reason": "must be reviewed against canonical repos/amof test location before landing"
+    }
+  },
+  "after_expected": {
+    "contracts_dirty": 0,
+    "audit_receipts_dirty": 0,
+    "remaining_dirty_buckets": [
+      "root implementation quarantine",
+      "assistant deletion residue",
+      "config drift",
+      "root tests"
+    ]
+  },
+  "publish_strategy": {
+    "local_branch": "main-helper",
+    "remote_strategy": "clean OpenSandbox branch off origin/main to avoid known main-helper PAT-shaped secret-scanning ancestry",
+    "known_ancestry_blocker": [
+      "f9a74b9475f06ca3106062a25f40de011875dc97",
+      "2cf981a76ded81def5c3e3a79a4488f3298ab782"
+    ]
+  },
+  "out_of_scope_held": [
+    "runtime topology",
+    "feature work",
+    "deploy/release",
+    "cloud-dev",
+    "generated-build new work",
+    "root implementation dirt changes"
+  ],
+  "next_slice": "ultra-plan-10-root-implementation-dirt-quarantine-or-reapply-decision"
+}

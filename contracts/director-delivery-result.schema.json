@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://amof.dev/contracts/director-delivery-result.schema.json",
+  "title": "DirectorDeliveryResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "ecosystem",
+    "ticket_id",
+    "run_id",
+    "stage",
+    "changed_refs",
+    "artifacts",
+    "receipts",
+    "failures",
+    "next_action"
+  ],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["pass", "fail", "blocked"]
+    },
+    "ecosystem": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ticket_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "stage": {
+      "type": "string",
+      "minLength": 1
+    },
+    "changed_refs": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["string", "null"]
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "receipts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["string", "null"]
+      }
+    },
+    "failures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "message", "retryable", "owner"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "retryable": {
+            "type": "boolean"
+          },
+          "owner": {
+            "type": "string",
+            "enum": ["director", "operator", "external"]
+          }
+        }
+      }
+    },
+    "next_action": {
+      "type": "string"
+    }
+  }
+}

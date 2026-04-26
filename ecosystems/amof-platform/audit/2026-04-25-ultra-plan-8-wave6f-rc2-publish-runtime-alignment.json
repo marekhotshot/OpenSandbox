@@ -1,0 +1,62 @@
+{
+  "slice": "ultra-plan-8-wave6f-publish-local-rc-and-align-runtime-image",
+  "result": "failed",
+  "published_rc_truth": {
+    "version": "1.5.0-rc.2",
+    "tag": "v1.5.0-rc.2",
+    "release_commit": "847990577ff2b3146e3b7375b2c6aaf9f4f28db2",
+    "branch_push": {
+      "remote": "https://github.com/marekhotshot/amof.git",
+      "ref": "main",
+      "status": "pushed",
+      "range": "e5de15c2f362064f1cf9e897713e89929fd2b0b1..847990577ff2b3146e3b7375b2c6aaf9f4f28db2"
+    },
+    "tag_push": {
+      "remote": "https://github.com/marekhotshot/amof.git",
+      "tag": "v1.5.0-rc.2",
+      "status": "pushed"
+    },
+    "release_record": ".amof-tmp/up8-wave6c-clean-release-workspace/releases/v1.5.0-rc.2.json",
+    "pushed": true
+  },
+  "runtime_image_truth": {
+    "controlplane_image": "host.k3d.internal:5000/amof-controlplane:up8-wave6f-rc2-8479905-20260425025720",
+    "source_ref": "v1.5.0-rc.2",
+    "source_commit": "847990577ff2b3146e3b7375b2c6aaf9f4f28db2",
+    "built": true,
+    "imported_to_k3d": true,
+    "deployed_to": "amof-amof-control-plane-controlplane",
+    "runtime_import_path": {
+      "AMOF_CODE_ROOT": "/app",
+      "PYTHONPATH": "/app/scripts:/app"
+    },
+    "dashboard_image_preserved": "host.k3d.internal:5000/amof-dashboard:up8-wave5-gmd-dev-operator-20260425015322"
+  },
+  "post_alignment_proof": {
+    "attempted": true,
+    "run_ids": [
+      "c6692415-2397-4043-a20e-7197c14b5c97",
+      "UP8-GOLDEN-GMD-DEV-RC2-RUNTIME-002"
+    ],
+    "observed_run_status": "success",
+    "observed_exit_code": 0,
+    "result_artifact_expected": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave6f-rc2-runtime-proof-result-gmd-dev.json",
+    "result_artifact_present": false,
+    "accepted_as_valid_proof": false
+  },
+  "blocker": {
+    "classification": "runtime execution failure",
+    "summary": "Published v1.5.0-rc.2 image includes the director-action parser and command module, but /app/scripts/amof.py does not dispatch director-action.",
+    "details": [
+      "The controlplane image was correctly built from v1.5.0-rc.2 and deployed with AMOF_CODE_ROOT=/app.",
+      "The in-image files /app/scripts/amof/cli.py and /app/scripts/amof/commands/director_action.py contain the action.",
+      "The in-image entrypoint /app/scripts/amof.py lacks cmd_director_action dispatch.",
+      "Running /usr/local/bin/python /app/scripts/amof.py -e gmd director-action gmd-dev-local-proof exits 0 without printing the action result and without writing the requested result artifact.",
+      "Therefore the queued run status alone is not sufficient evidence of a successful proof on the released runtime."
+    ],
+    "affected_release": "v1.5.0-rc.2",
+    "required_fix": "Add director-action dispatch to repos/amof/scripts/amof.py, land it to canonical main, create the next local RC, rebuild controlplane from that release commit, then rerun the gmd-dev proof."
+  },
+  "final_verdict": "failed",
+  "next_slice": "ultra-plan-8-wave6g-fix-cli-dispatch-and-issue-rc3"
+}

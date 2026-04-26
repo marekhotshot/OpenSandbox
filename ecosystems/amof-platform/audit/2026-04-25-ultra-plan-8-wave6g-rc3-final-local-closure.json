@@ -1,0 +1,89 @@
+{
+  "slice": "ultra-plan-8-wave6g-fix-cli-dispatch-and-issue-rc3",
+  "result": "pass",
+  "dispatch_fix": {
+    "file": "repos/amof/scripts/amof.py",
+    "summary": "Added args.command == \"director-action\" dispatch to cmd_director_action.",
+    "candidate_commit": "f9985f1671f0e9f96b52dbeb2f70a6a64c69aadc",
+    "landed_main_commit": "2a46b1c7c55a31e2479af1d7001e4a39c9f20895",
+    "promote_main_audit": "ecosystems/amof-platform/audit/2026-04-25-030459-promote-main-up8-6.json"
+  },
+  "false_positive_classification": {
+    "second_fix_required": false,
+    "reason": "Once CLI dispatch exists, the command writes a result artifact. The earlier success-without-artifact was caused by missing dispatch in /app/scripts/amof.py."
+  },
+  "rc_publish": {
+    "version": "1.5.0-rc.3",
+    "tag": "v1.5.0-rc.3",
+    "release_commit": "f295d3b6337fffb73c19c43fde94485c78bfae2e",
+    "branch_push": "pushed main 2a46b1c..f295d3b",
+    "tag_push": "pushed v1.5.0-rc.3",
+    "release_record": {
+      "schema_version": 1,
+      "version": "1.5.0-rc.3",
+      "tag": "v1.5.0-rc.3",
+      "previous_tag": "v1.5.0-rc.2",
+      "timestamp": "2026-04-25T01:05:11Z",
+      "action": "promote",
+      "bump_part": null,
+      "stage": "rc",
+      "stage_num": 3,
+      "branch": "main",
+      "commit": "2a46b1c7c55a31e2479af1d7001e4a39c9f20895",
+      "author": "Marek Ga\u0161per",
+      "commits_since_previous": 2,
+      "commit_subjects": [
+        "chore(promote-main): promote UP8-6 candidate bundle",
+        "chore(promote-main): promote UP8-6 candidate bundle"
+      ],
+      "files_updated": [
+        "scripts/amof/__init__.py",
+        "scripts/amof/orchestrator/__init__.py",
+        "CHANGELOG.md"
+      ],
+      "origin": "cli",
+      "dry_run": false,
+      "pushed": false
+    }
+  },
+  "runtime_image": {
+    "controlplane": "host.k3d.internal:5000/amof-controlplane:up8-wave6g-rc3-f295d3b-20260425030525",
+    "dashboard": "host.k3d.internal:5000/amof-dashboard:up8-wave5-gmd-dev-operator-20260425015322",
+    "runtime_env": {
+      "AMOF_CODE_ROOT": "/app",
+      "PYTHONPATH": "/app/scripts:/app"
+    }
+  },
+  "post_fix_proof": {
+    "run_id": "0830bcfa-e78a-464c-bbf8-e6fb6f8e1357",
+    "result_artifact": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave6g-rc3-runtime-proof-result-gmd-dev.json",
+    "result": "pass",
+    "argo": {
+      "sync_status": "Synced",
+      "health_status": "Healthy",
+      "revision": "847990577ff2b3146e3b7375b2c6aaf9f4f28db2"
+    },
+    "readback": [
+      {
+        "url": "http://127.0.0.1:18095/",
+        "http_status": 200,
+        "content_type": "text/html; charset=utf-8",
+        "body_summary": "HTML response"
+      },
+      {
+        "url": "http://127.0.0.1:18095/_healthz",
+        "http_status": 200,
+        "content_type": "text/plain; charset=utf-8",
+        "body": "ok"
+      }
+    ]
+  },
+  "final_local_milestone_closure_verdict": "closed",
+  "remaining_scope_deferred": [
+    "cloud-dev",
+    "test/prod",
+    "DNS",
+    "stable promote",
+    "UI redesign"
+  ]
+}

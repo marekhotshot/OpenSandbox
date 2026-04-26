@@ -1,0 +1,96 @@
+{
+  "slice": "ultra-plan-9-generated-build-contract-phase-3-runtime-proof-local-only",
+  "ticket": "UP9-3",
+  "result": "local_runtime_proof_implemented_and_proven_for_python_node_go",
+  "scope": "generated-build first-wave runtime proof only; no API/UI, no deploy/release, no cloud-dev, no Java/.NET",
+  "implementation_commit": {
+    "branch": "feat/UP9-3",
+    "source_sha": "c90c56abbbc56f24f3feaeb1d79649ed7d86be89",
+    "subject": "feat(generated-build): add local runtime-proof for first-wave families",
+    "promote_main_dry_run": "pass",
+    "remote_push_status": "not attempted/succeeded because GITHUB_TOKEN/GIT_TOKEN are missing in this shell"
+  },
+  "files_changed": [
+    "scripts/amof.py",
+    "scripts/amof/cli.py",
+    "scripts/amof/generated_build/__init__.py",
+    "scripts/amof/generated_build/__main__.py",
+    "scripts/amof/generated_build/detector.py",
+    "tests/test_generated_build_detector.py"
+  ],
+  "runtime_proof_primitive": {
+    "function": "run_runtime_proof(artifact, image, timeout_seconds=20, substrate='local-docker-run')",
+    "requires_input_status": "build_proven",
+    "success_transition": "build_proven -> runtime_proven",
+    "failure_behavior": "returns the input artifact unchanged; no runtime_proof is emitted",
+    "liveness_signal": "port_open",
+    "docker_behavior": "docker run -d --rm -p 127.0.0.1:<ephemeral>:<inferred_port> <image>; poll loopback TCP; docker rm -f cleanup",
+    "runtime_health_claims": "none beyond bounded port_open liveness"
+  },
+  "cli": {
+    "amof_native_command": "scripts/amof.py generated-build runtime-proof <repo_path> --image <image> [--service <name>] [--output artifact.json] [--timeout N]",
+    "module_command": "python -m amof.generated_build runtime-proof <repo_path> --image <image>",
+    "exit_codes": {
+      "0": "runtime_proven or non-refused non-failure path",
+      "3": "build_proven remained build_proven because liveness was not observed"
+    }
+  },
+  "template_adjustments": {
+    "python": "python template now installs requirements.txt when present before copying app files; needed for truthful FastAPI/Uvicorn runtime proof",
+    "node": "unchanged first-wave template; package*.json install then copy app",
+    "go": "unchanged first-wave template; multi-stage go build into distroless/static"
+  },
+  "tests": {
+    "command": "PYTHONPATH=scripts .venv/bin/python -m pytest tests/test_generated_build_detector.py tests/test_command_builder_runtime.py -q",
+    "result": "39 passed",
+    "new_runtime_proof_tests": [
+      "runtime proof success path advances to runtime_proven",
+      "runtime proof failure keeps build_proven and emits no runtime_proof",
+      "runtime proof on proposed artifact does not overclaim",
+      "runtime_proven artifact validates against schema",
+      "CLI returns exit code 3 when liveness is not observed"
+    ]
+  },
+  "manual_runtime_proof": {
+    "fixtures_root": "/tmp/up9-3-fixtures",
+    "schema_validation": "all runtime_proven artifacts validate against contracts/generated-build-contract.schema.json",
+    "families": {
+      "python": {
+        "image": "localhost:5000/generated-build/python:up9-3",
+        "status": "runtime_proven",
+        "build_digest": "sha256:6a56b61c3853815f209d52575dcb0146dbe99ace810dc601e35cdfa2e1d9bc6c",
+        "liveness_signal": "port_open",
+        "checked_via": "local-docker-run",
+        "runtime_proof_file": "/tmp/up9-3-python-runtime-proof.json"
+      },
+      "node": {
+        "image": "localhost:5000/generated-build/node:up9-3",
+        "status": "runtime_proven",
+        "build_digest": "sha256:274cdc0ee7b6b31668ef88350224323cf901b2c6ee2af4e53b201498ff0f0156",
+        "liveness_signal": "port_open",
+        "checked_via": "local-docker-run",
+        "runtime_proof_file": "/tmp/up9-3-node-runtime-proof.json"
+      },
+      "go": {
+        "image": "localhost:5000/generated-build/go:up9-3",
+        "status": "runtime_proven",
+        "build_digest": "sha256:2e93b4c8cca0eac31bf377409d3a557df5121a80c28f2098370781aaed5460af",
+        "liveness_signal": "port_open",
+        "checked_via": "local-docker-run",
+        "runtime_proof_file": "/tmp/up9-3-go-runtime-proof.json"
+      }
+    }
+  },
+  "out_of_scope_held": [
+    "API/UI surfacing",
+    "deploy/release wiring",
+    "cloud-dev",
+    "Java/.NET/non-first-wave runtimes",
+    "runtime semantics beyond port_open",
+    "production readiness claims"
+  ],
+  "next_slice": {
+    "id": "ultra-plan-9-generated-build-contract-phase-4-persist-artifacts-and-index-local",
+    "summary": "Persist generated-build artifacts under a canonical local `.amof/generated-builds/index.json` and add read-only listing/lookup CLI commands. No API/UI, no deploy/release, no cloud-dev."
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "slice": "ultra-plan-9-generated-build-contract-phase-7-wire-ui-to-live-local-artifacts-proof",
+  "result": "browser_proof_passed_against_live_backend_reading_runtime_proven_python_node_go_store",
+  "scope": "proof-only for read-only generated-build UI; no new backend behavior, no UI feature changes, no execution from UI, no deploy/release wiring",
+  "backend_runtime": {
+    "command": "AMOF_GENERATED_BUILDS_ROOT=/tmp/up9-4-store/.amof/generated-builds PYTHONPATH=/home/hotshot/work/amof-platform/repos/amof/scripts .venv/bin/python -m uvicorn amof.api.main:app --host 127.0.0.1 --port 18080",
+    "url": "http://127.0.0.1:18080/api/v1",
+    "store_root": "/tmp/up9-4-store/.amof/generated-builds",
+    "store_index_rows": [
+      {"repo_id": "go", "service": "go", "runtime_family": "go", "status": "runtime_proven"},
+      {"repo_id": "node", "service": "node", "runtime_family": "node", "status": "runtime_proven"},
+      {"repo_id": "python", "service": "python", "runtime_family": "python", "status": "runtime_proven"}
+    ]
+  },
+  "ui_runtime": {
+    "image": "amof-ui-generated-builds-readonly-check:latest",
+    "container": "amof-ui-gb-proof",
+    "url": "http://127.0.0.1:3018/generated-builds",
+    "proof_proxy": {
+      "url": "http://127.0.0.1:3019",
+      "reason": "The built UI image uses relative /api/v1 for auth and generated-build calls. A local same-origin proxy mapped /api/v1 to backend 127.0.0.1:18080 and all other paths to the UI container 127.0.0.1:3018 so browser proof matches ingress-style same-origin behavior without changing UI/backend code."
+    }
+  },
+  "browser_proof": {
+    "tooling": "Google Chrome headless via Chrome DevTools Protocol",
+    "list_page": {
+      "url": "http://127.0.0.1:3019/generated-builds",
+      "result": "pass",
+      "observed_text_counts": {
+        "python/python": 1,
+        "node/node": 1,
+        "go/go": 1,
+        "runtime_proven": 3,
+        "generated-build only": 1,
+        "not deploy-admitted": 2
+      }
+    },
+    "detail_page": {
+      "url": "http://127.0.0.1:3019/generated-builds?repo_path=/tmp/up9-3-fixtures/python&service=python",
+      "result": "pass",
+      "observed_text_counts": {
+        "runtime_proven": 5,
+        "port_open": 2,
+        "python-uvicorn-distroless-v1": 2,
+        "Build Proof": 1,
+        "Runtime Proof": 1,
+        "uvicorn app:app": 2,
+        "generated-build only": 2,
+        "not deploy-admitted": 3
+      },
+      "screenshot": "/tmp/up9-7-generated-builds-detail.png",
+      "html_snapshot": "/tmp/up9-7-generated-builds-detail.html"
+    },
+    "safety": {
+      "result": "pass",
+      "button_texts_observed": "Nav|AMOF MCP\nMCP|Supabase Media|Feedback|DEBUG & LOGS",
+      "forbidden_mutation_buttons_absent": [
+        "Build",
+        "Run",
+        "Prove",
+        "Deploy",
+        "Promote",
+        "Release",
+        "Rollback",
+        "Discard"
+      ]
+    }
+  },
+  "truth_labels": {
+    "generated_build_only_visible": true,
+    "not_deploy_admitted_visible": true,
+    "status_preserved_from_backend": true,
+    "runtime_proof_liveness_signal_visible": "port_open",
+    "no_release_or_deploy_readiness_claim": true
+  },
+  "blockers": [],
+  "out_of_scope_held": [
+    "new backend behavior",
+    "execution from UI",
+    "deploy/release wiring",
+    "cloud-dev",
+    "mutation actions",
+    "generated-build admission"
+  ],
+  "next_slice": {
+    "id": "ultra-plan-9-generated-build-contract-phase-8-readonly-artifact-admission-policy-design",
+    "summary": "Design the admission policy that decides when a runtime_proven generated-build artifact may become a build contract candidate, without wiring deploy/release flows yet."
+  }
+}

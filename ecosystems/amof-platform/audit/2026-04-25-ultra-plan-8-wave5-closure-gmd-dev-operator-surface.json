@@ -1,0 +1,52 @@
+{
+  "slice": "ultra-plan-8-wave5-gmd-dev-operator-surface-minimal",
+  "result": "closed",
+  "ui_trigger": "DashboardSlides Quick actions / Local gmd-dev proof",
+  "browser_click_proof": {
+    "result": "pass",
+    "dashboard_url": "http://amof.localhost:8081/",
+    "browser": "google-chrome headless via CDP",
+    "card_visible": true,
+    "run_id": "62120609-fbf9-45ba-a598-bed53cbba4a2",
+    "status_transitions_observed": {
+      "queued": true,
+      "running": true,
+      "success": true
+    },
+    "compact_summary_observed": {
+      "argo_sync_health": "Synced / Healthy",
+      "pods": "12/12",
+      "root_status": 200,
+      "healthz_status": 200
+    },
+    "runs_link_href": "http://amof.localhost:8081/runs/62120609-fbf9-45ba-a598-bed53cbba4a2",
+    "runs_link_loaded": true,
+    "api_status": {
+      "status": "success",
+      "exit_code": 0,
+      "action": "director-action/gmd-dev-local-proof"
+    }
+  },
+  "api_proof_run_id": "9ee69b1d-dfb2-4fd6-88da-9a0bbefe30c2",
+  "browser_proof_run_id": "62120609-fbf9-45ba-a598-bed53cbba4a2",
+  "local_image": "host.k3d.internal:5000/amof-dashboard:up8-wave5-gmd-dev-operator-20260425015322",
+  "deployment_target": "amof-amof-control-plane-dashboard in amof-system",
+  "deferred_scope": [
+    "cloud-dev",
+    "public DNS",
+    "test/prod",
+    "release/promote",
+    "run-chat redesign",
+    "generic action framework"
+  ],
+  "commits": {
+    "repos/amof": "4dddd98bcd2791ce6cf51d4f2f96c15cd3117bc3",
+    "repos/amof-ui": "72f22f5c74b9bcfd1adfeaa81cc49a4ee5e01a8d"
+  },
+  "push_results": {
+    "repos/amof": "pushed HEAD to origin/up8-gmd-dev-director-action",
+    "repos/amof-ui": "pushed HEAD to origin/up8-gmd-dev-operator-surface"
+  },
+  "browser_click_proof_artifact": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-browser-click-proof-gmd-dev.json",
+  "final_closure_receipt": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-closure-gmd-dev-operator-surface.json"
+}

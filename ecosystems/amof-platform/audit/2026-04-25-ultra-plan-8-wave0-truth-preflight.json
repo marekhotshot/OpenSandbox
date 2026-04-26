@@ -1,0 +1,118 @@
+{
+  "program": "Ultra Plan 8 Golden Delivery Baseline",
+  "artifact": "wave0-truth-preflight",
+  "generated_at": "2026-04-25T00:05:00+02:00",
+  "workspace": {
+    "path": "/home/hotshot/work/amof-platform",
+    "state_file": ".amof/state.json",
+    "state_ecosystem": "amof-platform",
+    "active_ticket": null,
+    "workspace_branch": "workspace/amof-platform",
+    "root_git_status": "main...origin/main [ahead 324, behind 624] after gmd sync; dirty state pre-existed and must not be reset in this slice"
+  },
+  "ecosystems": {
+    "amof-platform": {
+      "role": "delivery_plane_under_test",
+      "repo_set": ["amof", "amof-ui", "opensandbox"],
+      "optional_disabled_repos": ["amof-assistant"],
+      "provisioner": "hetzner-k3s",
+      "manifest_status": "valid",
+      "environment_truth": "cloud/prod AMOF control plane truth lives in helm values, release status, audits, and runtime probes",
+      "release_truth": "v1.5.0-rc.1; version files match; working tree is dirty; 217 commits since latest tag",
+      "reset_safety": "do_not_reset",
+      "reset_reason": "AMOF core checkout is the system under test and contains unrelated dirty operator/runtime work"
+    },
+    "gmd": {
+      "role": "recommended_golden_downstream_ecosystem",
+      "repo_set": ["gmd-app"],
+      "provisioner": "local-k3d",
+      "manifest_status": "valid_strict",
+      "repo_presence": "complete_after_sync",
+      "source_repo": {
+        "path": "repos/gmd-app",
+        "branch": "main",
+        "remote": "https://github.com/marekhotshot/google-microservices-demo.git",
+        "commit": "c9857ee54fba10486013f15ba6b31411986f530c",
+        "dirty": false
+      },
+      "gitops_truth": {
+        "application_set": "infrastructure/gitops/gmd/applicationset.yaml",
+        "chart": "infrastructure/gitops/gmd/chart",
+        "applications": ["gmd-dev", "gmd-test", "gmd-prod"],
+        "helm_lint": "pass",
+        "helm_template": "pass; rendered 1200 lines for gmd-dev"
+      },
+      "runtime_truth": {
+        "active_kube_context": "k3d-amof",
+        "argocd_crds": "missing",
+        "gmd_namespaces": "absent",
+        "gmd_applications": "absent",
+        "cloud_dev_kubeconfig": "present but contains no usable context entries",
+        "prod_dev_kubeconfig": "missing"
+      },
+      "dns_truth": "no gmd public hostname or Cloudflare record proved in this preflight",
+      "secret_config_truth": "no gmd-specific secrets discovered; Cloudflare and Argo credentials not proved for the active runtime",
+      "build_backend_truth": "gmd chart uses upstream public image repository by default; AMOF lifecycle build backend is still AMOF-stack-oriented, not a gmd app build path",
+      "reset_safety": "reset_safe_for_source_repo",
+      "reset_reason": "fresh clean main checkout after sync; generated .amof/profile.md residue was removed"
+    },
+    "hotshot": {
+      "role": "later_rollout_candidate",
+      "repo_set": ["hotshot-sk"],
+      "manifest_status": "valid",
+      "repo_presence": "missing_in_current_workspace",
+      "reset_safety": "do_not_reset_until_installed_and_guardrails_reviewed",
+      "reset_reason": "manifest protects server/.env and server/data/commentary/*"
+    },
+    "demo-microsaas": {
+      "role": "retired_recovery_only",
+      "repo_set": ["microsaas-frontend", "microsaas-backend", "microsaas-helm"],
+      "manifest_status": "valid",
+      "repo_presence": "missing_in_current_workspace",
+      "reset_safety": "kill_or_preserve_only",
+      "reset_reason": "manifest is retired and uses local file:// seed repo paths outside this workspace"
+    }
+  },
+  "local_drift_decisions": [
+    {
+      "scope": "repos/gmd-app",
+      "decision": "replay_now_complete",
+      "reason": "golden candidate required repo presence; gmd sync cloned the source repo"
+    },
+    {
+      "scope": "repos/gmd-app/.amof/profile.md",
+      "decision": "kill_complete",
+      "reason": "generated sync residue; removed so gmd source baseline is clean"
+    },
+    {
+      "scope": "repos/amof",
+      "decision": "replay_later_or_do_not_reset",
+      "reason": "state branch expects codex/amof-explicit-work-20260327 but checkout is detached HEAD with unrelated dirty files"
+    },
+    {
+      "scope": "repos/amof-ui",
+      "decision": "replay_later",
+      "reason": "dirty UI checkout is unrelated to proving gmd source repo presence"
+    },
+    {
+      "scope": "repos/opensandbox",
+      "decision": "do_not_reset",
+      "reason": "sync reported unrelated histories; not needed for the gmd golden proof"
+    },
+    {
+      "scope": ".amof-worktrees",
+      "decision": "no_delivery_truth",
+      "reason": "ticket worktrees are execution lanes and were not treated as sacred baseline truth"
+    }
+  ],
+  "wave0_exit": {
+    "status": "complete_with_blockers",
+    "golden_candidate_ready_for_source_baseline": true,
+    "golden_candidate_ready_for_live_deploy": false,
+    "blocking_prerequisites": [
+      "usable Argo CD runtime or kubeconfig with ApplicationSet/Application CRDs",
+      "gmd DNS/live URL contract",
+      "gmd-specific AMOF lifecycle deploy/readback support or an approved direct Argo registration path"
+    ]
+  }
+}

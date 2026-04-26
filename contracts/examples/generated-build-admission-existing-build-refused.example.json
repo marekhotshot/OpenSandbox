@@ -1,0 +1,37 @@
+{
+  "policy_result_kind": "generated_build_admission_policy_result",
+  "artifact_ref": {
+    "artifact_path": ".amof/generated-builds/example/root/artifact.json",
+    "repo_path": "/workspace/repos/example",
+    "service": "root",
+    "image_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "artifact_proof_status": "runtime_proven",
+  "admission_status": "refused",
+  "reasons": [
+    "runtime_proven",
+    "generated_artifact_exists",
+    "existing_build_contract_detected"
+  ],
+  "missing_prerequisites": [
+    "existing_build_contract_retirement_decision"
+  ],
+  "refusal_conditions": [
+    "existing_build_contract_present"
+  ],
+  "precedence_decision": "existing_build_wins",
+  "evidence_summary": {
+    "build_contract_kind": "generated",
+    "runtime_family": "node",
+    "confidence": "accepted",
+    "template_id": "node-express-distroless-v1",
+    "has_rendered_path": true,
+    "has_build_proof": true,
+    "has_runtime_proof": true,
+    "liveness_signal": "port_open",
+    "risk_flags": [
+      "existing_build_files: [Dockerfile]"
+    ]
+  },
+  "evaluated_at": "2026-04-26T18:26:00Z"
+}

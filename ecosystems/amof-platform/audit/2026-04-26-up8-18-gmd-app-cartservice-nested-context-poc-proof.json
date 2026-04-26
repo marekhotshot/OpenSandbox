@@ -1,0 +1,171 @@
+{
+  "slice": "ultra-plan-8-introduce-first-party-gmd-app-source-build-phase-f-add-cartservice-dotnet-nested-context",
+  "ticket": "UP8-18",
+  "result": "cartservice_built_pushed_and_verified_no_live_behavior_change",
+  "scope": "add cartservice (.NET, nested context src/cartservice/src) to gmd-app source-build PoC; no contract flip, no routing, no chart change, no adservice work",
+  "phase_a_script_extension": {
+    "modified_file": "repos/amof/scripts/build-gmd-app.sh",
+    "newly_supported_service": "cartservice",
+    "supported_services_in_dispatch_table_total": [
+      "frontend",
+      "emailservice",
+      "currencyservice",
+      "shippingservice",
+      "productcatalogservice",
+      "checkoutservice",
+      "recommendationservice",
+      "paymentservice",
+      "loadgenerator",
+      "cartservice"
+    ],
+    "nested_context_dispatch": {
+      "SERVICE_DOCKERFILE[cartservice]": "src/cartservice/src/Dockerfile",
+      "SERVICE_CONTEXT[cartservice]": "src/cartservice/src",
+      "rationale": "Mirrors upstream skaffold.yaml convention; the existing per-service map already represents non-flat contexts so no script structural change was required."
+    }
+  },
+  "phase_b_command_builder": {
+    "modified_file": "repos/amof/scripts/amof/api/command_builder.py",
+    "constant_now_lists_ten_services_in_pinned_order": true,
+    "function_unchanged_signature": "build_gmd_app_lifecycle_build_command(root, image_tag=None, services=['frontend'], no_push=False)",
+    "still_not_routed_in_release_lifecycle_action": true,
+    "ecosystem_build_contract_for_gmd_unchanged": "mirror_upstream"
+  },
+  "tests": {
+    "modified_file": "repos/amof/tests/test_command_builder_runtime.py",
+    "new_tests_added": 2,
+    "new_test_names": [
+      "test_gmd_app_build_command_dispatches_cartservice_with_nested_context",
+      "test_canonical_build_gmd_app_script_pins_cartservice_nested_context"
+    ],
+    "updated_existing_tests": [
+      "test_gmd_app_build_supported_services_tuple now pins all ten entries with cartservice last",
+      "test_gmd_app_build_command_still_rejects_known_deferred_services no longer asserts cartservice (now supported); still asserts adservice and shoppingassistantservice",
+      "test_gmd_app_build_command_rejects_unsupported_service updated to use adservice (Java) as the negative example since cartservice is now supported"
+    ],
+    "test_run_result": "16/16 pass (14 pre-existing + 2 new)"
+  },
+  "phase_c_proof": {
+    "gmd_app_head": "c9857ee5",
+    "tag_used": "gmd-dev-c9857ee5",
+    "cartservice": {
+      "command_executed": "bash repos/amof/scripts/build-gmd-app.sh --service cartservice --tag gmd-dev-c9857ee5",
+      "dockerfile": "repos/gmd-app/src/cartservice/src/Dockerfile",
+      "build_context": "repos/gmd-app/src/cartservice/src",
+      "language_runtime": "mcr.microsoft.com/dotnet/sdk:10.0.100-noble builder + mcr.microsoft.com/dotnet/runtime-deps:10.0.0-noble-chiseled runtime (.NET 10)",
+      "image_tags_applied": [
+        "localhost:5000/gmd/cartservice:gmd-dev-c9857ee5",
+        "host.k3d.internal:5000/gmd/cartservice:gmd-dev-c9857ee5"
+      ],
+      "manifest_digest": "sha256:1d14d306ff133699239d61af5a70a6aaa51236e0a73f6dedd1518acd4f8a344d",
+      "manifest_size_bytes": 856,
+      "wall_time_seconds_approx": 180
+    },
+    "registry_proof": {
+      "catalog_includes_gmd_cartservice": true,
+      "catalog_full": [
+        "amof-agent",
+        "amof-assistant",
+        "amof-cluster-builder",
+        "amof-controlplane",
+        "amof-dashboard",
+        "gmd/cartservice",
+        "gmd/checkoutservice",
+        "gmd/currencyservice",
+        "gmd/emailservice",
+        "gmd/frontend",
+        "gmd/loadgenerator",
+        "gmd/paymentservice",
+        "gmd/productcatalogservice",
+        "gmd/recommendationservice",
+        "gmd/shippingservice",
+        "mirror/dockerhub/library/node",
+        "mirror/dockerhub/library/python",
+        "mirror/local/amof-controlplane-base",
+        "mirror/local/amof-controlplane-deps",
+        "mirror/local/amof-dashboard-deps"
+      ],
+      "tags_for_gmd_cartservice": ["gmd-dev-c9857ee5"],
+      "cartservice_manifest_endpoint_check": "HTTP/1.1 200 OK Content-Length 856 Docker-Content-Digest sha256:1d14d306ff133699239d61af5a70a6aaa51236e0a73f6dedd1518acd4f8a344d"
+    },
+    "all_ten_first_party_chart_default_services_present_in_local_registry_at_tag_gmd_dev_c9857ee5": true
+  },
+  "live_behavior_unchanged_check": {
+    "gmd_supported_actions": ["deploy", "promote"],
+    "gmd_action_layout_ids": ["deploy", "promote"],
+    "gmd_ecosystem_build_contract_kind": "mirror_upstream",
+    "build_button_in_dashboard": "still hidden"
+  },
+  "commits_landed_to_canonical_main": [
+    {
+      "ticket": "UP8-18",
+      "candidate_branch": "feat/UP8-18",
+      "source_sha": "979796e0c7b936192c630d218c7818f853152dbd",
+      "synthesized_main_sha": "5157c821c9073d7c8c778a2efa3b98f55a216e31",
+      "summary": "feat(gmd-app): add cartservice (.NET, nested context) to source-build PoC",
+      "files": [
+        "scripts/build-gmd-app.sh",
+        "scripts/amof/api/command_builder.py",
+        "tests/test_command_builder_runtime.py"
+      ]
+    }
+  ],
+  "first_party_default_services_coverage": {
+    "supported_in_dispatch_table_count": 10,
+    "supported_services": [
+      "frontend",
+      "emailservice",
+      "currencyservice",
+      "shippingservice",
+      "productcatalogservice",
+      "checkoutservice",
+      "recommendationservice",
+      "paymentservice",
+      "loadgenerator",
+      "cartservice"
+    ],
+    "remaining_default_blockers_count": 1,
+    "remaining_default_blockers": ["adservice (Java)"],
+    "remaining_optional_off_by_default": ["shoppingassistantservice"]
+  },
+  "what_remains_before_chart_integration_lifecycle_dispatch_and_contract_flip": {
+    "summary": "Only adservice remains as a chart-default first-party blocker. Once it lands in the dispatch table, the script can produce all 11 chart-default first-party gmd-deployable images.",
+    "for_remaining_one_service": {
+      "adservice": "Java toolchain (Gradle/JDK distroless). Adds a new substrate base set (e.g. eclipse-temurin or equivalent JDK + JRE) to whatever cluster-builder mirror is later chosen. Host-only host docker has the bandwidth to pull these from Docker Hub today; cluster-builder integration would require mirroring."
+    },
+    "for_chart_integration_minimal": {
+      "approach": "Recommended Option B from UP8-source-boundary audit: add helm.parameters to the dev element of infrastructure/gitops/gmd/applicationset.yaml flipping `images.repository` -> `host.k3d.internal:5000/gmd` and `images.tag` -> the gmd-app source-build tag for `gmd-dev` only.",
+      "blocked_until": "all 11 chart-default first-party services build successfully on the chosen substrate. After UP8-18, 10/11 are covered; only adservice remains."
+    },
+    "for_lifecycle_dispatch_wiring": {
+      "change_required": "scripts/amof/api/routers/release.py release_lifecycle_action() must branch on name == 'gmd' so action == 'build' calls build_gmd_app_lifecycle_build_command instead of build_lifecycle_build_command. Probably needs a thin wrapper that iterates the dispatch table in one lifecycle invocation.",
+      "blocked_until": "the command can produce the full set of chart-default gmd-deployable images, otherwise dispatched builds would always be incomplete"
+    },
+    "for_contract_flip": {
+      "change_required": "_ecosystem_build_contract('gmd') -> source_build with produces / source_repos / build_command metadata; update lifecycle contract test that pins kind == 'mirror_upstream'",
+      "blocked_until": "lifecycle dispatch wiring is in place AND the chart actually consumes the locally-built images"
+    },
+    "cluster_builder_substrate_decision": {
+      "open_question": "Does the gmd lifecycle build need to run inside the in-cluster builder pod (same path as AMOF platform substrate)?",
+      "if_yes_required_work_after_full_service_set": "Mirror per-language base images so the builder pod's containerd can pull them: golang:1.26.1-alpine, gcr.io/distroless/static, python:3.14.3-alpine, node:20.20.1-alpine, alpine:3.23.3, mcr.microsoft.com/dotnet/sdk:10.0.100-noble, mcr.microsoft.com/dotnet/runtime-deps:10.0.0-noble-chiseled, plus the Java base for adservice once it lands.",
+      "if_no": "Host-only builds suffice for local development; production / cloud-dev substrate remains a separate decision."
+    }
+  },
+  "next_slice": {
+    "id": "ultra-plan-8-introduce-first-party-gmd-app-source-build-phase-g-add-adservice-java-last-default-blocker",
+    "what_to_implement": [
+      "Add adservice (Java) to scripts/build-gmd-app.sh dispatch table.",
+      "Update _GMD_APP_BUILD_SUPPORTED_SERVICES (eleventh entry) and add a focused test.",
+      "Run host build for adservice and verify registry proof (this is the Java toolchain pull on the host docker).",
+      "After adservice lands, the prerequisite for chart integration / lifecycle dispatch wiring / contract flip is satisfied for all chart-default first-party services."
+    ],
+    "what_to_explicitly_defer": [
+      "Cluster-builder integration",
+      "Contract flip",
+      "Chart integration",
+      "Lifecycle dispatch wiring",
+      "shoppingassistantservice (chart-default-off, opt-in)",
+      "UI changes"
+    ]
+  }
+}

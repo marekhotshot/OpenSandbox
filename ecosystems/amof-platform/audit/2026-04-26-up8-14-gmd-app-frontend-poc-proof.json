@@ -1,0 +1,136 @@
+{
+  "slice": "ultra-plan-8-introduce-first-party-gmd-app-source-build-phase-b-frontend-only-poc",
+  "ticket": "UP8-14",
+  "result": "frontend_image_built_pushed_and_verified_no_live_behavior_change",
+  "scope": "host-side build script + command builder hook only; no contract flip, no routing, no chart change",
+  "phase_a_host_script": {
+    "added_file": "repos/amof/scripts/build-gmd-app.sh",
+    "interface": {
+      "args": ["--service <name>", "--tag <tag>", "--no-push"],
+      "supported_services_in_phase_b_poc": ["frontend"],
+      "rejects_other_services_with_exit_code_2": true
+    },
+    "image_naming_convention": {
+      "push_alias": "localhost:5000/gmd/<service>:<tag>",
+      "in_cluster_pull_alias": "host.k3d.internal:5000/gmd/<service>:<tag>"
+    },
+    "env_overrides": [
+      "AMOF_GMD_APP_DIR",
+      "AMOF_GMD_APP_PUSH_REGISTRY",
+      "AMOF_GMD_APP_PULL_REGISTRY",
+      "AMOF_GMD_APP_REGISTRY_NAMESPACE"
+    ]
+  },
+  "phase_b_command_builder_hook": {
+    "modified_file": "repos/amof/scripts/amof/api/command_builder.py",
+    "added_function": "build_gmd_app_lifecycle_build_command(root, image_tag=None, services=['frontend'], no_push=False)",
+    "supported_services_constant": "_GMD_APP_BUILD_SUPPORTED_SERVICES = ('frontend',)",
+    "validation_rules_enforced": [
+      "services must contain at least one entry",
+      "every service must be in _GMD_APP_BUILD_SUPPORTED_SERVICES",
+      "exactly one service per invocation"
+    ],
+    "raises_FileNotFoundError_if_script_missing": true,
+    "intentionally_not_routed_in_release_lifecycle_action": true,
+    "ecosystem_build_contract_for_gmd_unchanged": "mirror_upstream"
+  },
+  "tests": {
+    "modified_file": "repos/amof/tests/test_command_builder_runtime.py",
+    "new_tests_added": 5,
+    "new_test_names": [
+      "test_gmd_app_build_command_defaults_to_frontend",
+      "test_gmd_app_build_command_appends_no_push",
+      "test_gmd_app_build_command_rejects_unsupported_service",
+      "test_gmd_app_build_command_rejects_multiple_services",
+      "test_gmd_app_build_command_raises_when_script_missing"
+    ],
+    "test_run_result": "9/9 pass (4 pre-existing + 5 new)"
+  },
+  "phase_c_proof": {
+    "command_executed": "bash repos/amof/scripts/build-gmd-app.sh --service frontend --tag gmd-dev-c9857ee5",
+    "host_workspace_root": "/home/hotshot/work/amof-platform",
+    "gmd_app_dir": "/home/hotshot/work/amof-platform/repos/gmd-app",
+    "gmd_app_head": "c9857ee5",
+    "dockerfile": "/home/hotshot/work/amof-platform/repos/gmd-app/src/frontend/Dockerfile",
+    "build_context": "/home/hotshot/work/amof-platform/repos/gmd-app/src/frontend",
+    "image_tags_applied": [
+      "localhost:5000/gmd/frontend:gmd-dev-c9857ee5",
+      "host.k3d.internal:5000/gmd/frontend:gmd-dev-c9857ee5"
+    ],
+    "manifest_digest": "sha256:dc3766f5be747efac14f09af7e85bfa795bf45f978dcfec5097382294c95cc31",
+    "registry_proof": {
+      "catalog_includes_gmd_frontend": true,
+      "catalog_full": [
+        "amof-agent",
+        "amof-assistant",
+        "amof-cluster-builder",
+        "amof-controlplane",
+        "amof-dashboard",
+        "gmd/frontend",
+        "mirror/dockerhub/library/node",
+        "mirror/dockerhub/library/python",
+        "mirror/local/amof-controlplane-base",
+        "mirror/local/amof-controlplane-deps",
+        "mirror/local/amof-dashboard-deps"
+      ],
+      "tags_for_gmd_frontend": ["gmd-dev-c9857ee5"],
+      "manifest_endpoint_check": "HTTP/1.1 200 OK Content-Length 856 Docker-Content-Digest sha256:dc3766f5be747efac14f09af7e85bfa795bf45f978dcfec5097382294c95cc31"
+    },
+    "build_log_excerpt_tail": [
+      "#17 naming to localhost:5000/gmd/frontend:gmd-dev-c9857ee5 done",
+      "#17 unpacking to localhost:5000/gmd/frontend:gmd-dev-c9857ee5 0.1s done",
+      "#17 naming to host.k3d.internal:5000/gmd/frontend:gmd-dev-c9857ee5 done",
+      "#17 unpacking to host.k3d.internal:5000/gmd/frontend:gmd-dev-c9857ee5 done",
+      "#17 DONE 0.8s",
+      "gmd-dev-c9857ee5: digest: sha256:dc3766f5be747efac14f09af7e85bfa795bf45f978dcfec5097382294c95cc31 size: 856",
+      "Pushed: localhost:5000/gmd/frontend:gmd-dev-c9857ee5",
+      "Pullable inside k3d as: host.k3d.internal:5000/gmd/frontend:gmd-dev-c9857ee5"
+    ]
+  },
+  "live_behavior_unchanged_check": {
+    "gmd_supported_actions": ["deploy", "promote"],
+    "gmd_action_layout_ids": ["deploy", "promote"],
+    "gmd_ecosystem_build_contract_kind": "mirror_upstream",
+    "build_button_in_dashboard": "still hidden"
+  },
+  "commits_landed_to_canonical_main": [
+    {
+      "ticket": "UP8-14",
+      "candidate_branch": "feat/UP8-14",
+      "source_sha": "2f6268de66ce68456b06df4b7051b8bc84e3e793",
+      "synthesized_main_sha": "e2172ad80d18bd5b68b00f7e74f7a045e12c27e1",
+      "summary": "feat(gmd-app): first-party source-build PoC for frontend (script + command builder, not yet routed)",
+      "files": [
+        "scripts/build-gmd-app.sh",
+        "scripts/amof/api/command_builder.py",
+        "tests/test_command_builder_runtime.py"
+      ]
+    }
+  ],
+  "what_remains_before_contract_flip_to_source_build": [
+    "Build the remaining 10 default first-party services in addition to frontend: adservice, cartservice (nested context), checkoutservice, currencyservice, emailservice, loadgenerator, paymentservice, productcatalogservice, recommendationservice, shippingservice. shoppingassistantservice remains optional (chart default `create: false`).",
+    "Decide whether the in-cluster cluster-builder pod is required for gmd-app builds; if yes, mirror per-language base images that gmd-app Dockerfiles depend on (golang:1.26.1-alpine, gcr.io/distroless/static, mcr.microsoft.com/dotnet/sdk:10.0.100-noble, mcr.microsoft.com/dotnet/runtime-deps:10.0.0-noble-chiseled, plus the Java/Node/Python bases of the other services).",
+    "Wire the gmd-app build dispatch in scripts/amof/api/routers/release.py release_lifecycle_action() so action='build' for ecosystem='gmd' picks build_gmd_app_lifecycle_build_command instead of build_lifecycle_build_command.",
+    "Decide chart integration approach (Option A: edit chart values.yaml in place; Option B: per-env helm.parameters in applicationset.yaml for dev only; Option C: per-env values files). Per UP8-source-boundary audit, Option B is recommended for first proof.",
+    "Apply the chosen chart integration: flip images.repository -> host.k3d.internal:5000/gmd and images.tag -> the gmd-app source-build tag for the targeted environment(s).",
+    "Flip _ecosystem_build_contract('gmd') from mirror_upstream to source_build with produces / source_repos / build_command metadata. This unhides Build in the UI and admits the API build POST. Update the lifecycle contract test accordingly.",
+    "Run the full gmd lifecycle build via the live API and verify that all targeted gmd-app images land in the local registry and that the live gmd-dev environment pulls them via the chart."
+  ],
+  "next_slice": {
+    "id": "ultra-plan-8-introduce-first-party-gmd-app-source-build-phase-c-extend-to-second-service",
+    "what_to_implement": [
+      "Extend scripts/build-gmd-app.sh to support a second small service (e.g. emailservice or productcatalogservice) so the multi-service shape gets exercised before the full set lands.",
+      "Update _GMD_APP_BUILD_SUPPORTED_SERVICES in command_builder.py and the command builder validation tests.",
+      "Run the script for both services on host and verify both images appear in localhost:5000/gmd/<service>:<tag>.",
+      "Still no contract flip, no routing, no chart change."
+    ],
+    "what_to_explicitly_defer": [
+      "All 10+ services at once",
+      "Cluster-builder integration",
+      "Contract flip",
+      "Chart integration",
+      "Lifecycle dispatch wiring",
+      "UI changes"
+    ]
+  }
+}

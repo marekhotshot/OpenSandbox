@@ -1,0 +1,25 @@
+{
+  "result": "pass",
+  "dashboard_url": "http://amof.localhost:8081/",
+  "browser": "google-chrome headless via CDP",
+  "card_visible": true,
+  "run_id": "62120609-fbf9-45ba-a598-bed53cbba4a2",
+  "status_transitions_observed": {
+    "queued": true,
+    "running": true,
+    "success": true
+  },
+  "compact_summary_observed": {
+    "argo_sync_health": "Synced / Healthy",
+    "pods": "12/12",
+    "root_status": 200,
+    "healthz_status": 200
+  },
+  "runs_link_href": "http://amof.localhost:8081/runs/62120609-fbf9-45ba-a598-bed53cbba4a2",
+  "runs_link_loaded": true,
+  "api_status": {
+    "status": "success",
+    "exit_code": 0,
+    "action": "director-action/gmd-dev-local-proof"
+  }
+}

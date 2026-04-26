@@ -1,0 +1,410 @@
+{
+  "canonical_backend": "http://amof.localhost:8081",
+  "run_id": "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+  "accepted": {
+    "task_id": "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+    "run_id": "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+    "status": "queued",
+    "action": "director.gmd_dev_local_proof.v1",
+    "target_environment": "dev",
+    "input_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-input-gmd-dev.json",
+    "result_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-result-gmd-dev.json",
+    "request_id": "up8-wave4d-dashboard-runtime-proof-001"
+  },
+  "auth_checks": {
+    "missing_credential": {
+      "status_code": 401,
+      "body": {
+        "detail": {
+          "code": "auth_required",
+          "message": "Your AMOF session is missing or expired. Sign in again to continue."
+        }
+      }
+    },
+    "public_prefix_with_internal_credential": {
+      "status_code": 401,
+      "body": {
+        "detail": {
+          "code": "auth_required",
+          "message": "Your AMOF session is missing or expired. Sign in again to continue."
+        }
+      }
+    },
+    "control_prefix_with_valid_credential": {
+      "status_code": 200,
+      "body": {
+        "task_id": "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+        "run_id": "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+        "status": "queued",
+        "action": "director.gmd_dev_local_proof.v1",
+        "target_environment": "dev",
+        "input_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-input-gmd-dev.json",
+        "result_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-result-gmd-dev.json",
+        "request_id": "up8-wave4d-dashboard-runtime-proof-001"
+      }
+    }
+  },
+  "status_history": [
+    {
+      "run_id": "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+      "ecosystem": "gmd",
+      "action": "director-action/gmd-dev-local-proof",
+      "status": "success",
+      "created_at": "2026-04-24T23:28:28.919469Z",
+      "started_at": "2026-04-24T23:28:28.925309Z",
+      "finished_at": "2026-04-24T23:28:29.549800Z",
+      "exit_code": 0,
+      "terminal": true,
+      "last_event_at": "2026-04-24T23:28:29.548230Z",
+      "last_event_type": "lifecycle_action_completed",
+      "last_message": "Lifecycle action completed"
+    }
+  ],
+  "terminal_status": {
+    "run_id": "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+    "ecosystem": "gmd",
+    "action": "director-action/gmd-dev-local-proof",
+    "status": "success",
+    "created_at": "2026-04-24T23:28:28.919469Z",
+    "started_at": "2026-04-24T23:28:28.925309Z",
+    "finished_at": "2026-04-24T23:28:29.549800Z",
+    "exit_code": 0,
+    "terminal": true,
+    "last_event_at": "2026-04-24T23:28:29.548230Z",
+    "last_event_type": "lifecycle_action_completed",
+    "last_message": "Lifecycle action completed"
+  },
+  "run_detail": {
+    "run_id": "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+    "ecosystem": "gmd",
+    "action": "director-action/gmd-dev-local-proof",
+    "command": [
+      "/usr/local/bin/python",
+      "/workspace/scripts/amof.py",
+      "-e",
+      "gmd",
+      "director-action",
+      "gmd-dev-local-proof",
+      "--input",
+      "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-input-gmd-dev.json",
+      "--output",
+      "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-result-gmd-dev.json",
+      "--local-port",
+      "18087"
+    ],
+    "status": "success",
+    "created_at": "2026-04-24T23:28:28.919469Z",
+    "started_at": "2026-04-24T23:28:28.925309Z",
+    "finished_at": "2026-04-24T23:28:29.549800Z",
+    "exit_code": 0,
+    "session_id": null,
+    "session_state": null,
+    "session_message": null,
+    "session_has_telemetry": false,
+    "session_has_messages": false,
+    "loop_state": {
+      "run_id": "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+      "task_id": "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+      "queue_state": "done",
+      "loop_state": "completed",
+      "loop_step": 1,
+      "current_goal": "['/usr/local/bin/python', '/workspace/scripts/amof.py', '-e', 'gmd', 'director-action', 'gmd-dev-local-proof', '--input', 'ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-input-gmd-dev.json', '--output', 'ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-result-gmd-dev.json', '--local-port', '18087']",
+      "decision": "DONE",
+      "stop_reason": "done",
+      "cancel_requested": false,
+      "steps": [],
+      "latest_evidence": {
+        "director_action": "director.gmd_dev_local_proof.v1",
+        "director_action_status": "completed",
+        "environment_id": "dev",
+        "target_environment": "dev",
+        "summary": "Director action director.gmd_dev_local_proof.v1 completed for dev",
+        "result": "success",
+        "ticket_id": "UP8-GOLDEN-GMD-DEV-DASHBOARD-RUNTIME-001",
+        "input_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-input-gmd-dev.json",
+        "result_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-result-gmd-dev.json",
+        "local_only": true,
+        "cloud_dev": false,
+        "release_promote": false,
+        "request_id": "up8-wave4d-dashboard-runtime-proof-001",
+        "started_at": "2026-04-24T23:28:28.925309Z",
+        "finished_at": "2026-04-24T23:28:29.549800Z",
+        "exit_code": 0
+      },
+      "last_result_summary": "Director action director.gmd_dev_local_proof.v1 completed for dev",
+      "last_persist_attempt_at": "2026-04-24T23:28:29.550827Z",
+      "persistence_error_count": 0,
+      "persistence_store_status": "healthy",
+      "persistence_warning_active": false,
+      "persistence_warning": null,
+      "last_persisted_at": "2026-04-24T23:28:29.550827Z"
+    },
+    "retention": {
+      "visibility": "visible",
+      "archived": false,
+      "archived_at": null,
+      "archive_reason": null,
+      "seeded_example": false,
+      "canonical_history": false,
+      "label": null
+    },
+    "latest_evidence": {
+      "director_action": "director.gmd_dev_local_proof.v1",
+      "director_action_status": "completed",
+      "environment_id": "dev",
+      "target_environment": "dev",
+      "summary": "Director action director.gmd_dev_local_proof.v1 completed for dev",
+      "result": "success",
+      "ticket_id": "UP8-GOLDEN-GMD-DEV-DASHBOARD-RUNTIME-001",
+      "input_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-input-gmd-dev.json",
+      "result_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-result-gmd-dev.json",
+      "local_only": true,
+      "cloud_dev": false,
+      "release_promote": false,
+      "request_id": "up8-wave4d-dashboard-runtime-proof-001",
+      "started_at": "2026-04-24T23:28:28.925309Z",
+      "finished_at": "2026-04-24T23:28:29.549800Z",
+      "exit_code": 0
+    },
+    "latest_decision": "DONE",
+    "latest_summary": "Director action director.gmd_dev_local_proof.v1 completed for dev",
+    "terminal_condition": null,
+    "blocker": null,
+    "blocker_summary": null,
+    "materialization_mode": null,
+    "promotion_applied": null,
+    "scratch_artifact_paths": [],
+    "canonical_write_targets": [],
+    "promotion_evidence": [],
+    "pause_mode": null,
+    "required_choice": null,
+    "forced_choices": [],
+    "handoff": {},
+    "runtime_mode": null,
+    "batch_id": null,
+    "batch_state": null,
+    "batch_cursor": null,
+    "current_item_id": null,
+    "current_child_run_id": null,
+    "child_run_ids": [],
+    "completed_items": [],
+    "persistence_store_status": "healthy",
+    "persistence_warning_active": false,
+    "persistence_warning": null,
+    "last_persistence_error": null,
+    "last_persistence_error_at": null,
+    "last_persisted_at": "2026-04-24T23:28:29.550827Z",
+    "persistence_error_count": 0,
+    "runtime_merkle_root": {
+      "family": "runtime",
+      "hash": "81dabb62709c00cb",
+      "item_count": 8,
+      "updated_at": "2026-04-24T23:28:29.549800Z",
+      "child_hashes": {
+        "cancel_requested": "fcbcf165908dd18a",
+        "decision": "94630a03a897be3c",
+        "loop_state": "7093fda846e50b26",
+        "loop_step": "6b86b273ff34fce1",
+        "queue_state": "58bf5b5478e5d1fb",
+        "run_present": "b5bea41b6c623f7c",
+        "stop_reason": "58bf5b5478e5d1fb",
+        "summary": "a76f54b6188b3ea0"
+      }
+    },
+    "artifact_merkle_root": {
+      "family": "artifact",
+      "hash": "4e2b155c0756d8b5",
+      "item_count": 1,
+      "updated_at": "2026-04-24T23:28:29.549800Z",
+      "child_hashes": {
+        "artifacts_present": "fcbcf165908dd18a"
+      }
+    },
+    "agent_merkle_root": {
+      "family": "agent",
+      "hash": "5db75756f43689a3",
+      "item_count": 2,
+      "updated_at": "2026-04-24T23:28:29.549800Z",
+      "child_hashes": {
+        "action": "87e7abf9f13782fd",
+        "agent_present": "b5bea41b6c623f7c"
+      }
+    },
+    "pipeline_merkle_root": {
+      "family": "pipeline",
+      "hash": "751eb1eea3e19c3e",
+      "item_count": 8,
+      "updated_at": "2026-04-24T23:28:29.549800Z",
+      "child_hashes": {
+        "ecosystem": "16632c3a1a298aed",
+        "exit_code": "5feceb66ffc86f38",
+        "finished_at": "3ef0cd25066677b8",
+        "queue_state": "58bf5b5478e5d1fb",
+        "run_present": "b5bea41b6c623f7c",
+        "started_at": "471b65778c48e425",
+        "status": "68e7a69974a64106",
+        "task_id": "73b9f5bee01463b7"
+      }
+    },
+    "stop_boundary_requested": false,
+    "stop_boundary_phase": null,
+    "stop_boundary_step": null,
+    "stop_boundary_honored": null,
+    "stop_boundary_decision": null,
+    "stop_boundary_summary": null,
+    "stop_boundary_stop_reason": null,
+    "logs": [
+      "{",
+      "  \"action\": \"director.gmd_dev_local_proof.v1\",",
+      "  \"final_status\": \"pass\",",
+      "  \"result_path\": \"/workspace/ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-result-gmd-dev.json\",",
+      "  \"blocker\": null",
+      "}"
+    ],
+    "events": [
+      {
+        "timestamp": "2026-04-24T23:28:28.919827Z",
+        "level": "info",
+        "type": "lifecycle_action_queued",
+        "message": "Lifecycle action queued: gmd-dev-local-proof",
+        "run_id": "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+        "payload": {
+          "action": "gmd-dev-local-proof",
+          "director_action": "director.gmd_dev_local_proof.v1",
+          "environment_id": "dev",
+          "stage_id": "dev",
+          "target_environment": "dev",
+          "ticket_id": "UP8-GOLDEN-GMD-DEV-DASHBOARD-RUNTIME-001",
+          "input_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-input-gmd-dev.json",
+          "result_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-result-gmd-dev.json",
+          "local_only": true,
+          "cloud_dev": false,
+          "release_promote": false,
+          "request_id": "up8-wave4d-dashboard-runtime-proof-001",
+          "lifecycle_action": "gmd-dev-local-proof",
+          "status": "queued"
+        }
+      },
+      {
+        "timestamp": "2026-04-24T23:28:28.926101Z",
+        "level": "info",
+        "type": "lifecycle_action_started",
+        "message": "Lifecycle action started",
+        "run_id": "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+        "payload": {
+          "action": "gmd-dev-local-proof",
+          "director_action": "director.gmd_dev_local_proof.v1",
+          "environment_id": "dev",
+          "stage_id": "dev",
+          "target_environment": "dev",
+          "ticket_id": "UP8-GOLDEN-GMD-DEV-DASHBOARD-RUNTIME-001",
+          "input_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-input-gmd-dev.json",
+          "result_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-result-gmd-dev.json",
+          "local_only": true,
+          "cloud_dev": false,
+          "release_promote": false,
+          "request_id": "up8-wave4d-dashboard-runtime-proof-001",
+          "lifecycle_action": "gmd-dev-local-proof",
+          "status": "started"
+        }
+      },
+      {
+        "timestamp": "2026-04-24T23:28:29.538704Z",
+        "level": "info",
+        "type": "log",
+        "message": "{",
+        "run_id": "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+        "payload": null
+      },
+      {
+        "timestamp": "2026-04-24T23:28:29.539832Z",
+        "level": "info",
+        "type": "log",
+        "message": "  \"action\": \"director.gmd_dev_local_proof.v1\",",
+        "run_id": "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+        "payload": null
+      },
+      {
+        "timestamp": "2026-04-24T23:28:29.540678Z",
+        "level": "info",
+        "type": "log",
+        "message": "  \"final_status\": \"pass\",",
+        "run_id": "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+        "payload": null
+      },
+      {
+        "timestamp": "2026-04-24T23:28:29.541514Z",
+        "level": "info",
+        "type": "log",
+        "message": "  \"result_path\": \"/workspace/ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-result-gmd-dev.json\",",
+        "run_id": "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+        "payload": null
+      },
+      {
+        "timestamp": "2026-04-24T23:28:29.542343Z",
+        "level": "info",
+        "type": "log",
+        "message": "  \"blocker\": null",
+        "run_id": "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+        "payload": null
+      },
+      {
+        "timestamp": "2026-04-24T23:28:29.543435Z",
+        "level": "info",
+        "type": "log",
+        "message": "}",
+        "run_id": "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+        "payload": null
+      },
+      {
+        "timestamp": "2026-04-24T23:28:29.548230Z",
+        "level": "info",
+        "type": "lifecycle_action_completed",
+        "message": "Lifecycle action completed",
+        "run_id": "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+        "payload": {
+          "action": "gmd-dev-local-proof",
+          "director_action": "director.gmd_dev_local_proof.v1",
+          "environment_id": "dev",
+          "stage_id": "dev",
+          "target_environment": "dev",
+          "ticket_id": "UP8-GOLDEN-GMD-DEV-DASHBOARD-RUNTIME-001",
+          "input_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-input-gmd-dev.json",
+          "result_path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-result-gmd-dev.json",
+          "local_only": true,
+          "cloud_dev": false,
+          "release_promote": false,
+          "request_id": "up8-wave4d-dashboard-runtime-proof-001",
+          "lifecycle_action": "gmd-dev-local-proof",
+          "status": "completed"
+        }
+      }
+    ]
+  },
+  "runs_list_contains_run": true,
+  "gmd_runs_list_contains_run": true,
+  "runs_list_first_ids": [
+    "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+    "82b365a3-b7e4-45b2-8fab-525463c9c7e9",
+    "0acdc9ef-c1f7-4abf-a30c-29f0b9d36185",
+    "a431549c-779a-4551-9c67-4de35cabc75c",
+    "a181c0be-de61-4632-a0a8-9efa732079d7",
+    "e8ce57a1-d6c4-4738-8a30-493ee24fdf8d",
+    "191dc799-695c-4cdd-9edc-60ef1a626194",
+    "e8301df9-8794-49ca-8f7f-4b179e5fa32c",
+    "4a9294c5-2ca1-41f6-8d15-9ceabe020108",
+    "a7bb7146-4ddb-488a-af0d-d2e9efa16c2a"
+  ],
+  "gmd_runs_list_first_ids": [
+    "8fbbd260-27d6-4821-8cd0-9d9ae2bfd7fa",
+    "a431549c-779a-4551-9c67-4de35cabc75c",
+    "a181c0be-de61-4632-a0a8-9efa732079d7",
+    "e8ce57a1-d6c4-4738-8a30-493ee24fdf8d",
+    "191dc799-695c-4cdd-9edc-60ef1a626194",
+    "e8301df9-8794-49ca-8f7f-4b179e5fa32c",
+    "d1a1c345-c51c-475c-8913-cb3873d34422",
+    "dddacfa4-62a3-41fe-a617-cff9123efbdc",
+    "14a0ed12-1135-41e8-be02-2cca4da7627c",
+    "dba7a177-9edb-4ce8-8abd-cd56ba5bd4c8"
+  ]
+}

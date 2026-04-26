@@ -1,0 +1,37 @@
+{
+  "policy_result_kind": "generated_build_admission_policy_result",
+  "artifact_ref": {
+    "artifact_path": ".amof/generated-builds/python/python/artifact.json",
+    "repo_path": "/tmp/up9-3-fixtures/python",
+    "service": "python",
+    "image_digest": "sha256:6a56b61c3853815f209d52575dcb0146dbe99ace810dc601e35cdfa2e1d9bc6c"
+  },
+  "artifact_proof_status": "runtime_proven",
+  "admission_status": "candidate_only",
+  "reasons": [
+    "runtime_proven",
+    "template_rendered",
+    "image_digest_recorded",
+    "first_wave_runtime_family",
+    "no_existing_build_contract_conflict"
+  ],
+  "missing_prerequisites": [
+    "operator_confirmation",
+    "deploy_pull_reference_confirmation",
+    "source_ref_confirmation"
+  ],
+  "refusal_conditions": [],
+  "precedence_decision": "no_existing_build_contract",
+  "evidence_summary": {
+    "build_contract_kind": "generated",
+    "runtime_family": "python",
+    "confidence": "accepted",
+    "template_id": "python-uvicorn-distroless-v1",
+    "has_rendered_path": true,
+    "has_build_proof": true,
+    "has_runtime_proof": true,
+    "liveness_signal": "port_open",
+    "risk_flags": []
+  },
+  "evaluated_at": "2026-04-26T18:25:00Z"
+}

@@ -1,0 +1,768 @@
+{
+  "gate": "up8.gmd_dev.local_release_gate.v1",
+  "generated_at": "2026-04-25T02:41:00+02:00",
+  "mode": "dry-run",
+  "target": {
+    "ecosystem": "gmd",
+    "environment": "dev",
+    "runtime": "local-k3d"
+  },
+  "verdict": "admissible",
+  "release_gate_substrate": {
+    "chosen": "separate clean release workspace/worktree",
+    "reason": "current root remote points to OpenSandbox and contains broad dirty state; separate clean substrate minimizes release ambiguity without broad cleanup",
+    "current_workspace_role": "evidence and development workspace, not release-tag substrate"
+  },
+  "release_object": {
+    "type": "amof-local-delivery-plane-candidate",
+    "git_refs": {
+      "amof_canonical_main": "e5de15c2f362064f1cf9e897713e89929fd2b0b1",
+      "amof_ui_canonical_main": "72f22f5c74b9bcfd1adfeaa81cc49a4ee5e01a8d"
+    },
+    "image_tags": {
+      "controlplane": "host.k3d.internal:5000/amof-controlplane:up8-wave6c-controlplane-e5de15c-20260425024114",
+      "dashboard": "host.k3d.internal:5000/amof-dashboard:up8-wave5-gmd-dev-operator-20260425015322"
+    },
+    "image_build_truth": {
+      "controlplane_context": "clean .amof-tmp/up8-wave6c-controlplane-context built from repos/amof origin/main archive",
+      "controlplane_imported_to_k3d": true,
+      "dashboard_imported_to_k3d": true
+    },
+    "argo": {
+      "application": "gmd-dev",
+      "revision": "3e061f6acf4325ae38a3b824cfa6503e4f88237d",
+      "chart_path": "infrastructure/gitops/gmd/chart",
+      "sync_status": "Synced",
+      "health_status": "Healthy"
+    }
+  },
+  "dirt_decision_matrix": [
+    {
+      "scope": "root",
+      "status": "M",
+      "path": ".amof/agent.yaml",
+      "decision": "quarantine/stash",
+      "reason": "local runtime/config state should not be part of release tag"
+    },
+    {
+      "scope": "root",
+      "status": "M",
+      "path": ".gitignore",
+      "decision": "land now",
+      "reason": "release contract/documentation truth created by UP8; should be committed before release execution"
+    },
+    {
+      "scope": "root",
+      "status": "M",
+      "path": "contracts/README.md",
+      "decision": "land now",
+      "reason": "release contract/documentation truth created by UP8; should be committed before release execution"
+    },
+    {
+      "scope": "root",
+      "status": "M",
+      "path": "infrastructure/helm/amof-stack/values-cloud-dev.yaml",
+      "decision": "block gate",
+      "reason": "deploy/chart values can affect release runtime truth"
+    },
+    {
+      "scope": "root",
+      "status": "D",
+      "path": "repos/amof-thinking-assistant/src/app/layout.tsx",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "user-confirmed intentional manual removal; not part of local gmd-dev release gate"
+    },
+    {
+      "scope": "root",
+      "status": "D",
+      "path": "repos/amof-thinking-assistant/src/app/page.tsx",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "user-confirmed intentional manual removal; not part of local gmd-dev release gate"
+    },
+    {
+      "scope": "root",
+      "status": "D",
+      "path": "repos/amof-thinking-assistant/src/components/console/ConsoleShell.tsx",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "user-confirmed intentional manual removal; not part of local gmd-dev release gate"
+    },
+    {
+      "scope": "root",
+      "status": "D",
+      "path": "repos/amof-thinking-assistant/src/components/console/ScreenEnvironments.tsx",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "user-confirmed intentional manual removal; not part of local gmd-dev release gate"
+    },
+    {
+      "scope": "root",
+      "status": "D",
+      "path": "repos/amof-thinking-assistant/src/lib/api/amof.ts",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "user-confirmed intentional manual removal; not part of local gmd-dev release gate"
+    },
+    {
+      "scope": "root",
+      "status": "D",
+      "path": "repos/amof-thinking-assistant/src/lib/api/index.ts",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "user-confirmed intentional manual removal; not part of local gmd-dev release gate"
+    },
+    {
+      "scope": "root",
+      "status": "D",
+      "path": "repos/amof-thinking-assistant/src/lib/runtime-config.ts",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "user-confirmed intentional manual removal; not part of local gmd-dev release gate"
+    },
+    {
+      "scope": "root",
+      "status": "D",
+      "path": "repos/amof-thinking-assistant/src/lib/screen-contract.ts",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "user-confirmed intentional manual removal; not part of local gmd-dev release gate"
+    },
+    {
+      "scope": "root",
+      "status": "D",
+      "path": "repos/amof-thinking-assistant/src/lib/screen-runtime.ts",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "user-confirmed intentional manual removal; not part of local gmd-dev release gate"
+    },
+    {
+      "scope": "root",
+      "status": "M",
+      "path": "scripts/amof.py",
+      "decision": "block gate",
+      "reason": "root release command path is dirty and can affect release execution"
+    },
+    {
+      "scope": "root",
+      "status": "M",
+      "path": "scripts/amof/api/auth.py",
+      "decision": "block gate",
+      "reason": "root release command path is dirty and can affect release execution"
+    },
+    {
+      "scope": "root",
+      "status": "M",
+      "path": "scripts/amof/api/models/action.py",
+      "decision": "block gate",
+      "reason": "root release command path is dirty and can affect release execution"
+    },
+    {
+      "scope": "root",
+      "status": "M",
+      "path": "scripts/amof/api/routers/ecosystem.py",
+      "decision": "block gate",
+      "reason": "root release command path is dirty and can affect release execution"
+    },
+    {
+      "scope": "root",
+      "status": "M",
+      "path": "scripts/amof/api/routers/release.py",
+      "decision": "block gate",
+      "reason": "root release command path is dirty and can affect release execution"
+    },
+    {
+      "scope": "root",
+      "status": "M",
+      "path": "scripts/amof/api/routers/run.py",
+      "decision": "block gate",
+      "reason": "root release command path is dirty and can affect release execution"
+    },
+    {
+      "scope": "root",
+      "status": "M",
+      "path": "scripts/amof/api/services/agent_runner.py",
+      "decision": "block gate",
+      "reason": "root release command path is dirty and can affect release execution"
+    },
+    {
+      "scope": "root",
+      "status": "M",
+      "path": "scripts/amof/commands/agent_cmd.py",
+      "decision": "block gate",
+      "reason": "root release command path is dirty and can affect release execution"
+    },
+    {
+      "scope": "root",
+      "status": "M",
+      "path": "scripts/amof/orchestrator/agent.py",
+      "decision": "block gate",
+      "reason": "root release command path is dirty and can affect release execution"
+    },
+    {
+      "scope": "root",
+      "status": "M",
+      "path": "scripts/amof/orchestrator/llm/inference_authority.py",
+      "decision": "block gate",
+      "reason": "root release command path is dirty and can affect release execution"
+    },
+    {
+      "scope": "root",
+      "status": "M",
+      "path": "scripts/amof/orchestrator/llm/openai_client.py",
+      "decision": "block gate",
+      "reason": "root release command path is dirty and can affect release execution"
+    },
+    {
+      "scope": "root",
+      "status": "M",
+      "path": "scripts/amof/orchestrator/model_router.py",
+      "decision": "block gate",
+      "reason": "root release command path is dirty and can affect release execution"
+    },
+    {
+      "scope": "root",
+      "status": "M",
+      "path": "scripts/amof/orchestrator/runners.py",
+      "decision": "block gate",
+      "reason": "root release command path is dirty and can affect release execution"
+    },
+    {
+      "scope": "root",
+      "status": "M",
+      "path": "scripts/amof/orchestrator/telemetry.py",
+      "decision": "block gate",
+      "reason": "root release command path is dirty and can affect release execution"
+    },
+    {
+      "scope": "root",
+      "status": "M",
+      "path": "scripts/amof/orchestrator/tools/base.py",
+      "decision": "block gate",
+      "reason": "root release command path is dirty and can affect release execution"
+    },
+    {
+      "scope": "root",
+      "status": "M",
+      "path": "scripts/amof/orchestrator/tools/shell.py",
+      "decision": "block gate",
+      "reason": "root release command path is dirty and can affect release execution"
+    },
+    {
+      "scope": "root",
+      "status": "M",
+      "path": "scripts/amof/queue/dispatcher.py",
+      "decision": "block gate",
+      "reason": "root release command path is dirty and can affect release execution"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "contracts/director-delivery-contract.md",
+      "decision": "land now",
+      "reason": "release contract/documentation truth created by UP8; should be committed before release execution"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "contracts/director-delivery-input.schema.json",
+      "decision": "land now",
+      "reason": "release contract/documentation truth created by UP8; should be committed before release execution"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "contracts/director-delivery-result.schema.json",
+      "decision": "land now",
+      "reason": "release contract/documentation truth created by UP8; should be committed before release execution"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "contracts/director-gmd-dev-local-proof-action.md",
+      "decision": "land now",
+      "reason": "release contract/documentation truth created by UP8; should be committed before release execution"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-director-input-gmd.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-gmd-result.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-golden-selection.md",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-rollout-and-operating-mode.md",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave0-truth-preflight.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave1-gmd-dev-substrate-result.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave2-director-input-gmd-dev.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave2-director-result-gmd-dev.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave3-director-action-input-gmd-dev.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave3-director-action-result-gmd-dev.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4-control-api-action-input-gmd-dev.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4-control-api-action-result-gmd-dev.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4-control-api-run-receipt-gmd-dev.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-input-gmd-dev.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-action-result-gmd-dev.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4b-live-http-run-receipt-gmd-dev.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-input-gmd-dev.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-action-result-gmd-dev.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave4d-dashboard-runtime-run-receipt-gmd-dev.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-browser-click-proof-gmd-dev.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-closure-gmd-dev-operator-surface.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-input-gmd-dev.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-result-gmd-dev.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-proof-gmd-dev.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5a-local-dashboard-runtime-recovery.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave6a-local-release-gate-dry-run.json",
+      "decision": "ignore for gate with explicit reason",
+      "reason": "UP8 evidence receipts; not release input for semver command"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "tests/test_runner_local_overrides.py",
+      "decision": "quarantine/stash",
+      "reason": "untracked local tests are not part of current release object unless separately landed"
+    },
+    {
+      "scope": "root",
+      "status": "??",
+      "path": "tests/test_shell_interruptibility.py",
+      "decision": "quarantine/stash",
+      "reason": "untracked local tests are not part of current release object unless separately landed"
+    },
+    {
+      "scope": "repos/amof",
+      "status": "M",
+      "path": "scripts/amof/api/routers/release.py",
+      "decision": "quarantine/stash",
+      "reason": "unrelated local work outside landed Wave 5 action commit"
+    },
+    {
+      "scope": "repos/amof",
+      "status": "M",
+      "path": "scripts/amof/api/services/agent_runner.py",
+      "decision": "quarantine/stash",
+      "reason": "unrelated local work outside landed Wave 5 action commit"
+    },
+    {
+      "scope": "repos/amof",
+      "status": "M",
+      "path": "tests/test_run_control_stop.py",
+      "decision": "quarantine/stash",
+      "reason": "unrelated local work outside landed Wave 5 action commit"
+    },
+    {
+      "scope": "repos/amof-ui",
+      "status": "M",
+      "path": "src/app/ecosystems/[name]/page.tsx",
+      "decision": "quarantine/stash",
+      "reason": "unrelated local UI work outside landed Wave 5 dashboard proof commit"
+    },
+    {
+      "scope": "repos/amof-ui",
+      "status": "M",
+      "path": "src/app/layout.tsx",
+      "decision": "quarantine/stash",
+      "reason": "unrelated local UI work outside landed Wave 5 dashboard proof commit"
+    },
+    {
+      "scope": "repos/amof-ui",
+      "status": "M",
+      "path": "src/components/app-header.tsx",
+      "decision": "quarantine/stash",
+      "reason": "unrelated local UI work outside landed Wave 5 dashboard proof commit"
+    },
+    {
+      "scope": "repos/amof-ui",
+      "status": "M",
+      "path": "src/components/app-sidebar.tsx",
+      "decision": "quarantine/stash",
+      "reason": "unrelated local UI work outside landed Wave 5 dashboard proof commit"
+    },
+    {
+      "scope": "repos/amof-ui",
+      "status": "M",
+      "path": "src/components/auth-provider.tsx",
+      "decision": "quarantine/stash",
+      "reason": "unrelated local UI work outside landed Wave 5 dashboard proof commit"
+    },
+    {
+      "scope": "repos/amof-ui",
+      "status": "M",
+      "path": "src/components/backlog-panel.tsx",
+      "decision": "quarantine/stash",
+      "reason": "unrelated local UI work outside landed Wave 5 dashboard proof commit"
+    },
+    {
+      "scope": "repos/amof-ui",
+      "status": "M",
+      "path": "src/components/dashboard-client.tsx",
+      "decision": "quarantine/stash",
+      "reason": "unrelated local UI work outside landed Wave 5 dashboard proof commit"
+    },
+    {
+      "scope": "repos/amof-ui",
+      "status": "M",
+      "path": "src/components/ecosystem-journal-page.tsx",
+      "decision": "quarantine/stash",
+      "reason": "unrelated local UI work outside landed Wave 5 dashboard proof commit"
+    },
+    {
+      "scope": "repos/amof-ui",
+      "status": "M",
+      "path": "src/hooks/useAmofApi.tsx",
+      "decision": "quarantine/stash",
+      "reason": "unrelated local UI work outside landed Wave 5 dashboard proof commit"
+    },
+    {
+      "scope": "repos/amof-ui",
+      "status": "M",
+      "path": "src/hooks/useBacklog.ts",
+      "decision": "quarantine/stash",
+      "reason": "unrelated local UI work outside landed Wave 5 dashboard proof commit"
+    },
+    {
+      "scope": "repos/amof-ui",
+      "status": "??",
+      "path": "public/",
+      "decision": "quarantine/stash",
+      "reason": "unrelated local UI work outside landed Wave 5 dashboard proof commit"
+    },
+    {
+      "scope": "repos/amof-ui",
+      "status": "??",
+      "path": "src/app/favicon.ico/",
+      "decision": "quarantine/stash",
+      "reason": "unrelated local UI work outside landed Wave 5 dashboard proof commit"
+    }
+  ],
+  "scope_cleanliness": {
+    "release_clean_scope": [
+      "clean release workspace with canonical repos/amof origin/main e5de15c",
+      "clean release workspace with canonical repos/amof-ui origin/main 72f22f5",
+      "root release command files from clean canonical release substrate only",
+      "UP8 evidence artifacts referenced as external receipts, not release inputs"
+    ],
+    "current_workspace_blockers": [
+      {
+        "scope": "root",
+        "status": "M",
+        "path": "infrastructure/helm/amof-stack/values-cloud-dev.yaml",
+        "decision": "block gate",
+        "reason": "deploy/chart values can affect release runtime truth"
+      },
+      {
+        "scope": "root",
+        "status": "M",
+        "path": "scripts/amof.py",
+        "decision": "block gate",
+        "reason": "root release command path is dirty and can affect release execution"
+      },
+      {
+        "scope": "root",
+        "status": "M",
+        "path": "scripts/amof/api/auth.py",
+        "decision": "block gate",
+        "reason": "root release command path is dirty and can affect release execution"
+      },
+      {
+        "scope": "root",
+        "status": "M",
+        "path": "scripts/amof/api/models/action.py",
+        "decision": "block gate",
+        "reason": "root release command path is dirty and can affect release execution"
+      },
+      {
+        "scope": "root",
+        "status": "M",
+        "path": "scripts/amof/api/routers/ecosystem.py",
+        "decision": "block gate",
+        "reason": "root release command path is dirty and can affect release execution"
+      },
+      {
+        "scope": "root",
+        "status": "M",
+        "path": "scripts/amof/api/routers/release.py",
+        "decision": "block gate",
+        "reason": "root release command path is dirty and can affect release execution"
+      },
+      {
+        "scope": "root",
+        "status": "M",
+        "path": "scripts/amof/api/routers/run.py",
+        "decision": "block gate",
+        "reason": "root release command path is dirty and can affect release execution"
+      },
+      {
+        "scope": "root",
+        "status": "M",
+        "path": "scripts/amof/api/services/agent_runner.py",
+        "decision": "block gate",
+        "reason": "root release command path is dirty and can affect release execution"
+      },
+      {
+        "scope": "root",
+        "status": "M",
+        "path": "scripts/amof/commands/agent_cmd.py",
+        "decision": "block gate",
+        "reason": "root release command path is dirty and can affect release execution"
+      },
+      {
+        "scope": "root",
+        "status": "M",
+        "path": "scripts/amof/orchestrator/agent.py",
+        "decision": "block gate",
+        "reason": "root release command path is dirty and can affect release execution"
+      },
+      {
+        "scope": "root",
+        "status": "M",
+        "path": "scripts/amof/orchestrator/llm/inference_authority.py",
+        "decision": "block gate",
+        "reason": "root release command path is dirty and can affect release execution"
+      },
+      {
+        "scope": "root",
+        "status": "M",
+        "path": "scripts/amof/orchestrator/llm/openai_client.py",
+        "decision": "block gate",
+        "reason": "root release command path is dirty and can affect release execution"
+      },
+      {
+        "scope": "root",
+        "status": "M",
+        "path": "scripts/amof/orchestrator/model_router.py",
+        "decision": "block gate",
+        "reason": "root release command path is dirty and can affect release execution"
+      },
+      {
+        "scope": "root",
+        "status": "M",
+        "path": "scripts/amof/orchestrator/runners.py",
+        "decision": "block gate",
+        "reason": "root release command path is dirty and can affect release execution"
+      },
+      {
+        "scope": "root",
+        "status": "M",
+        "path": "scripts/amof/orchestrator/telemetry.py",
+        "decision": "block gate",
+        "reason": "root release command path is dirty and can affect release execution"
+      },
+      {
+        "scope": "root",
+        "status": "M",
+        "path": "scripts/amof/orchestrator/tools/base.py",
+        "decision": "block gate",
+        "reason": "root release command path is dirty and can affect release execution"
+      },
+      {
+        "scope": "root",
+        "status": "M",
+        "path": "scripts/amof/orchestrator/tools/shell.py",
+        "decision": "block gate",
+        "reason": "root release command path is dirty and can affect release execution"
+      },
+      {
+        "scope": "root",
+        "status": "M",
+        "path": "scripts/amof/queue/dispatcher.py",
+        "decision": "block gate",
+        "reason": "root release command path is dirty and can affect release execution"
+      }
+    ],
+    "safe_to_clear_now": [],
+    "not_cleared_reason": "current workspace contains broad unrelated/user-confirmed changes; release gate should use clean substrate rather than broad cleanup"
+  },
+  "artifact_coherence": {
+    "browser_click_proof": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-browser-click-proof-gmd-dev.json",
+    "browser_run_id": "62120609-fbf9-45ba-a598-bed53cbba4a2",
+    "control_api_result_artifact": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-result-gmd-dev.json",
+    "release_dry_run_output": ".amof-tmp/up8-wave6c-release-dry-run.txt",
+    "release_dry_run_reported_uncommitted_changes": true
+  },
+  "reasons": [
+    "Controlplane image truth is now pinned to canonical e5de15c build output.",
+    "Current root workspace remains dirty and is not a safe release substrate.",
+    "A separate clean release workspace is the correct substrate for the next gate run.",
+    "Clean release substrate dry-run has no uncommitted-working-tree warning."
+  ],
+  "missing_prerequisites": [
+    "Run release dry-run from that clean substrate.",
+    "Decide whether UP8 contract/audit artifacts should be committed in root before final release execution."
+  ],
+  "refusal_conditions": [
+    "infrastructure/helm/amof-stack/values-cloud-dev.yaml",
+    "scripts/amof.py",
+    "scripts/amof/api/auth.py",
+    "scripts/amof/api/models/action.py",
+    "scripts/amof/api/routers/ecosystem.py",
+    "scripts/amof/api/routers/release.py",
+    "scripts/amof/api/routers/run.py",
+    "scripts/amof/api/services/agent_runner.py",
+    "scripts/amof/commands/agent_cmd.py",
+    "scripts/amof/orchestrator/agent.py",
+    "scripts/amof/orchestrator/llm/inference_authority.py",
+    "scripts/amof/orchestrator/llm/openai_client.py",
+    "scripts/amof/orchestrator/model_router.py",
+    "scripts/amof/orchestrator/runners.py",
+    "scripts/amof/orchestrator/telemetry.py",
+    "scripts/amof/orchestrator/tools/base.py",
+    "scripts/amof/orchestrator/tools/shell.py",
+    "scripts/amof/queue/dispatcher.py"
+  ],
+  "release_dry_run_summary": "\n  Pre-release validation:\n    \u2713 Branch: main-helper\n    \u2713 Version files in sync (1.5.0-rc.1)\n    \u2713 CHANGELOG.md exists\n    \u26a0 Uncommitted changes in working tree\n\n\n  Current:  v1.5.0-rc.1\n  Next:     v1.5.0-alpha.1\n  Branch:   main-helper\n  Commits:  217 since v1.5.0-rc.1\n    - fix(local-qwen): record L2 boundary and runtime limit\n    - docs(playbooks,contracts): R2 live-proof unblock plan + Runpod release-gate amendment\n    - docs(decisions): record Runpod proddev admission NO-GO (Mini Ultra Plan 2 / R3)\n    - docs(.amof): mark workspace agent.yaml canonical, record reconciliation decision\n    - docs(prompts,docs,release): backfill prompt status, doc indexes, release boundary\n    - docs(playbooks,tools): add canonical playbooks, demote legacy, register real tools\n    - docs(contracts): add Status convention, INDEX, program contract\n    - fix(local-k3d): make the lab use canonical ingress and builder plumbing\n    - chore(promote-main): promote AMOF-0 candidate bundle\n    - chore(promote-main): promote AMOF-0 candidate bundle\n    ... and 207 more\n\n  Will update:\n    scripts/amof/__init__.py                 \u2192  __version__ = \"1.5.0-alpha.1\"\n    scripts/amof/orchestrator/__init__.py    \u2192  __version__ = \"1.5.0-alpha.1\"\n    CHANGELOG.md                             \u2192  ## [1.5.0-alpha.1] - 2026-04-25\n    README.md                                \u2192  Current status: v1.5.0-alpha.1\n    releases/                                \u2192  v1.5.0-alpha.1.json\n    git commit + tag                         \u2192  v1.5.0-alpha.1\n\n  [dry-run] No changes made.\n",
+  "clean_release_substrate_proof": {
+    "path": ".amof-tmp/up8-wave6c-clean-release-workspace",
+    "head": "e5de15c2f362064f1cf9e897713e89929fd2b0b1",
+    "branch": "main",
+    "git_status": "clean",
+    "dry_run_output": ".amof-tmp/up8-wave6c-clean-release-dry-run.txt",
+    "dry_run_exit_code": 0,
+    "dry_run_reported_uncommitted_changes": false
+  },
+  "execution_blockers": [
+    "release execution is intentionally out of scope for Wave 6c"
+  ]
+}

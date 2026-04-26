@@ -1,0 +1,177 @@
+{
+  "gate": "up8.gmd_dev.local_release_gate.v1",
+  "generated_at": "2026-04-25T02:33:00+02:00",
+  "mode": "dry-run",
+  "target": {
+    "ecosystem": "gmd",
+    "environment": "dev",
+    "runtime": "local-k3d"
+  },
+  "verdict": "blocked",
+  "release_object": {
+    "type": "amof-local-delivery-plane-candidate",
+    "git_refs": {
+      "amof_candidate_commit": "4dddd98bcd2791ce6cf51d4f2f96c15cd3117bc3",
+      "amof_canonical_main": "e5de15c2f362064f1cf9e897713e89929fd2b0b1",
+      "amof_ui_canonical_main": "72f22f5c74b9bcfd1adfeaa81cc49a4ee5e01a8d"
+    },
+    "image_tags": {
+      "dashboard": "host.k3d.internal:5000/amof-dashboard:up8-wave5-gmd-dev-operator-20260425015322",
+      "controlplane": "host.k3d.internal:5000/amof-controlplane:local"
+    },
+    "argo": {
+      "application": "gmd-dev",
+      "revision": "3e061f6acf4325ae38a3b824cfa6503e4f88237d",
+      "chart_path": "infrastructure/gitops/gmd/chart",
+      "sync_status": "Synced",
+      "health_status": "Healthy"
+    }
+  },
+  "canonicalization_status": {
+    "amof_ui": {
+      "status": "landed_on_origin_main",
+      "landed_sha": "72f22f5c74b9bcfd1adfeaa81cc49a4ee5e01a8d",
+      "method": "fast-forward push HEAD:main",
+      "diff_files": [
+        "src/components/dashboard-slides.tsx"
+      ],
+      "unrelated_commits_dragged_in": false
+    },
+    "amof": {
+      "status": "landed_on_origin_main",
+      "candidate_sha": "4dddd98bcd2791ce6cf51d4f2f96c15cd3117bc3",
+      "landed_sha": "e5de15c2f362064f1cf9e897713e89929fd2b0b1",
+      "method": "amof promote-main --push synthetic code-only commit",
+      "ticket_id_used_for_promote_main": "UP8-5",
+      "diff_files": [
+        "scripts/amof/api/command_builder.py",
+        "scripts/amof/api/models/action.py",
+        "scripts/amof/api/routers/ecosystem.py",
+        "scripts/amof/cli.py",
+        "scripts/amof/commands/__init__.py",
+        "scripts/amof/commands/director_action.py",
+        "scripts/amof/queue/dispatcher.py"
+      ],
+      "unrelated_commits_dragged_in": false,
+      "promote_main_audit": "ecosystems/amof-platform/audit/2026-04-25-023336-promote-main-up8-5.json"
+    }
+  },
+  "required_evidence": {
+    "browser_click_proof": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-browser-click-proof-gmd-dev.json",
+    "control_api_run_id": "62120609-fbf9-45ba-a598-bed53cbba4a2",
+    "result_artifact": "ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave5-operator-surface-action-result-gmd-dev.json",
+    "release_dry_run_output": ".amof-tmp/up8-wave6a-release-dry-run.txt"
+  },
+  "scope_cleanliness": {
+    "must_be_clean_for_release_execution": [
+      "root workspace release tree used by scripts/amof.py release",
+      "repos/amof canonical release-relevant paths if building local controlplane from workspace",
+      "repos/amof-ui canonical release-relevant paths if building local dashboard from workspace"
+    ],
+    "release_relevant_blockers": [
+      {
+        "scope": "root workspace",
+        "reason": "release dry-run reports uncommitted changes; root release command would tag ambiguous workspace state",
+        "status_excerpt": [
+          "M .amof/agent.yaml",
+          " M .gitignore",
+          " M contracts/README.md",
+          " M infrastructure/helm/amof-stack/values-cloud-dev.yaml",
+          " D repos/amof-thinking-assistant/src/app/layout.tsx",
+          " D repos/amof-thinking-assistant/src/app/page.tsx",
+          " D repos/amof-thinking-assistant/src/components/console/ConsoleShell.tsx",
+          " D repos/amof-thinking-assistant/src/components/console/ScreenEnvironments.tsx",
+          " D repos/amof-thinking-assistant/src/lib/api/amof.ts",
+          " D repos/amof-thinking-assistant/src/lib/api/index.ts",
+          " D repos/amof-thinking-assistant/src/lib/runtime-config.ts",
+          " D repos/amof-thinking-assistant/src/lib/screen-contract.ts",
+          " D repos/amof-thinking-assistant/src/lib/screen-runtime.ts",
+          " M scripts/amof.py",
+          " M scripts/amof/api/auth.py",
+          " M scripts/amof/api/models/action.py",
+          " M scripts/amof/api/routers/ecosystem.py",
+          " M scripts/amof/api/routers/release.py",
+          " M scripts/amof/api/routers/run.py",
+          " M scripts/amof/api/services/agent_runner.py",
+          " M scripts/amof/commands/agent_cmd.py",
+          " M scripts/amof/orchestrator/agent.py",
+          " M scripts/amof/orchestrator/llm/inference_authority.py",
+          " M scripts/amof/orchestrator/llm/openai_client.py",
+          " M scripts/amof/orchestrator/model_router.py",
+          " M scripts/amof/orchestrator/runners.py",
+          " M scripts/amof/orchestrator/telemetry.py",
+          " M scripts/amof/orchestrator/tools/base.py",
+          " M scripts/amof/orchestrator/tools/shell.py",
+          " M scripts/amof/queue/dispatcher.py",
+          "?? contracts/director-delivery-contract.md",
+          "?? contracts/director-delivery-input.schema.json",
+          "?? contracts/director-delivery-result.schema.json",
+          "?? contracts/director-gmd-dev-local-proof-action.md",
+          "?? ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-director-input-gmd.json",
+          "?? ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-gmd-result.json",
+          "?? ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-golden-selection.md",
+          "?? ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-rollout-and-operating-mode.md",
+          "?? ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave0-truth-preflight.json",
+          "?? ecosystems/amof-platform/audit/2026-04-25-ultra-plan-8-wave1-gmd-dev-substrate-result.json"
+        ]
+      }
+    ],
+    "irrelevant_for_this_gate": [
+      "cloud-dev kubeconfig/DNS/public URL state",
+      "gmd-test and gmd-prod runtime state",
+      "release/promote execution state"
+    ],
+    "unknown_needs_separate_decision": [
+      {
+        "scope": "repos/amof local dirt",
+        "status_excerpt": [
+          "M scripts/amof/api/routers/release.py",
+          " M scripts/amof/api/services/agent_runner.py",
+          " M tests/test_run_control_stop.py"
+        ]
+      },
+      {
+        "scope": "repos/amof-ui local dirt",
+        "status_excerpt": [
+          "M src/app/ecosystems/[name]/page.tsx",
+          " M src/app/layout.tsx",
+          " M src/components/app-header.tsx",
+          " M src/components/app-sidebar.tsx",
+          " M src/components/auth-provider.tsx",
+          " M src/components/backlog-panel.tsx",
+          " M src/components/dashboard-client.tsx",
+          " M src/components/ecosystem-journal-page.tsx",
+          " M src/hooks/useAmofApi.tsx",
+          " M src/hooks/useBacklog.ts",
+          "?? public/",
+          "?? src/app/favicon.ico/"
+        ]
+      }
+    ]
+  },
+  "artifact_coherence": {
+    "latest_browser_proof_passed": true,
+    "latest_browser_run_id": "62120609-fbf9-45ba-a598-bed53cbba4a2",
+    "argo_revision_matches_recorded_proof": true,
+    "dashboard_image_matches_browser_proof": true,
+    "release_dry_run_exit_code": 0,
+    "release_dry_run_reported_uncommitted_changes": true
+  },
+  "reasons": [
+    "Wave 5 code is now present on canonical main for repos/amof and repos/amof-ui.",
+    "The local gmd-dev browser proof is still passing and traceable to artifacts.",
+    "Release execution remains blocked because the root release workspace is dirty and release dry-run reports uncommitted changes."
+  ],
+  "missing_prerequisites": [
+    "Resolve or explicitly exclude root workspace dirt before release execution.",
+    "Classify repos/amof and repos/amof-ui remaining local dirt before building/tagging release images from local checkouts.",
+    "Produce a clean release-status receipt after dirt classification."
+  ],
+  "refusal_conditions": [
+    "root workspace has uncommitted changes",
+    "repos/amof has unrelated local dirt outside the landed Wave 5 commit",
+    "repos/amof-ui has unrelated local dirt outside the landed Wave 5 commit",
+    "release object image tag still points to local dashboard tag while controlplane tag is still generic local"
+  ],
+  "release_dry_run_summary": "\n  Pre-release validation:\n    \u2713 Branch: main-helper\n    \u2713 Version files in sync (1.5.0-rc.1)\n    \u2713 CHANGELOG.md exists\n    \u26a0 Uncommitted changes in working tree\n\n\n  Current:  v1.5.0-rc.1\n  Next:     v1.5.0-alpha.1\n  Branch:   main-helper\n  Commits:  217 since v1.5.0-rc.1\n    - fix(local-qwen): record L2 boundary and runtime limit\n    - docs(playbooks,contracts): R2 live-proof unblock plan + Runpod release-gate amendment\n    - docs(decisions): record Runpod proddev admission NO-GO (Mini Ultra Plan 2 / R3)\n    - docs(.amof): mark workspace agent.yaml canonical, record reconciliation decision\n    - docs(prompts,docs,release): backfill prompt status, doc indexes, release boundary\n    - docs(playbooks,tools): add canonical playbooks, demote legacy, register real tools\n    - docs(contracts): add Status convention, INDEX, program contract\n    - fix(local-k3d): make the lab use canonical ingress and builder plumbing\n    - chore(promote-main): promote AMOF-0 candidate bundle\n    - chore(promote-main): promote AMOF-0 candidate bundle\n    ... and 207 more\n\n  Will update:\n    scripts/amof/__init__.py                 \u2192  __version__ = \"1.5.0-alpha.1\"\n    scripts/amof/orchestrator/__init__.py    \u2192  __version__ = \"1.5.0-alpha.1\"\n    CHANGELOG.md                             \u2192  ## [1.5.0-alpha.1] - 2026-04-25\n    README.md                                \u2192  Current status: v1.5.0-alpha.1\n    releases/                                \u2192  v1.5.0-alpha.1.json\n    git commit + tag                         \u2192  v1.5.0-alpha.1\n\n  [dry-run] No changes made.\n"
+}

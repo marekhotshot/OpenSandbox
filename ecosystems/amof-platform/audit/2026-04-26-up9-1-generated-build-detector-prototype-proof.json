@@ -1,0 +1,112 @@
+{
+  "slice": "ultra-plan-9-generated-build-contract-phase-1-detector-prototype-python-only",
+  "ticket": "UP9-1",
+  "lane": "GENERATED BUILD CONTRACT",
+  "result": "python_only_detector_prototype_landed_with_all_refusal_paths_proven_no_live_behavior_change",
+  "scope": "first implementation slice of the generated-build lane: read-only python-only runtime detector + CLI + fixture tests; no template rendering, no build proof, no runtime proof, no API/UI surfacing, no integration with existing build paths",
+  "design_source": {
+    "design_audit": "ecosystems/amof-platform/audit/2026-04-26-generated-build-contract-design-tranche-cp0-cp7.json",
+    "canonical_contract": "contracts/generated-build-contract.md",
+    "canonical_schema": "contracts/generated-build-contract.schema.json",
+    "canonical_matrix": "contracts/generated-build-runtime-detector-matrix.md"
+  },
+  "phase_a_detector_module": {
+    "added_files": [
+      "repos/amof/scripts/amof/generated_build/__init__.py",
+      "repos/amof/scripts/amof/generated_build/detector.py",
+      "repos/amof/scripts/amof/generated_build/__main__.py"
+    ],
+    "public_entry_point": "amof.generated_build.detect_runtime(repo_root: Path) -> dict",
+    "output_conformance": "matches contracts/generated-build-contract.schema.json (validated by tests when jsonschema is importable)",
+    "side_effects": "none — strictly read-only; never writes Dockerfiles, never runs docker, never reaches network",
+    "external_dependencies_added": []
+  },
+  "phase_b_scope_held": {
+    "python_family_path": "implemented end-to-end (detection only — status: proposed when accepted)",
+    "node_and_go_families": "hard signals recognised; refused with refusal_reason: runtime_family_not_in_first_wave",
+    "polyglot": "refused with refusal_reason: polyglot_repo_no_per_service_map when 2+ in-wave families show hard signals",
+    "no_signals_or_missing_root": "refused with refusal_reason: no_runtime_signal",
+    "python_hard_only_no_soft": "refused with refusal_reason: template_inputs_missing",
+    "existing_build_pre_emption": "refused with refusal_reason: existing_build_contract_present"
+  },
+  "phase_c_strict_rules": {
+    "existing_build_pre_emption_checked_first": "yes — refuses even when python signals are also present",
+    "polyglot_conflict_refusal": "yes — fires when 2+ in-wave families show hard signals (proven by python+node test)",
+    "no_guessing_past_confidence_scale": "yes — only `accepted` clears the threshold for status==proposed; `high`/`medium`/`low` paths intentionally not exposed in this slice"
+  },
+  "phase_d_proof": {
+    "test_file": "repos/amof/tests/test_generated_build_detector.py",
+    "test_count": 12,
+    "test_results": "12/12 pass; combined with command_builder runtime tests: 29/29 pass",
+    "fixture_trees_covered": [
+      "python_fastapi: pyproject.toml + requirements.txt + app.py + fastapi/uvicorn deps",
+      "python_minimal_no_soft: requirements.txt only with no entrypoint and no framework hint",
+      "node_express: package.json + package-lock.json + index.js + express dep",
+      "go_stdlib: go.mod + go.sum + main.go",
+      "polyglot_python_node: pyproject.toml + requirements.txt + package.json + package-lock.json",
+      "repo_with_existing_dockerfile: Dockerfile + requirements.txt (existing-build pre-emption)",
+      "empty_repo: no signals at all",
+      "missing_root: nonexistent path",
+      "file_as_root: regular file passed instead of directory"
+    ],
+    "tiny_cli": {
+      "module": "python -m amof.generated_build detect <repo_path>",
+      "stdout": "JSON artifact (indent=2)",
+      "exit_codes": {"0": "non-refused (proposed | build_proven | runtime_proven)", "2": "refused"},
+      "side_effects": "none — read-only"
+    },
+    "schema_conformance_test": "validates artifacts against contracts/generated-build-contract.schema.json when jsonschema is importable; skips otherwise (so the suite stays runnable in slim envs)",
+    "self_consistency_check_run_against_repos_amof": {
+      "command": "python -m amof.generated_build detect /home/hotshot/work/amof-platform/repos/amof",
+      "exit_code": 2,
+      "status": "refused",
+      "refusal_reason": "existing_build_contract_present",
+      "risk_flags": ["existing_build_files: ['Dockerfile.controlplane']"],
+      "verdict": "expected — repos/amof already ships Dockerfile.controlplane, so the existing-build pre-emption path correctly fires"
+    }
+  },
+  "live_behavior_unchanged_check": {
+    "gmd_supported_actions": ["deploy", "promote"],
+    "gmd_ecosystem_build_contract_kind": "mirror_upstream",
+    "build_button_in_dashboard": "still hidden",
+    "no_dispatcher_routing_changes": true,
+    "no_chart_changes": true,
+    "no_ui_changes": true,
+    "no_template_rendering": true,
+    "no_docker_build_invocations": true
+  },
+  "commits_landed_to_canonical_main": [
+    {
+      "ticket": "UP9-1",
+      "candidate_branch": "feat/UP9-1",
+      "source_sha": "66a24691d98d194b75a2b22c7c660e82295d628f",
+      "synthesized_main_sha": "4b757e4979c2efba1d4d00fccc30e9716f82f02d",
+      "summary": "feat(generated-build): UP9-1 read-only python-only detector prototype",
+      "files": [
+        "scripts/amof/generated_build/__init__.py (new, +34 lines)",
+        "scripts/amof/generated_build/__main__.py (new, +48 lines)",
+        "scripts/amof/generated_build/detector.py (new, +421 lines)",
+        "tests/test_generated_build_detector.py (new, +264 lines)"
+      ],
+      "total_diff": "+767 lines / 0 deletions"
+    }
+  ],
+  "what_remains_before_first_real_value": {
+    "next_slice_recommendation": "ultra-plan-9-generated-build-contract-phase-2-python-template-renderer",
+    "what_to_implement_next": [
+      "Add scripts/amof/generated_build/template_renderer.py with one entry point: render_python_uvicorn_distroless_v1(artifact, output_path) -> Path that writes a Dockerfile based on the proposed artifact's signals/entrypoint/inferred_port.",
+      "The template should produce a multi-stage Dockerfile FROM python:3.12-slim with a pinned entrypoint and the inferred port exposed. No PyPI mirroring assumptions; the template assumes host docker network.",
+      "Wire a CLI subcommand: `python -m amof.generated_build render <repo_path> --out <dockerfile_path>` that runs the detector first and writes only when the artifact is `proposed`.",
+      "Update artifact emission so when render succeeds the artifact's `dockerfile_template.rendered_path` is populated and `template_not_yet_rendered` is dropped from `risk_flags`.",
+      "Add focused tests asserting the rendered Dockerfile shape against a snapshot; do NOT run docker build in this slice."
+    ],
+    "what_to_explicitly_defer": [
+      "Build proof execution (next slice after rendering)",
+      "Runtime proof execution",
+      "API/UI surfacing of artifacts",
+      "Node and Go family generation",
+      "Integration with build_gmd_app_lifecycle_build_command",
+      "Contract flip, dispatch wiring, chart integration"
+    ]
+  }
+}
