@@ -1,0 +1,76 @@
+{
+  "slice": "ultra-plan-10-root-baseline-closeout-and-ecosystem-role-classification",
+  "result": "root_baseline_rule_and_repo_roles_documented_for_clean_publication",
+  "scope": "root baseline decision and repo-role classification only; no feature delivery, no runtime topology changes, no deploy/release, no cloud-dev, no generated-build expansion",
+  "repo_role_classification": [
+    {
+      "surface": "root workspace / home/hotshot/work/amof-platform",
+      "role": "wrapper_config_audit_shell",
+      "reason": "root holds wrappers, config, contracts, audit receipts, and ignored repo checkouts; not product implementation truth"
+    },
+    {
+      "surface": "repos/amof",
+      "role": "canonical_active",
+      "reason": "canonical AMOF backend/CLI/runtime source; doctor import source resolves here"
+    },
+    {
+      "surface": "repos/amof-ui",
+      "role": "canonical_active",
+      "reason": "canonical AMOF Control Center frontend source; clean on main at f961494"
+    },
+    {
+      "surface": "repos/gmd-app",
+      "role": "active_supporting",
+      "reason": "active supporting ecosystem app/source truth for current gmd golden/generated-build work"
+    },
+    {
+      "surface": "repos/opensandbox",
+      "role": "inactive_member",
+      "reason": "path resolves to the root checkout; OpenSandbox/root is an ecosystem member and orchestration shell, not current AMOF execution path"
+    },
+    {
+      "surface": "_lanes/*",
+      "role": "historical_reference",
+      "reason": "non-canonical recovery/reference material"
+    },
+    {
+      "surface": ".amof-worktrees/*",
+      "role": "historical_reference",
+      "reason": "active_ticket is null; no managed worktree is active"
+    }
+  ],
+  "root_baseline_decision": {
+    "baseline": "clean root origin/main",
+    "main_helper_status": "retired legacy cleanup branch",
+    "operational_rule": "Do not start new work from main-helper. Start root work from clean origin/main or a clean published UP10 branch.",
+    "why": "main-helper has known PAT-shaped secret-scanning ancestry and was only a local cleanup carrier. Clean UP10 branches were published from origin/main instead."
+  },
+  "proof": {
+    "doctor": {
+      "verdict": "PASS",
+      "canonical_amof": "/home/hotshot/work/amof-platform/repos/amof",
+      "canonical_ui": "/home/hotshot/work/amof-platform/repos/amof-ui",
+      "runtime_import_source": "/home/hotshot/work/amof-platform/repos/amof/scripts/amof/__init__.py"
+    },
+    "repo_states": {
+      "root": {"branch": "main-helper", "head": "5d73fb5", "dirty": 0},
+      "repos_amof": {"branch": "feat/UP10-1", "head": "3f224c2", "dirty": 0},
+      "repos_amof_ui": {"branch": "main", "head": "f961494", "dirty": 0},
+      "repos_gmd_app": {"branch": "main", "head": "c9857ee5", "dirty": 0}
+    },
+    "opensandbox_role_evidence": "git -C repos/opensandbox rev-parse --show-toplevel resolves to /home/hotshot/work/amof-platform"
+  },
+  "published_clean_branches_to_merge_or_supersede": [
+    "feat/UP10-root-wrapper-guardrails",
+    "feat/UP10-visible-dirty-state-classification-v2",
+    "feat/UP10-root-contracts-audit-batch",
+    "feat/UP10-root-implementation-dirt-archive"
+  ],
+  "out_of_scope_held": [
+    "feature work",
+    "runtime topology changes",
+    "deploy/release/cloud-dev",
+    "generated-build new work"
+  ],
+  "next_slice": "ultra-plan-10-merge-clean-opensandbox-branches-and-delete-main-helper-local"
+}
