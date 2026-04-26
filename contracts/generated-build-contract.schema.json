@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://amof.dev/contracts/generated-build-contract.schema.json",
+  "title": "Generated Build Contract",
+  "description": "Authoritative shape for an AMOF-generated build contract. Generated builds are produced by AMOF detection + templating for codebases that do not ship a trustworthy upstream build instruction. See contracts/generated-build-contract.md.",
+  "type": "object",
+  "required": [
+    "build_contract_kind",
+    "runtime_family",
+    "confidence",
+    "signals",
+    "dockerfile_template",
+    "image_outputs",
+    "status"
+  ],
+  "properties": {
+    "build_contract_kind": {
+      "type": "string",
+      "const": "generated",
+      "description": "Discriminator: this artifact came from the generated lane, not the existing lane."
+    },
+    "ecosystem": {
+      "type": "string",
+      "description": "Optional ecosystem id this artifact is scoped to. Omit for cross-ecosystem records."
+    },
+    "source_repo": {
+      "type": "object",
+      "description": "Where the source under analysis lives.",
+      "required": ["host_path"],
+      "properties": {
+        "host_path": {"type": "string", "description": "Workspace-rooted path, e.g. repos/<repo>"},
+        "url": {"type": "string"},
+        "branch": {"type": "string"},
+        "head": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "service": {
+      "type": "string",
+      "description": "Optional service name within the repo. Required for multi-service repos; omit for single-service repos."
+    },
+    "runtime_family": {
+      "type": "string",
+      "description": "Detected runtime family. See generated-build-runtime-detector-matrix.md for the active taxonomy.",
+      "enum": [
+        "python",
+        "node",
+        "go",
+        "static",
+        "unknown"
+      ]
+    },
+    "confidence": {
+      "type": "string",
+      "description": "How strong the detection evidence is. `accepted` is the gating threshold for status >= proposed.",
+      "enum": ["low", "medium", "high", "accepted", "refused"]
+    },
+    "signals": {
+      "type": "object",
+      "description": "Detection evidence. Hard signals are deterministic file presence checks. Soft signals are heuristics (script names, dependency hints).",
+      "required": ["hard", "soft"],
+      "properties": {
+        "hard": {
+          "type": "array",
+          "description": "Files/markers whose presence proves the runtime family. E.g. `pyproject.toml`, `package.json`, `go.mod`.",
+          "items": {
+            "type": "object",
+            "required": ["kind", "path"],
+            "properties": {
+              "kind": {"type": "string", "enum": ["file", "dir", "script", "manifest"]},
+              "path": {"type": "string"},
+              "value": {"type": "string", "description": "Optional captured detail (e.g. python_version=3.12, node_version=20, go_module_name=...)."}
+            },
+            "additionalProperties": false
+          }
+        },
+        "soft": {
+          "type": "array",
+          "description": "Heuristic signals such as `start` script names, common entrypoint filenames, dependency hints. Used to break ties only.",
+          "items": {
+            "type": "object",
+            "required": ["kind", "value"],
+            "properties": {
+              "kind": {"type": "string"},
+              "value": {"type": "string"}
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "dockerfile_template": {
+      "type": "object",
+      "required": ["id", "version"],
+      "properties": {
+        "id": {"type": "string", "description": "Template id, e.g. python-uvicorn-distroless-v1, node-express-distroless-v1, go-stdlib-distroless-v1."},
+        "version": {"type": "string", "description": "Template version."},
+        "rendered_path": {"type": "string", "description": "Where the rendered Dockerfile was written. Optional in proposed status until the template is materialized."}
+      },
+      "additionalProperties": false
+    },
+    "image_outputs": {
+      "type": "array",
+      "description": "The image references the build would produce. At least one entry required.",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["push_image", "pull_image"],
+        "properties": {
+          "push_image": {"type": "string", "description": "Host push alias, e.g. localhost:5000/<ns>/<svc>:<tag>."},
+          "pull_image": {"type": "string", "description": "In-cluster pull alias, e.g. host.k3d.internal:5000/<ns>/<svc>:<tag>."}
+        },
+        "additionalProperties": false
+      }
+    },
+    "inferred_port": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535,
+      "description": "Port the entrypoint is expected to expose. Required if the runtime family is a network service."
+    },
+    "entrypoint": {
+      "type": "string",
+      "description": "Final command emitted into the Dockerfile. Required for network services."
+    },
+    "risk_flags": {
+      "type": "array",
+      "description": "Caveats the operator must see. Examples: `multi_language_signals`, `custom_toolchain_heuristic`, `vendored_dependencies`, `large_context_size`.",
+      "items": {"type": "string"}
+    },
+    "status": {
+      "type": "string",
+      "description": "Proof ladder position. See contracts/generated-build-contract.md §3.",
+      "enum": ["refused", "proposed", "build_proven", "runtime_proven"]
+    },
+    "refusal_reason": {
+      "type": "string",
+      "description": "Required when status == refused. Explains which detection signal failed or which template was unsupported."
+    },
+    "build_proof": {
+      "type": "object",
+      "description": "Required when status >= build_proven.",
+      "required": ["docker_build_exit_code", "image_digest"],
+      "properties": {
+        "docker_build_exit_code": {"type": "integer"},
+        "image_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "built_at": {"type": "string", "format": "date-time"},
+        "built_in_substrate": {"type": "string", "description": "e.g. host-docker, k3d-cluster-builder, cloud-builder"}
+      },
+      "additionalProperties": false
+    },
+    "runtime_proof": {
+      "type": "object",
+      "description": "Required when status == runtime_proven.",
+      "required": ["liveness_signal", "checked_at"],
+      "properties": {
+        "liveness_signal": {
+          "type": "string",
+          "description": "What was observed.",
+          "enum": ["port_open", "healthcheck_ok", "log_pattern_seen"]
+        },
+        "checked_at": {"type": "string", "format": "date-time"},
+        "checked_via": {"type": "string", "description": "How: e.g. local-docker-run, k3d-pod, cloud-deploy"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "refused"}}, "required": ["status"]},
+      "then": {"required": ["refusal_reason"]}
+    },
+    {
+      "if": {"properties": {"status": {"const": "build_proven"}}, "required": ["status"]},
+      "then": {"required": ["build_proof"]}
+    },
+    {
+      "if": {"properties": {"status": {"const": "runtime_proven"}}, "required": ["status"]},
+      "then": {"required": ["build_proof", "runtime_proof"]}
+    }
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,38 @@
+{
+  "build_contract_kind": "generated",
+  "ecosystem": "example-go-app",
+  "source_repo": {
+    "host_path": "repos/example-go-app",
+    "url": "https://github.com/example-org/example-go-app.git",
+    "branch": "main",
+    "head": "789abcd"
+  },
+  "service": "server",
+  "runtime_family": "go",
+  "confidence": "accepted",
+  "signals": {
+    "hard": [
+      {"kind": "manifest", "path": "go.mod", "value": "module=github.com/example-org/example-go-app go=1.22"},
+      {"kind": "file", "path": "go.sum"}
+    ],
+    "soft": [
+      {"kind": "entrypoint_filename", "value": "main.go"},
+      {"kind": "module_name", "value": "github.com/example-org/example-go-app"}
+    ]
+  },
+  "dockerfile_template": {
+    "id": "go-stdlib-distroless-v1",
+    "version": "1.0.0",
+    "rendered_path": ".amof/generated-builds/example-go-app/server/Dockerfile"
+  },
+  "image_outputs": [
+    {
+      "push_image": "localhost:5000/example-go-app/server:gen-789abcd",
+      "pull_image": "host.k3d.internal:5000/example-go-app/server:gen-789abcd"
+    }
+  ],
+  "inferred_port": 8080,
+  "entrypoint": "/server",
+  "risk_flags": [],
+  "status": "proposed"
+}

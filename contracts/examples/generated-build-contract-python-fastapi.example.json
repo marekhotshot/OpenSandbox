@@ -1,0 +1,45 @@
+{
+  "build_contract_kind": "generated",
+  "ecosystem": "example-python-app",
+  "source_repo": {
+    "host_path": "repos/example-python-app",
+    "url": "https://github.com/example-org/example-python-app.git",
+    "branch": "main",
+    "head": "abc1234"
+  },
+  "service": "api",
+  "runtime_family": "python",
+  "confidence": "accepted",
+  "signals": {
+    "hard": [
+      {"kind": "manifest", "path": "pyproject.toml", "value": "python_requires=>=3.12"},
+      {"kind": "file", "path": "requirements.txt"}
+    ],
+    "soft": [
+      {"kind": "entrypoint_filename", "value": "app.py"},
+      {"kind": "framework_dependency", "value": "fastapi>=0.100"},
+      {"kind": "asgi_runtime_dependency", "value": "uvicorn>=0.20"}
+    ]
+  },
+  "dockerfile_template": {
+    "id": "python-uvicorn-distroless-v1",
+    "version": "1.0.0",
+    "rendered_path": ".amof/generated-builds/example-python-app/api/Dockerfile"
+  },
+  "image_outputs": [
+    {
+      "push_image": "localhost:5000/example-python-app/api:gen-abc1234",
+      "pull_image": "host.k3d.internal:5000/example-python-app/api:gen-abc1234"
+    }
+  ],
+  "inferred_port": 8000,
+  "entrypoint": "uvicorn app:app --host 0.0.0.0 --port 8000",
+  "risk_flags": [],
+  "status": "build_proven",
+  "build_proof": {
+    "docker_build_exit_code": 0,
+    "image_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "built_at": "2026-04-26T00:30:00Z",
+    "built_in_substrate": "host-docker"
+  }
+}

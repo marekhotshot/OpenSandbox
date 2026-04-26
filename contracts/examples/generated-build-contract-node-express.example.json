@@ -1,0 +1,50 @@
+{
+  "build_contract_kind": "generated",
+  "ecosystem": "example-node-app",
+  "source_repo": {
+    "host_path": "repos/example-node-app",
+    "url": "https://github.com/example-org/example-node-app.git",
+    "branch": "main",
+    "head": "def5678"
+  },
+  "service": "web",
+  "runtime_family": "node",
+  "confidence": "accepted",
+  "signals": {
+    "hard": [
+      {"kind": "manifest", "path": "package.json", "value": "node>=20"},
+      {"kind": "file", "path": "package-lock.json"}
+    ],
+    "soft": [
+      {"kind": "package_json_main", "value": "index.js"},
+      {"kind": "package_json_scripts_start", "value": "node index.js"},
+      {"kind": "framework_dependency", "value": "express^4"}
+    ]
+  },
+  "dockerfile_template": {
+    "id": "node-express-distroless-v1",
+    "version": "1.0.0",
+    "rendered_path": ".amof/generated-builds/example-node-app/web/Dockerfile"
+  },
+  "image_outputs": [
+    {
+      "push_image": "localhost:5000/example-node-app/web:gen-def5678",
+      "pull_image": "host.k3d.internal:5000/example-node-app/web:gen-def5678"
+    }
+  ],
+  "inferred_port": 3000,
+  "entrypoint": "node index.js",
+  "risk_flags": [],
+  "status": "runtime_proven",
+  "build_proof": {
+    "docker_build_exit_code": 0,
+    "image_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "built_at": "2026-04-26T00:35:00Z",
+    "built_in_substrate": "host-docker"
+  },
+  "runtime_proof": {
+    "liveness_signal": "port_open",
+    "checked_at": "2026-04-26T00:36:00Z",
+    "checked_via": "local-docker-run"
+  }
+}
