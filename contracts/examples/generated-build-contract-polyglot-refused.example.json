@@ -1,0 +1,37 @@
+{
+  "build_contract_kind": "generated",
+  "ecosystem": "example-polyglot-monorepo",
+  "source_repo": {
+    "host_path": "repos/example-polyglot-monorepo",
+    "url": "https://github.com/example-org/example-polyglot-monorepo.git",
+    "branch": "main",
+    "head": "feedbac"
+  },
+  "runtime_family": "unknown",
+  "confidence": "refused",
+  "signals": {
+    "hard": [
+      {"kind": "manifest", "path": "package.json"},
+      {"kind": "file", "path": "package-lock.json"},
+      {"kind": "manifest", "path": "pyproject.toml"},
+      {"kind": "file", "path": "requirements.txt"}
+    ],
+    "soft": []
+  },
+  "dockerfile_template": {
+    "id": "n/a",
+    "version": "n/a"
+  },
+  "image_outputs": [
+    {
+      "push_image": "(refused; no image would be produced)",
+      "pull_image": "(refused; no image would be produced)"
+    }
+  ],
+  "risk_flags": [
+    "python_hard_signals: [pyproject.toml, requirements.txt]",
+    "node_hard_signals: [package.json, package-lock.json]"
+  ],
+  "status": "refused",
+  "refusal_reason": "polyglot_repo_no_per_service_map"
+}

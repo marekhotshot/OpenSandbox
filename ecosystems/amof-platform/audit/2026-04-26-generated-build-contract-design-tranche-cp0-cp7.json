@@ -1,0 +1,237 @@
+{
+  "slice": "generated-build-contract-long-run-phase-0-to-7",
+  "ticket": "GBC-DESIGN-1",
+  "lane": "GENERATED BUILD CONTRACT",
+  "result": "design_tranche_complete_with_canonical_artifacts_landed",
+  "scope": "design tranche CP0-CP7 with bounded canonical artifacts; no implementation of detector or templates yet, no contract flip or routing changes",
+  "checkpoints": [
+    {
+      "id": "CP0",
+      "title": "scope lock",
+      "verdict": "pass",
+      "scope_in": [
+        "Detection of runtime family for codebases without trustworthy upstream Dockerfiles",
+        "Templated Dockerfile generation per detected family (first wave: python, node, go)",
+        "Machine-readable generated build contract artifact",
+        "Proof ladder (proposed -> build_proven -> runtime_proven) with explicit refusal lane"
+      ],
+      "scope_out": [
+        "Existing-build lane (already covered by ecosystem build contract / first-party PoC)",
+        "Cluster-builder substrate hardening",
+        "Lifecycle dispatch wiring, chart integration, contract flip on any specific ecosystem",
+        "Cloud-dev, release/promote, deploy wiring",
+        "UI redesign, generic cleanup"
+      ]
+    },
+    {
+      "id": "CP1",
+      "title": "existing vs generated contract truth boundary",
+      "verdict": "pass",
+      "decision_summary": {
+        "existing_build_contract": "Repo ships a Dockerfile (or skaffold.yaml / package.json#docker scripts) that AMOF treats as source of truth. Wires it; does not modify it.",
+        "generated_build_contract": "Repo does not ship a trustworthy upstream build instruction. AMOF detects, templates, generates, and must run through the proof ladder.",
+        "lane_selector": "When AMOF is asked to build a repo: existing wins if present and trustworthy; otherwise generated lane is entered. The lanes never silently merge; capability surface always names which lane produced the build.",
+        "refusal_conditions_for_generated": [
+          "no_runtime_signal",
+          "polyglot_repo_no_per_service_map",
+          "runtime_family_not_in_first_wave",
+          "template_inputs_missing",
+          "existing_build_contract_present"
+        ]
+      },
+      "canonical_artifact": "contracts/generated-build-contract.md"
+    },
+    {
+      "id": "CP2",
+      "title": "runtime taxonomy + first-wave families",
+      "verdict": "pass",
+      "first_wave_families": ["python", "node", "go", "static (refusal-only in first wave)"],
+      "deferred_families": ["dotnet", "java", "rust", "ruby", "php", "polyglot", "unknown"],
+      "rationale": "Each first-wave family has one dominant manifest, a clean distroless-or-slim runtime base, and a small per-language template surface. Deferred families either fan out across multiple manifests, have a heavy SDK/runtime split, or require per-service decomposition before they can be templated truthfully.",
+      "canonical_artifact": "contracts/generated-build-runtime-detector-matrix.md"
+    },
+    {
+      "id": "CP3",
+      "title": "detection signals + confidence scoring",
+      "verdict": "pass",
+      "hard_signal_examples_per_family": {
+        "python": ["pyproject.toml", "requirements.txt", "setup.py", "setup.cfg", "Pipfile", "poetry.lock"],
+        "node":   ["package.json (top-level)", "package-lock.json", "yarn.lock", "pnpm-lock.yaml"],
+        "go":     ["go.mod", "go.sum"],
+        "static": ["index.html at repo root with no other family manifest"]
+      },
+      "soft_signal_role": "Used only to break ties or pick an entrypoint; never to override hard signals.",
+      "confidence_enum": ["low", "medium", "high", "accepted", "refused"],
+      "gate_threshold_for_proposed": "accepted",
+      "ambiguity_handling": "Hard signals from two or more in-wave families => status: refused, refusal_reason: polyglot_repo_no_per_service_map. Hard signal from a deferred family => status: refused, refusal_reason: runtime_family_not_in_first_wave."
+    },
+    {
+      "id": "CP4",
+      "title": "machine-readable schema + examples",
+      "verdict": "pass",
+      "schema_path": "contracts/generated-build-contract.schema.json",
+      "schema_required_fields": [
+        "build_contract_kind (const: generated)",
+        "runtime_family",
+        "confidence",
+        "signals (hard, soft)",
+        "dockerfile_template (id, version)",
+        "image_outputs",
+        "status"
+      ],
+      "schema_proof_gates_via_allOf_if_then": {
+        "status==refused":         "requires refusal_reason",
+        "status==build_proven":    "requires build_proof",
+        "status==runtime_proven":  "requires build_proof + runtime_proof"
+      },
+      "examples_landed": [
+        "contracts/examples/generated-build-contract-python-fastapi.example.json (status: build_proven)",
+        "contracts/examples/generated-build-contract-node-express.example.json (status: runtime_proven)",
+        "contracts/examples/generated-build-contract-go-stdlib.example.json (status: proposed)",
+        "contracts/examples/generated-build-contract-polyglot-refused.example.json (status: refused)"
+      ],
+      "examples_validation_result": "4/4 examples validate against the schema (jsonschema verified locally)"
+    },
+    {
+      "id": "CP5",
+      "title": "first-wave Dockerfile templates",
+      "verdict": "partial",
+      "templates_named": [
+        {
+          "id": "python-uvicorn-distroless-v1",
+          "runtime_base": "python:3.12-slim",
+          "assumptions": [
+            "ASGI app exposed via uvicorn",
+            "Top-level requirements.txt or pyproject.toml describes deps",
+            "Application entrypoint is `app:app` or supplied via signal"
+          ],
+          "required_inputs": ["requirements.txt OR pyproject.toml", "an importable ASGI app object"],
+          "known_risks": [
+            "PyPI access required at build time unless deps are vendored",
+            "Native deps (e.g. cryptography, asyncpg) need build-essential layer"
+          ],
+          "proof_expectation": "build_proven on host docker; runtime_proven via local docker run with port_open liveness on inferred_port"
+        },
+        {
+          "id": "node-express-distroless-v1",
+          "runtime_base": "node:20-alpine",
+          "assumptions": [
+            "package.json + lockfile present",
+            "package.json#scripts.start exists OR package.json#main exists",
+            "Express-or-equivalent listens on inferred_port"
+          ],
+          "required_inputs": ["package.json", "lockfile (package-lock.json | yarn.lock | pnpm-lock.yaml)"],
+          "known_risks": [
+            "npm registry access required unless deps are vendored",
+            "Postinstall scripts can pull native toolchain unexpectedly"
+          ],
+          "proof_expectation": "build_proven on host docker; runtime_proven via local docker run with port_open liveness on inferred_port"
+        },
+        {
+          "id": "go-stdlib-distroless-v1",
+          "runtime_base": "gcr.io/distroless/static",
+          "assumptions": [
+            "Single-binary build via `go build ./...`",
+            "Module declares main package at repo root or under `cmd/<name>/`"
+          ],
+          "required_inputs": ["go.mod", "main.go OR cmd/<name>/main.go"],
+          "known_risks": [
+            "CGO_ENABLED=0 required for distroless/static; cgo deps would force runtime base swap to distroless/cc",
+            "Go module proxy access needed at build time unless vendored"
+          ],
+          "proof_expectation": "build_proven on host docker; runtime_proven via local docker run with port_open liveness on inferred_port (default 8080)"
+        }
+      ],
+      "why_partial": "Template ids and shapes are pinned; the actual Dockerfile template files (under contracts/templates/ or similar) are intentionally not authored in this design tranche. They land in the first implementation slice (CP7-recommended).",
+      "blocker_classification": null
+    },
+    {
+      "id": "CP6",
+      "title": "proof model + false-confidence prevention",
+      "verdict": "pass",
+      "proof_ladder": [
+        {
+          "status": "proposed",
+          "amof_may_claim": "We detected the runtime family with `accepted` confidence and rendered a Dockerfile from template <id@version>.",
+          "amof_must_not_claim": "That the image builds; that the image runs; that any health signal is observed; that the artifact is admissible by the lifecycle dispatcher."
+        },
+        {
+          "status": "build_proven",
+          "amof_may_claim": "docker build exited 0; the image_digest is recorded; the build_in_substrate is named.",
+          "amof_must_not_claim": "That the image runs healthily; that the inferred entrypoint actually serves traffic; that any port is open."
+        },
+        {
+          "status": "runtime_proven",
+          "amof_may_claim": "The image was started in the named substrate, the inferred entrypoint did not crash, and a minimal liveness signal (port_open / healthcheck_ok / log_pattern_seen) was observed within the proof timeout.",
+          "amof_must_not_claim": "Production readiness; persistence soundness; security posture; performance characteristics. These are separate downstream contracts."
+        },
+        {
+          "status": "refused",
+          "amof_may_claim": "Why we refused (refusal_reason) and what the operator can do to advance.",
+          "amof_must_not_claim": "Anything about the codebase's buildability or runtime behavior."
+        }
+      ],
+      "false_confidence_prevention_rules": [
+        "Status MUST NOT advance unless the proof for the new tier is materialized in the artifact (`build_proof` for build_proven; `build_proof` + `runtime_proof` for runtime_proven). Schema enforces via allOf/if/then.",
+        "UI/API surfaces MUST display the `status` value verbatim and MUST visually differentiate `proposed` from the proven tiers.",
+        "Lifecycle dispatcher MUST NOT admit a generated artifact as a deploy source unless `status >= build_proven`.",
+        "Operator-facing health labels MUST require `status == runtime_proven`.",
+        "Refusal artifacts MUST include `refusal_reason` and SHOULD include `risk_flags` so the operator sees the evidence."
+      ]
+    },
+    {
+      "id": "CP7",
+      "title": "first implementation tranche recommendation",
+      "verdict": "pass",
+      "recommended_next_implementation_slice": "ultra-plan-9-generated-build-contract-phase-1-detector-prototype-python-only",
+      "what_to_implement": [
+        "Add scripts/amof/generated_build/detector.py with one entry point: detect_runtime(repo_root: Path) -> dict matching the contract schema.",
+        "Implement only the python family path end-to-end. Other families return (kind: refused, refusal_reason: runtime_family_not_in_first_wave).",
+        "Implement the polyglot refusal: if both python hard signals and node hard signals are present, return refused.",
+        "Implement the existing-build pre-emption: if a Dockerfile exists at the repo root, return refused with refusal_reason: existing_build_contract_present.",
+        "Add focused unit tests against fixture trees (python repo, node repo, go repo, polyglot repo, repo with existing Dockerfile, empty repo).",
+        "Wire one small CLI entry: `python -m amof.generated_build detect <repo_path>` that prints the artifact JSON. Pure read-only."
+      ],
+      "what_to_explicitly_defer": [
+        "Template rendering (no Dockerfile generation in this slice)",
+        "Build proof / runtime proof execution (no docker build run yet)",
+        "API/UI surfacing of generated artifacts",
+        "Integration with the existing build_gmd_app_lifecycle_build_command",
+        "Node and Go family implementations"
+      ],
+      "why_python_first": "Python detection has the cleanest single-file hard signal (pyproject.toml or requirements.txt). The codebase under hand (AMOF itself) also uses Python, which gives a self-consistency check at zero cost (running the detector on repos/amof should not produce a generated contract, because the repo already ships Dockerfile.controlplane / Dockerfile.controlplane-base / Dockerfile.controlplane-deps -- the existing-build pre-emption path)."
+    }
+  ],
+  "canonical_artifacts_created": [
+    "contracts/generated-build-contract.md",
+    "contracts/generated-build-contract.schema.json",
+    "contracts/generated-build-runtime-detector-matrix.md",
+    "contracts/examples/generated-build-contract-python-fastapi.example.json",
+    "contracts/examples/generated-build-contract-node-express.example.json",
+    "contracts/examples/generated-build-contract-go-stdlib.example.json",
+    "contracts/examples/generated-build-contract-polyglot-refused.example.json",
+    "contracts/INDEX.md (updated to list the new build-generated lane)"
+  ],
+  "blockers": [
+    {
+      "checkpoint": "CP5",
+      "kind": "implementation blocker",
+      "message": "Template ids and shapes are pinned in this design slice but the actual Dockerfile template files are intentionally not authored. Land them in the first implementation slice."
+    }
+  ],
+  "live_behavior_unchanged_check": {
+    "gmd_supported_actions": ["deploy", "promote"],
+    "gmd_ecosystem_build_contract_kind": "mirror_upstream",
+    "build_button_in_dashboard": "still hidden",
+    "no_dispatcher_routing_changes": true,
+    "no_chart_changes": true,
+    "no_ui_changes": true
+  },
+  "out_of_scope_held_throughout": [
+    "cloud-dev",
+    "UI redesign",
+    "release/promote",
+    "deploy wiring",
+    "generic cleanup"
+  ]
+}
