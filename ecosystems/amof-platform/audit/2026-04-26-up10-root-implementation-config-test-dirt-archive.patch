@@ -1,0 +1,3720 @@
+# UP10 root implementation/config/test dirt archive
+# Created: 2026-04-26
+# Purpose: preserve remaining noncanonical root dirt before restoring root checkout.
+
+diff --git a/.amof/agent.yaml b/.amof/agent.yaml
+index 3e89d94..a335629 100644
+--- a/.amof/agent.yaml
++++ b/.amof/agent.yaml
+@@ -45,21 +45,75 @@ local_inference:
+   # IAL Phase 2a — opt-in local routing for non-master sources.
+   # Live rollout is intentionally summarizer-only first; indexer stays on
+   # the cloud path until the summarizer path is verified end-to-end.
++  #
++  # Mini Ultra Plan 2 / Phase L1: provider attribution is truthful here.
++  # When this block is active, llm_call events carry
++  #   provider="local"
++  #   model="local/<host>/<model>"
++  # and the SSE rebroadcast preserves provider/failure_class on errors.
++  # No silent fallback to OpenAI/Anthropic — fallback policy is explicit
++  # per source ("cloud" or "none"), see DEFAULT_LOCAL_FALLBACK_POLICY.
+   enabled: true
+-  # PLACEHOLDER — must be a host reachable from the cloud controlplane pod.
+-  # `http://127.0.0.1:11434/v1` is only valid for an in-process CLI/runner on
+-  # the same machine as Ollama; the in-cluster pod cannot reach the
+-  # operator's loopback. Replace with one of:
++  # OPERATOR-OVERRIDABLE — must be a host reachable from the runtime that
++  # loads this config. `http://127.0.0.1:11434/v1` is only valid for an
++  # in-process CLI/runner on the same machine as Ollama; the in-cluster
++  # control-plane pod cannot reach the operator's loopback. Replace with:
+   #   - in-cluster Ollama Service URL (e.g. http://ollama.amof-system.svc.cluster.local:11434/v1)
++  #   - host endpoint via host.k3d.internal:<bridge-port> from a k3d control-plane pod
+   #   - reverse-proxied / firewalled endpoint reachable from the cluster
+   #   - VPN / private-network endpoint
+   # Raw public Ollama exposure is NOT acceptable by default; api_key here is
+   # only an OpenAI-SDK placeholder, not real auth.
+-  base_url: https://ollama.example.invalid:11434/v1
++  base_url: http://host.k3d.internal:11435/v1
+   api_key: local
+   timeout: 60
+   fallback: cloud
+   sources:
+     summarizer:
+       model: qwen3.6:35b-a3b-8k
++  # Mini Ultra Plan 2 / Phase L2 — opt-in runner-scoped local routing.
++  # Active ONLY when a run is started with --runtime-profile local_qwen
++  # AND the runner name appears in allowed_runners. Every other runner
++  # and every run on a different profile is unaffected (default cloud
++  # cascade). When activated:
++  #   * llm_call events carry provider="local", model="local/<host>/<model>"
++  #   * source="runner:<name>" via the per-runner InferenceAuthority sibling
++  #   * fallback is "none" — a runner-scope local failure must surface,
++  #     not silently route back to anthropic/openrouter (would violate
++  #     the L2 "no silent fallback" contract).
++  # base_url / api_key / timeout default to the surrounding local_inference
++  # block; supply them here only to override per-runner.
++  runner_overrides:
++    enabled_for_profile: ["local_qwen"]
++    allowed_runners: ["code"]
++    model: "qwen2.5-coder:7b-instruct"
++# Mini Ultra Plan 2 / Phase R1 — Runpod provider contract for clouddev.
++#
++# Reuses the LocalOpenAICompatibleClient shape with provider_id="runpod"
++# (validated by _ALLOWED_PROVIDER_IDS in local_openai_compatible.py). This
++# keeps OpenAI-compatible Serverless endpoints behind one client while
++# attribution stays truthful per provider:
++#   * llm_call events carry provider="runpod", model="runpod/<host>/<model>"
++#   * SSE rebroadcast carries provider/failure_class/status_code on errors
++#   * no silent fallback — fallback="none" so a Runpod miss surfaces
++#     instead of leaking back to Anthropic/OpenRouter inside a clouddev
++#     run that was explicitly opted in to Runpod.
++#
++# enabled: false at REST so Helm-deployed clouddev pods boot in a known-safe
++# state. The clouddev_runpod_runner runtime profile is the explicit opt-in
++# switch the runner factory checks at spawn time (mirror of L2 mechanism).
++#
++# Helm clouddev wires RUNPOD_API_KEY + RUNPOD_OPENAI_BASE_URL from the
++# runpod-auth secret into the control-plane pod ONLY for the cloud-dev
++# values file. Proddev is intentionally NOT wired in this phase.
++runpod:
++  enabled: false
++  base_url: "${RUNPOD_OPENAI_BASE_URL}"
++  api_key_env: "RUNPOD_API_KEY"
++  model: "qwen2.5-coder-32b-instruct"
++  timeout: 180
++  fallback: none
++  runner_overrides:
++    enabled_for_profile: ["clouddev_runpod_runner"]
++    allowed_runners: ["code"]
+ dry_run: false
+diff --git a/.gitignore b/.gitignore
+index 2d67fb5..02b4d74 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -67,6 +67,7 @@ kubeconfigs/
+ .amof/queue/
+ .amof/structured-logs/
+ .amof/mcp-operations/
++.amof/*.root-owned-*/
+ 
+ # Nested worktree repo sets (managed by amof, not tracked as submodules).
+ # Broadened from the historical `dev/` subset by clean-start slice 8 so
+diff --git a/infrastructure/helm/amof-stack/values-cloud-dev.yaml b/infrastructure/helm/amof-stack/values-cloud-dev.yaml
+index 1037263..72235ee 100644
+--- a/infrastructure/helm/amof-stack/values-cloud-dev.yaml
++++ b/infrastructure/helm/amof-stack/values-cloud-dev.yaml
+@@ -43,6 +43,26 @@ amof-control-plane:
+         secretName: amof-internal-control-auth
+         key: credential
+         optional: false
++      # Mini Ultra Plan 2 / Phase R1: Runpod LLM-provider secret wiring.
++      # Both keys come from the operator-provisioned `runpod-auth` secret.
++      # `optional: true` keeps clouddev bootable when the secret has not
++      # yet been seeded — at runtime, the resolver in
++      # _resolve_runner_runpod_clients refuses to register a Runpod
++      # client when either env var is absent (no silent fallback). The
++      # corresponding `runpod` block in `.amof/agent.yaml` is shipped
++      # with `enabled: false` at REST; flipping that flag is the only
++      # way the runner factory will even consult these env vars.
++      # IMPORTANT: this wiring is intentionally clouddev-only. It must
++      # NOT be copied into values-prod-dev.yaml until Phase R3 admits
++      # Runpod for proddev.
++      RUNPOD_API_KEY:
++        secretName: runpod-auth
++        key: api-key
++        optional: true
++      RUNPOD_OPENAI_BASE_URL:
++        secretName: runpod-auth
++        key: openai-base-url
++        optional: true
+   dashboard:
+     image:
+       repository: ghcr.io/marekhotshot/amof-dashboard
+diff --git a/repos/amof-thinking-assistant/src/app/layout.tsx b/repos/amof-thinking-assistant/src/app/layout.tsx
+deleted file mode 100644
+index b91e2cb..0000000
+--- a/repos/amof-thinking-assistant/src/app/layout.tsx
++++ /dev/null
+@@ -1,44 +0,0 @@
+-import type { Metadata, Viewport } from "next";
+-import "./globals.css";
+-
+-export const dynamic = "force-dynamic";
+-
+-export const metadata: Metadata = {
+-  title: "AMOF Control Console",
+-  description: "Mobile-first AI control console — voice first, no scroll, full screen",
+-};
+-
+-export const viewport: Viewport = {
+-  width: "device-width",
+-  initialScale: 1,
+-  maximumScale: 1,
+-  userScalable: false,
+-  themeColor: "#0a0a0c",
+-};
+-
+-function serializeRuntimeConfig(): string {
+-  return JSON.stringify({
+-    amofApiBase: process.env.NEXT_PUBLIC_AMOF_API?.trim() ?? "",
+-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "",
+-    supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ?? "",
+-  }).replace(/</g, "\\u003c");
+-}
+-
+-export default function RootLayout({
+-  children,
+-}: {
+-  children: React.ReactNode;
+-}) {
+-  return (
+-    <html lang="en" className="console-no-scroll">
+-      <body className="min-h-screen h-screen overflow-hidden bg-[var(--console-bg)] text-[var(--text-primary)] console-no-scroll">
+-        <script
+-          dangerouslySetInnerHTML={{
+-            __html: `window.__AMOF_RUNTIME_CONFIG__ = ${serializeRuntimeConfig()};`,
+-          }}
+-        />
+-        {children}
+-      </body>
+-    </html>
+-  );
+-}
+diff --git a/repos/amof-thinking-assistant/src/app/page.tsx b/repos/amof-thinking-assistant/src/app/page.tsx
+deleted file mode 100644
+index 87e4128..0000000
+--- a/repos/amof-thinking-assistant/src/app/page.tsx
++++ /dev/null
+@@ -1,47 +0,0 @@
+-"use client";
+-
+-import { useEffect, useState } from "react";
+-import { AuthGate } from "@/components/auth/AuthGate";
+-import { ConsoleShell } from "@/components/console/ConsoleShell";
+-import { resolveOperatorEnvironmentConfig } from "@/lib/screen-contract";
+-
+-type ConsoleIdentity = {
+-  ecosystemName: string;
+-  stage: string;
+-};
+-
+-const DEFAULT_IDENTITY: ConsoleIdentity = {
+-  ecosystemName: "amof-platform",
+-  stage: "cloud-dev",
+-};
+-
+-function resolveConsoleIdentity(hostname: string): ConsoleIdentity {
+-  const config = resolveOperatorEnvironmentConfig(hostname);
+-  return {
+-    ecosystemName: config.ecosystemName,
+-    stage: config.stageId,
+-  };
+-}
+-
+-export default function Home() {
+-  const [identity, setIdentity] = useState<ConsoleIdentity>(DEFAULT_IDENTITY);
+-
+-  useEffect(() => {
+-    if (typeof window === "undefined") return;
+-    setIdentity(resolveConsoleIdentity(window.location.hostname));
+-  }, []);
+-
+-  return (
+-    <main className="h-screen overflow-hidden">
+-      <AuthGate>
+-        {(user) => (
+-          <ConsoleShell
+-            currentUser={user}
+-            ecosystemName={identity.ecosystemName}
+-            stage={identity.stage}
+-          />
+-        )}
+-      </AuthGate>
+-    </main>
+-  );
+-}
+diff --git a/repos/amof-thinking-assistant/src/components/console/ConsoleShell.tsx b/repos/amof-thinking-assistant/src/components/console/ConsoleShell.tsx
+deleted file mode 100644
+index 5510505..0000000
+--- a/repos/amof-thinking-assistant/src/components/console/ConsoleShell.tsx
++++ /dev/null
+@@ -1,196 +0,0 @@
+-"use client";
+-
+-import { useCallback, useEffect, useRef, useState } from "react";
+-import type { AuthUser } from "@/components/auth/AuthGate";
+-import { CONSOLE_SCREENS } from "@/lib/console-screens";
+-import { tap } from "@/lib/haptics";
+-import type { ScreenActionIntent } from "@/lib/screen-contract";
+-import { Header } from "./Header";
+-import { ScreenConsole } from "./ScreenConsole";
+-import { ScreenAgents } from "./ScreenAgents";
+-import { ScreenEnvironments } from "./ScreenEnvironments";
+-import { ScreenIntegrations } from "./ScreenIntegrations";
+-import { ScreenLogs } from "./ScreenLogs";
+-import { ScreenSettings } from "./ScreenSettings";
+-import { AgentsPanel } from "./AgentsPanel";
+-
+-interface ConsoleShellProps {
+-  currentUser?: AuthUser | null;
+-  ecosystemName?: string;
+-  stage?: string;
+-}
+-
+-const SWIPE_THRESHOLD = 50;
+-const VISIBLE_SCREENS = 5;
+-
+-export function ConsoleShell({
+-  currentUser,
+-  ecosystemName = "demo-microsaas",
+-  stage = "dev",
+-}: ConsoleShellProps) {
+-  const [screenIndex, setScreenIndex] = useState(0);
+-  const [agentsPanelOpen, setAgentsPanelOpen] = useState(false);
+-  const [agentsPanelEverOpened, setAgentsPanelEverOpened] = useState(false);
+-  const [showSettings, setShowSettings] = useState(false);
+-  const [direction, setDirection] = useState<"next" | "prev">("next");
+-  const touchStartY = useRef(0);
+-  const touchStartX = useRef(0);
+-
+-  const maxIndex = showSettings ? CONSOLE_SCREENS.length - 1 : VISIBLE_SCREENS - 1;
+-
+-  const go = useCallback(
+-    (delta: number) => {
+-      setDirection(delta >= 0 ? "next" : "prev");
+-      setScreenIndex((i) => Math.max(0, Math.min(maxIndex, i + delta)));
+-    },
+-    [maxIndex],
+-  );
+-
+-  const onHeaderTap = useCallback(() => {
+-    setDirection("next");
+-    setScreenIndex((i) => (i >= maxIndex ? 0 : i + 1));
+-  }, [maxIndex]);
+-
+-  const onLongPress = useCallback(() => {
+-    setShowSettings((s) => {
+-      if (!s) setScreenIndex(CONSOLE_SCREENS.length - 1);
+-      else setScreenIndex(0);
+-      return !s;
+-    });
+-  }, []);
+-
+-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+-    touchStartY.current = e.touches[0].clientY;
+-    touchStartX.current = e.touches[0].clientX;
+-  }, []);
+-
+-  const handleTouchEnd = useCallback(
+-    (e: React.TouchEvent) => {
+-      const endY = e.changedTouches[0].clientY;
+-      const endX = e.changedTouches[0].clientX;
+-      const dy = touchStartY.current - endY;
+-      const dx = endX - touchStartX.current;
+-
+-      if (Math.abs(dx) > SWIPE_THRESHOLD && dx > 0 && Math.abs(dx) > Math.abs(dy)) {
+-        setAgentsPanelOpen(true);
+-        return;
+-      }
+-      if (Math.abs(dy) > SWIPE_THRESHOLD) {
+-        go(dy > 0 ? 1 : -1);
+-      }
+-    },
+-    [go],
+-  );
+-
+-  const openAgentsPanel = useCallback(() => setAgentsPanelOpen(true), []);
+-  const handleEnvironmentIntent = useCallback((intent: ScreenActionIntent) => {
+-    if (intent.kind === "select_environment") {
+-      tap();
+-    }
+-  }, []);
+-
+-  useEffect(() => {
+-    try {
+-      setAgentsPanelEverOpened(window.localStorage.getItem("amof-agents-panel-seen") === "1");
+-    } catch {}
+-  }, []);
+-
+-  useEffect(() => {
+-    if (!agentsPanelOpen) return;
+-    setAgentsPanelEverOpened(true);
+-    try {
+-      window.localStorage.setItem("amof-agents-panel-seen", "1");
+-    } catch {}
+-  }, [agentsPanelOpen]);
+-
+-  const screens = [
+-    <ScreenConsole
+-      key="console"
+-      currentUser={currentUser}
+-      showAgentsHint={screenIndex === 0 && !agentsPanelEverOpened}
+-      onOpenAgentsPanel={openAgentsPanel}
+-    />,
+-    <ScreenAgents key="agents" />,
+-    <ScreenEnvironments key="env" onIntent={handleEnvironmentIntent} />,
+-    <ScreenIntegrations key="int" />,
+-    <ScreenLogs key="logs" />,
+-    <ScreenSettings key="settings" />,
+-  ];
+-
+-  return (
+-    <div
+-      className="h-screen w-full overflow-hidden flex flex-col bg-[var(--console-bg)] console-bg-grid"
+-      onTouchStart={handleTouchStart}
+-      onTouchEnd={handleTouchEnd}
+-    >
+-      <a
+-        href="#main-content"
+-        className="console-skip-link"
+-      >
+-        Skip to main content
+-      </a>
+-      <Header
+-        ecosystemName={ecosystemName}
+-        stage={stage}
+-        status="ok"
+-        currentScreenIndex={screenIndex}
+-        onHeaderTap={onHeaderTap}
+-        onLongPress={onLongPress}
+-      />
+-
+-      <main id="main-content" tabIndex={-1} className="flex-1 min-h-0 pt-14 overflow-hidden relative" aria-label="Main content">
+-        {screens.map((screen, i) => (
+-          <div
+-            key={i}
+-            className="absolute inset-0 overflow-hidden console-transition"
+-            style={{
+-              opacity: screenIndex === i ? 1 : 0,
+-              pointerEvents: screenIndex === i ? "auto" : "none",
+-              transform:
+-                screenIndex === i
+-                  ? "translateX(0)"
+-                  : direction === "next"
+-                    ? "translateX(12px)"
+-                    : "translateX(-12px)",
+-            }}
+-          >
+-            {screen}
+-          </div>
+-        ))}
+-      </main>
+-
+-      {/* Thumb zone: bottom nav dots — no scroll */}
+-      {!showSettings && (
+-        <nav
+-          className="flex items-center justify-center gap-2 py-3 safe-area-inset-bottom border-t border-[var(--console-border)] bg-[var(--console-surface)]/90 backdrop-blur-sm shrink-0"
+-          style={{ paddingBottom: "max(12px, var(--safe-bottom))" }}
+-          aria-label="Screen navigation"
+-        >
+-          {CONSOLE_SCREENS.slice(0, VISIBLE_SCREENS).map((_, i) => (
+-            <button
+-              key={i}
+-              type="button"
+-              onClick={() => {
+-                tap();
+-                setDirection(i >= screenIndex ? "next" : "prev");
+-                setScreenIndex(i);
+-              }}
+-              className="console-tap rounded-full p-2 transition-all duration-300 ease-out active:scale-90 console-focus-visible"
+-              aria-label={CONSOLE_SCREENS[i].label}
+-            >
+-              <span
+-                className={`block w-2 h-2 rounded-full transition-all duration-200 ${
+-                  screenIndex === i
+-                    ? "bg-[var(--accent-green)] shadow-[0_0_10px_var(--accent-green-glow)] scale-125"
+-                    : "bg-[var(--text-muted)]/50"
+-                }`}
+-              />
+-            </button>
+-          ))}
+-        </nav>
+-      )}
+-
+-      <AgentsPanel isOpen={agentsPanelOpen} onClose={() => setAgentsPanelOpen(false)} />
+-    </div>
+-  );
+-}
+diff --git a/repos/amof-thinking-assistant/src/components/console/ScreenEnvironments.tsx b/repos/amof-thinking-assistant/src/components/console/ScreenEnvironments.tsx
+deleted file mode 100644
+index 9ecb9dc..0000000
+--- a/repos/amof-thinking-assistant/src/components/console/ScreenEnvironments.tsx
++++ /dev/null
+@@ -1,183 +0,0 @@
+-"use client";
+-
+-import {
+-  DEFAULT_OPERATOR_ENVIRONMENT_SNAPSHOT,
+-  createSelectEnvironmentIntent,
+-  type OperatorEnvironmentScreenProps,
+-  type ScreenActionIntent,
+-  type ScreenEnvironmentRuntime,
+-  type ScreenPhase,
+-} from "@/lib/screen-contract";
+-
+-type ScreenEnvironmentsProps = Partial<OperatorEnvironmentScreenProps>;
+-
+-function statusTone(phase: ScreenPhase) {
+-  if (phase === "error") return "border-rose-500/30 bg-rose-500/10 text-rose-200";
+-  if (phase === "unauthenticated") return "border-slate-500/30 bg-slate-500/10 text-slate-200";
+-  if (phase === "refreshing" || phase === "loading") return "border-amber-500/30 bg-amber-500/10 text-amber-200";
+-  if (phase === "step_up_required") return "border-sky-500/30 bg-sky-500/10 text-sky-200";
+-  return "border-emerald-500/30 bg-emerald-500/10 text-emerald-200";
+-}
+-
+-function observedTone(state: ScreenEnvironmentRuntime["observedState"]) {
+-  if (state === "observed_live") return "text-emerald-200";
+-  if (state === "observed_not_ready") return "text-amber-200";
+-  if (state === "registered_only") return "text-sky-200";
+-  return "text-[var(--text-muted)]";
+-}
+-
+-function resolutionTone(isFallbackLane: boolean) {
+-  return isFallbackLane
+-    ? "border-amber-400/50 bg-amber-400/15 text-amber-100"
+-    : "border-[var(--console-border)]/70 bg-[var(--console-surface)]/70 text-[var(--text-muted)]";
+-}
+-
+-function emitIntent(
+-  intent: ScreenActionIntent,
+-  onIntent?: (intent: ScreenActionIntent) => void,
+-  onAction?: (action: ScreenActionIntent["kind"]) => void,
+-) {
+-  onIntent?.(intent);
+-  onAction?.(intent.kind);
+-}
+-
+-export function ScreenEnvironments({ snapshot = DEFAULT_OPERATOR_ENVIRONMENT_SNAPSHOT, onIntent, onAction }: ScreenEnvironmentsProps = {}) {
+-  return (
+-    <div className="flex h-full flex-col gap-3 overflow-hidden px-4 pb-6 pt-4">
+-      <section className="console-glass rounded-2xl border border-[var(--console-border)]/80 p-4">
+-        <div className="flex items-start justify-between gap-3">
+-          <div className="min-w-0">
+-            <p className="text-[10px] uppercase tracking-[0.3em] text-[var(--text-muted)]">Screen v1</p>
+-            <h2 className="mt-1 text-lg font-semibold text-[var(--text-primary)]">{snapshot.runtime.label}</h2>
+-            <p className="mt-1 text-sm text-[var(--text-muted)]">
+-              {snapshot.ecosystemName} · {snapshot.stageId} · {snapshot.runtime.namespace}
+-            </p>
+-            <p className="mt-2 max-w-xl text-xs leading-5 text-[var(--text-muted)]">
+-              Operator environment surface: lane identity, auth state, runtime freshness, and the next launch actions in one place.
+-            </p>
+-          </div>
+-          <span className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] ${statusTone(snapshot.phase)}`}>
+-            {snapshot.phase}
+-          </span>
+-        </div>
+-
+-        <div className={`mt-3 rounded-xl border px-3 py-2 text-xs ${resolutionTone(snapshot.resolution.isFallbackLane)}`}>
+-          <div className="flex flex-wrap items-center gap-2">
+-            <span className="font-medium text-[var(--text-primary)]">Lane resolution</span>
+-            <span>{snapshot.resolution.requestedHost}</span>
+-            <span aria-hidden>→</span>
+-            <span>{snapshot.stageId}</span>
+-            {snapshot.resolution.isFallbackLane ? (
+-              <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-amber-200">
+-                fallback
+-              </span>
+-            ) : null}
+-          </div>
+-          {snapshot.resolution.fallbackReason ? <p className="mt-1 text-[11px]">{snapshot.resolution.fallbackReason}</p> : null}
+-          {snapshot.resolution.isFallbackLane ? (
+-            <button
+-              type="button"
+-              onClick={() => {
+-                emitIntent(createSelectEnvironmentIntent(snapshot.environmentId), onIntent, onAction);
+-              }}
+-              className="mt-2 inline-flex items-center rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-amber-100 console-tap"
+-            >
+-              Select current lane
+-            </button>
+-          ) : null}
+-        </div>
+-
+-        <div className="mt-4 grid grid-cols-2 gap-2">
+-          <div className="rounded-xl border border-[var(--console-border)]/70 bg-[var(--console-surface)]/80 p-3">
+-            <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">Auth</div>
+-            <div className="mt-1 text-sm font-medium text-[var(--text-primary)]">{snapshot.auth.sessionLabel}</div>
+-            <div className="mt-1 text-xs text-[var(--text-muted)]">
+-              {snapshot.state.kind === "unauthenticated"
+-                ? snapshot.state.message
+-                : snapshot.auth.stepUpRequired
+-                  ? "Step-up required"
+-                  : "Step-up satisfied"}
+-            </div>
+-          </div>
+-          <div className="rounded-xl border border-[var(--console-border)]/70 bg-[var(--console-surface)]/80 p-3">
+-            <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">Observed</div>
+-            <div className={`mt-1 text-sm font-medium ${observedTone(snapshot.runtime.observedState)}`}>
+-              {snapshot.runtime.observedState}
+-            </div>
+-            <div className="mt-1 text-xs text-[var(--text-muted)]">{snapshot.runtime.observedDetail}</div>
+-          </div>
+-          <div className="rounded-xl border border-[var(--console-border)]/70 bg-[var(--console-surface)]/80 p-3">
+-            <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">State</div>
+-            <div className="mt-1 text-sm font-medium text-[var(--text-primary)]">{snapshot.state.kind}</div>
+-            <div className="mt-1 text-xs text-[var(--text-muted)]">
+-              {snapshot.state.kind === "ready"
+-                ? "Canonical ready snapshot."
+-                : snapshot.state.kind === "refreshing"
+-                  ? "Previous snapshot is still being reconciled."
+-                  : snapshot.state.kind === "unauthenticated"
+-                    ? snapshot.state.message
+-                    : snapshot.state.kind === "step_up_required"
+-                      ? snapshot.state.message
+-                      : snapshot.state.message}
+-            </div>
+-          </div>
+-          <div className="rounded-xl border border-[var(--console-border)]/70 bg-[var(--console-surface)]/80 p-3">
+-            <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">Freshness</div>
+-            <div className="mt-1 text-sm font-medium text-[var(--text-primary)]">
+-              {snapshot.runtime.lastUpdatedAt ? new Date(snapshot.runtime.lastUpdatedAt).toLocaleString() : "Unavailable"}
+-            </div>
+-            <div className="mt-1 text-xs text-[var(--text-muted)]">Latest captured runtime snapshot.</div>
+-          </div>
+-        </div>
+-      </section>
+-
+-      <section className="grid grid-cols-2 gap-2">
+-        {snapshot.actions.map((action) => (
+-          <button
+-            key={action.kind}
+-            type="button"
+-            onClick={() => {
+-              if (!action.enabled) {
+-                return;
+-              }
+-              emitIntent(action.intent, onIntent, onAction);
+-            }}
+-            disabled={!action.enabled}
+-            className="console-glass console-tap rounded-xl border border-[var(--console-border)]/80 px-3 py-3 text-left console-transition active:scale-[0.98] disabled:opacity-50"
+-          >
+-            <span className="block text-sm font-medium text-[var(--text-primary)]">{action.label}</span>
+-            <span className="block text-xs text-[var(--text-muted)]">
+-              {action.enabled ? "Enabled" : action.reason ?? "Disabled"}
+-            </span>
+-          </button>
+-        ))}
+-      </section>
+-
+-      <section className="console-glass flex min-h-0 flex-1 flex-col rounded-2xl border border-[var(--console-border)]/80 p-4">
+-        <div className="flex items-center justify-between gap-2">
+-          <div>
+-            <p className="text-[10px] uppercase tracking-[0.3em] text-[var(--text-muted)]">Event tape</p>
+-            <h3 className="mt-1 text-sm font-semibold text-[var(--text-primary)]">Screen timeline</h3>
+-          </div>
+-          <span className="rounded-full border border-[var(--console-border)]/70 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+-            {snapshot.runtime.latestReleaseId ?? "no release"}
+-          </span>
+-        </div>
+-        <div className="mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+-          {snapshot.timeline.map((event) => (
+-            <div key={event.id} className="rounded-xl border border-[var(--console-border)]/70 bg-[var(--console-surface)]/70 px-3 py-2">
+-              <div className="flex items-start justify-between gap-3">
+-                <span className="text-xs font-medium text-[var(--text-primary)]">{event.summary}</span>
+-                <span className="shrink-0 text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]">{event.kind}</span>
+-              </div>
+-              <div className="mt-1 text-[11px] text-[var(--text-muted)]">
+-                {event.screenId} · {event.environmentId}
+-                {event.detail ? ` · ${event.detail}` : ""}
+-              </div>
+-            </div>
+-          ))}
+-        </div>
+-      </section>
+-    </div>
+-  );
+-}
+diff --git a/repos/amof-thinking-assistant/src/lib/api/amof.ts b/repos/amof-thinking-assistant/src/lib/api/amof.ts
+deleted file mode 100644
+index 96a37a9..0000000
+--- a/repos/amof-thinking-assistant/src/lib/api/amof.ts
++++ /dev/null
+@@ -1,246 +0,0 @@
+-/**
+- * AMOF API — calls AMOF control plane (ecosystems, arena, chat).
+- * Set NEXT_PUBLIC_AMOF_API to use this; otherwise mock is used.
+- */
+-
+-import type {
+-  AssistantAPI,
+-  AssistantBootstrapResponse,
+-  AssistantConversationState,
+-  SendMessageRequest,
+-  SendMessageResponse,
+-} from "./types";
+-import type { ChatMessage } from "../types";
+-import { getRuntimeConfig } from "@/lib/runtime-config";
+-
+-const DEFAULT_ECOSYSTEM = process.env.NEXT_PUBLIC_AMOF_ECOSYSTEM ?? "demo-microsaas";
+-const DEFAULT_AGENT_ID = process.env.NEXT_PUBLIC_AMOF_AGENT_ID ?? "director";
+-const DEFAULT_ARENA_MODE = process.env.NEXT_PUBLIC_AMOF_ARENA_MODE ?? "main";
+-
+-type ArenaThreadRow = {
+-  thread_id?: string;
+-  root_session_id?: string;
+-  latest_session_id?: string;
+-  arena_mode?: string;
+-};
+-
+-type ArenaMessageRow = {
+-  id?: number;
+-  role?: string;
+-  content?: string;
+-};
+-
+-function getApiBase(): string {
+-  const base = getRuntimeConfig().amofApiBase.trim();
+-  if (!base) return "";
+-  return base.replace(/\/$/, "");
+-}
+-
+-function mapArenaRole(role: string | undefined): ChatMessage["role"] | null {
+-  if (role === "user") return "user";
+-  if (role === "agent" || role === "assistant" || role === "report") return "assistant";
+-  return null;
+-}
+-
+-function mapArenaMessages(rows: ArenaMessageRow[]): ChatMessage[] {
+-  return rows
+-    .map((row, index) => {
+-      const role = mapArenaRole(row.role);
+-      if (!role || typeof row.content !== "string") return null;
+-      return {
+-        id: typeof row.id === "number" ? `arena-${row.id}` : `arena-${index}-${Date.now()}`,
+-        role,
+-        content: row.content,
+-        timestamp: Date.now(),
+-      } satisfies ChatMessage;
+-    })
+-    .filter((row): row is ChatMessage => row !== null);
+-}
+-
+-async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
+-  const response = await fetch(input, { credentials: "include", ...(init ?? {}) });
+-  if (!response.ok) {
+-    throw new Error(`AMOF API ${response.status}: ${response.statusText}`);
+-  }
+-  return (await response.json()) as T;
+-}
+-
+-async function loadPrimaryThread(
+-  base: string,
+-  ecosystem: string,
+-  agentId: string,
+-): Promise<ArenaThreadRow> {
+-  const params = new URLSearchParams({ agent_id: agentId });
+-  const payload = await fetchJson<{ threads?: ArenaThreadRow[] }>(
+-    `${base}/ecosystems/${encodeURIComponent(ecosystem)}/arena/threads?${params.toString()}`,
+-  );
+-  const thread = Array.isArray(payload.threads) ? payload.threads[0] : undefined;
+-  if (!thread?.thread_id) {
+-    throw new Error("AMOF did not return an arena thread");
+-  }
+-  return thread;
+-}
+-
+-async function loadThreadMessages(
+-  base: string,
+-  ecosystem: string,
+-  agentId: string,
+-  threadId: string,
+-  arenaMode: string,
+-): Promise<ChatMessage[]> {
+-  const params = new URLSearchParams({
+-    thread_id: threadId,
+-    mode: arenaMode,
+-    limit: "1000",
+-  });
+-  const payload = await fetchJson<{ messages?: ArenaMessageRow[] }>(
+-    `${base}/ecosystems/${encodeURIComponent(ecosystem)}/arena/chats/${encodeURIComponent(agentId)}?${params.toString()}`,
+-  );
+-  return mapArenaMessages(Array.isArray(payload.messages) ? payload.messages : []);
+-}
+-
+-function waitForRunToFinish(base: string, runId: string): Promise<void> {
+-  return new Promise((resolve, reject) => {
+-    const stream = new EventSource(`${base}/runs/${encodeURIComponent(runId)}/stream`);
+-    let settled = false;
+-
+-    const finish = (callback: () => void) => {
+-      if (settled) return;
+-      settled = true;
+-      stream.close();
+-      callback();
+-    };
+-
+-    stream.onmessage = (event) => {
+-      const text = typeof event.data === "string" ? event.data : String(event.data);
+-      if (text === "[DONE]") {
+-        finish(resolve);
+-      }
+-    };
+-
+-    stream.onerror = () => {
+-      finish(() => reject(new Error("AMOF stream closed before completion")));
+-    };
+-  });
+-}
+-
+-export class AmofAssistantAPI implements AssistantAPI {
+-  async initializeConversation(): Promise<AssistantBootstrapResponse> {
+-    const base = getApiBase();
+-    if (!base) {
+-      throw new Error("NEXT_PUBLIC_AMOF_API is not set");
+-    }
+-    const thread = await loadPrimaryThread(base, DEFAULT_ECOSYSTEM, DEFAULT_AGENT_ID);
+-    const conversation: AssistantConversationState = {
+-      ecosystem: DEFAULT_ECOSYSTEM,
+-      agentId: DEFAULT_AGENT_ID,
+-      threadId: thread.thread_id,
+-      sessionId: thread.latest_session_id ?? thread.root_session_id,
+-      arenaMode: thread.arena_mode ?? DEFAULT_ARENA_MODE,
+-    };
+-    const threadId = thread.thread_id;
+-    if (!threadId) {
+-      throw new Error("AMOF did not return a thread_id");
+-    }
+-    const messages = await loadThreadMessages(
+-      base,
+-      DEFAULT_ECOSYSTEM,
+-      DEFAULT_AGENT_ID,
+-      threadId,
+-      conversation.arenaMode ?? DEFAULT_ARENA_MODE,
+-    );
+-    return { messages, conversation };
+-  }
+-
+-  async sendMessage(
+-    request: SendMessageRequest,
+-    conversation?: AssistantConversationState,
+-  ): Promise<SendMessageResponse> {
+-    const base = getApiBase();
+-    if (!base) {
+-      throw new Error("NEXT_PUBLIC_AMOF_API is not set");
+-    }
+-
+-    const ecosystem = conversation?.ecosystem ?? DEFAULT_ECOSYSTEM;
+-    const agentId = conversation?.agentId ?? DEFAULT_AGENT_ID;
+-    const arenaMode = conversation?.arenaMode ?? DEFAULT_ARENA_MODE;
+-
+-    const thread =
+-      conversation?.threadId
+-        ? {
+-            thread_id: conversation.threadId,
+-            latest_session_id: conversation.sessionId,
+-            root_session_id: conversation.sessionId,
+-            arena_mode: arenaMode,
+-          }
+-        : await loadPrimaryThread(base, ecosystem, agentId);
+-
+-    const threadId = thread.thread_id;
+-    if (!threadId) {
+-      throw new Error("AMOF thread is missing thread_id");
+-    }
+-
+-    await fetchJson(
+-      `${base}/ecosystems/${encodeURIComponent(ecosystem)}/arena/chats/${encodeURIComponent(agentId)}/messages`,
+-      {
+-        method: "POST",
+-        headers: { "Content-Type": "application/json" },
+-        body: JSON.stringify({
+-          role: "user",
+-          content: request.userText,
+-          mode: arenaMode,
+-          thread_id: threadId,
+-        }),
+-      },
+-    );
+-
+-    const action = await fetchJson<{
+-      run_id?: string;
+-      session_id?: string;
+-      thread_id?: string;
+-    }>(`${base}/ecosystems/${encodeURIComponent(ecosystem)}/actions/agent`, {
+-      method: "POST",
+-      headers: { "Content-Type": "application/json" },
+-      body: JSON.stringify({
+-        prompt: request.userText,
+-        mode: "execute",
+-        session_id: conversation?.sessionId ?? thread.latest_session_id ?? thread.root_session_id,
+-        agent_id: agentId,
+-        thread_id: threadId,
+-        arena_mode: arenaMode,
+-        trigger_kind: "user",
+-      }),
+-    });
+-
+-    if (!action.run_id) {
+-      throw new Error("AMOF did not return a run_id");
+-    }
+-
+-    try {
+-      await waitForRunToFinish(base, action.run_id);
+-    } catch {
+-      // If SSE drops, reload persisted history anyway; the backend persists final chat rows.
+-    }
+-
+-    const nextConversation: AssistantConversationState = {
+-      ecosystem,
+-      agentId,
+-      threadId: action.thread_id ?? threadId,
+-      sessionId:
+-        action.session_id ?? conversation?.sessionId ?? thread.latest_session_id ?? thread.root_session_id,
+-      arenaMode,
+-    };
+-
+-    const messages = await loadThreadMessages(
+-      base,
+-      ecosystem,
+-      agentId,
+-      nextConversation.threadId ?? threadId,
+-      arenaMode,
+-    );
+-
+-    return { messages, conversation: nextConversation, replaceAll: true };
+-  }
+-}
+-
+-export const amofAPI = new AmofAssistantAPI();
+diff --git a/repos/amof-thinking-assistant/src/lib/api/index.ts b/repos/amof-thinking-assistant/src/lib/api/index.ts
+deleted file mode 100644
+index bcf7f0f..0000000
+--- a/repos/amof-thinking-assistant/src/lib/api/index.ts
++++ /dev/null
+@@ -1,17 +0,0 @@
+-/**
+- * API layer entry — choose implementation by env.
+- * Same UX works with mock (default) or AMOF backend.
+- */
+-
+-import type { AssistantAPI } from "./types";
+-import { mockAPI } from "./mock";
+-import { amofAPI } from "./amof";
+-import { getRuntimeConfig } from "@/lib/runtime-config";
+-
+-export function getAssistantAPI(): AssistantAPI {
+-  return getRuntimeConfig().amofApiBase ? amofAPI : mockAPI;
+-}
+-
+-export { mockAPI } from "./mock";
+-export { amofAPI } from "./amof";
+-export type { AssistantAPI, SendMessageRequest, SendMessageResponse, ModeSelection, ModeSet, ModeId } from "./types";
+diff --git a/repos/amof-thinking-assistant/src/lib/runtime-config.ts b/repos/amof-thinking-assistant/src/lib/runtime-config.ts
+deleted file mode 100644
+index a033e80..0000000
+--- a/repos/amof-thinking-assistant/src/lib/runtime-config.ts
++++ /dev/null
+@@ -1,30 +0,0 @@
+-"use client";
+-
+-export interface RuntimeConfig {
+-  amofApiBase: string;
+-  supabaseUrl: string;
+-  supabaseAnonKey: string;
+-}
+-
+-declare global {
+-  interface Window {
+-    __AMOF_RUNTIME_CONFIG__?: Partial<RuntimeConfig>;
+-  }
+-}
+-
+-function normalize(value: string | undefined): string {
+-  return value?.trim() ?? "";
+-}
+-
+-export function getRuntimeConfig(): RuntimeConfig {
+-  const runtime =
+-    typeof window !== "undefined" && window.__AMOF_RUNTIME_CONFIG__
+-      ? window.__AMOF_RUNTIME_CONFIG__
+-      : undefined;
+-
+-  return {
+-    amofApiBase: normalize(runtime?.amofApiBase ?? process.env.NEXT_PUBLIC_AMOF_API),
+-    supabaseUrl: normalize(runtime?.supabaseUrl ?? process.env.NEXT_PUBLIC_SUPABASE_URL),
+-    supabaseAnonKey: normalize(runtime?.supabaseAnonKey ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+-  };
+-}
+diff --git a/repos/amof-thinking-assistant/src/lib/screen-contract.ts b/repos/amof-thinking-assistant/src/lib/screen-contract.ts
+deleted file mode 100644
+index e88f5ed..0000000
+--- a/repos/amof-thinking-assistant/src/lib/screen-contract.ts
++++ /dev/null
+@@ -1,393 +0,0 @@
+-/**
+- * Screen runtime contract for the first Screen v1 operator environment surface.
+- *
+- * This module is intentionally UI-local and does not import release/deploy state
+- * from the AMOF web app packages. It provides the typed boundary the screen uses
+- * to render environment, auth, and runtime data as a single snapshot.
+- */
+-
+-export const OPERATOR_ENVIRONMENT_SCREEN_ID = "operator-environment" as const;
+-
+-export type ScreenPhase =
+-  | "loading"
+-  | "ready"
+-  | "refreshing"
+-  | "unauthenticated"
+-  | "step_up_required"
+-  | "error";
+-
+-export type ScreenEventKind =
+-  | "screen.opened"
+-  | "screen.loaded"
+-  | "screen.refresh.requested"
+-  | "screen.refresh.completed"
+-  | "screen.environment.selected"
+-  | "screen.launch.requested"
+-  | "screen.launch.completed"
+-  | "screen.step_up.requested"
+-  | "screen.error";
+-
+-export type ScreenObservedState = "observed_live" | "observed_not_ready" | "registered_only" | "unknown";
+-
+-export type ScreenActionKind =
+-  | "refresh"
+-  | "select_environment"
+-  | "launch_supabase"
+-  | "launch_n8n"
+-  | "request_step_up";
+-
+-export type ScreenActionIntent =
+-  | { kind: "refresh" }
+-  | { kind: "select_environment"; environmentId: string }
+-  | { kind: "launch_supabase"; launchUrl?: string | null }
+-  | { kind: "launch_n8n"; launchUrl?: string | null }
+-  | { kind: "request_step_up"; reason: string };
+-
+-export type ScreenLaunchUrlSource = "runtime" | "capability" | "missing";
+-
+-export interface ScreenActionDescriptor {
+-  kind: ScreenActionKind;
+-  label: string;
+-  enabled: boolean;
+-  reason?: string | null;
+-  intent: ScreenActionIntent;
+-}
+-
+-export type ScreenState =
+-  | {
+-      kind: "loading";
+-      message: string;
+-      retryable: true;
+-      hydratedAt: null;
+-    }
+-  | {
+-      kind: "unauthenticated";
+-      message: string;
+-      retryable: true;
+-      hydratedAt: string | null;
+-    }
+-  | {
+-      kind: "ready";
+-      hydratedAt: string;
+-      retryable: false;
+-    }
+-  | {
+-      kind: "refreshing";
+-      hydratedAt: string;
+-      previousKind: Exclude<ScreenPhase, "refreshing">;
+-      retryable: true;
+-    }
+-  | {
+-      kind: "step_up_required";
+-      message: string;
+-      retryable: false;
+-      hydratedAt?: string | null;
+-    }
+-  | {
+-      kind: "error";
+-      message: string;
+-      retryable: true;
+-      hydratedAt?: string | null;
+-    };
+-
+-export interface OperatorEnvironmentConfig {
+-  ecosystemName: string;
+-  stageId: string;
+-  environmentId: string;
+-  label: string;
+-  namespace: string;
+-  deployProfile: string;
+-  publicUrl?: string | null;
+-}
+-
+-export interface OperatorEnvironmentResolution {
+-  requestedHost: string;
+-  matchedHost: string | null;
+-  isFallbackLane: boolean;
+-  fallbackReason: string | null;
+-}
+-
+-export interface ScreenIdentity {
+-  screenId: typeof OPERATOR_ENVIRONMENT_SCREEN_ID;
+-  ecosystemName: string;
+-  stageId: string;
+-  environmentId: string;
+-}
+-
+-export interface ScreenAuthState {
+-  authenticated: boolean;
+-  stepUpRequired: boolean;
+-  canLaunchSupabase: boolean;
+-  canLaunchN8n: boolean;
+-  sessionLabel: string;
+-}
+-
+-export interface ScreenEnvironmentRuntime {
+-  label: string;
+-  namespace: string;
+-  deployProfile: string;
+-  publicUrl?: string | null;
+-  launchUrls: {
+-    supabase?: string | null;
+-    n8n?: string | null;
+-  };
+-  launchUrlSources: {
+-    supabase: ScreenLaunchUrlSource;
+-    n8n: ScreenLaunchUrlSource;
+-  };
+-  observedState: ScreenObservedState;
+-  observedDetail?: string | null;
+-  latestReleaseId?: string | null;
+-  latestRunId?: string | null;
+-  lastUpdatedAt?: string | null;
+-}
+-
+-interface ScreenTimelineEventBase {
+-  id: string;
+-  screenId: typeof OPERATOR_ENVIRONMENT_SCREEN_ID;
+-  environmentId: string;
+-  at: string;
+-  summary: string;
+-  detail?: string | null;
+-}
+-
+-export type ScreenTimelineEvent =
+-  | (ScreenTimelineEventBase & { kind: "screen.opened" })
+-  | (ScreenTimelineEventBase & { kind: "screen.loaded" })
+-  | (ScreenTimelineEventBase & { kind: "screen.refresh.requested" })
+-  | (ScreenTimelineEventBase & { kind: "screen.refresh.completed" })
+-  | (ScreenTimelineEventBase & { kind: "screen.environment.selected" })
+-  | (ScreenTimelineEventBase & { kind: "screen.launch.requested" })
+-  | (ScreenTimelineEventBase & { kind: "screen.launch.completed" })
+-  | (ScreenTimelineEventBase & { kind: "screen.step_up.requested" })
+-  | (ScreenTimelineEventBase & { kind: "screen.error" });
+-
+-export interface OperatorEnvironmentScreenSnapshot extends ScreenIdentity {
+-  phase: ScreenPhase;
+-  state: ScreenState;
+-  resolution: OperatorEnvironmentResolution;
+-  auth: ScreenAuthState;
+-  runtime: ScreenEnvironmentRuntime;
+-  actions: ScreenActionDescriptor[];
+-  timeline: ScreenTimelineEvent[];
+-  error?: string | null;
+-}
+-
+-export interface OperatorEnvironmentScreenProps {
+-  snapshot: OperatorEnvironmentScreenSnapshot;
+-  onIntent?: (intent: ScreenActionIntent) => void;
+-  onAction?: (action: ScreenActionKind) => void;
+-}
+-
+-export function createSelectEnvironmentIntent(environmentId: string): ScreenActionIntent {
+-  return {
+-    kind: "select_environment",
+-    environmentId,
+-  };
+-}
+-
+-const OPERATOR_ENVIRONMENT_CONFIGS: Array<{
+-  hosts: string[];
+-  config: OperatorEnvironmentConfig;
+-}> = [
+-  {
+-    hosts: ["uc-amof.hotshot.sk", "uc.amof.dev"],
+-    config: {
+-      ecosystemName: "amof-platform",
+-      stageId: "prod-dev",
+-      environmentId: "prod-dev",
+-      label: "Production development lane",
+-      namespace: "amof-system",
+-      deployProfile: "prod-dev",
+-      publicUrl: "https://amof.hotshot.sk",
+-    },
+-  },
+-  {
+-    hosts: ["mobile.amof.dev", "mobile.amov.dev", "localhost", "127.0.0.1"],
+-    config: {
+-      ecosystemName: "amof-platform",
+-      stageId: "cloud-dev",
+-      environmentId: "cloud-dev",
+-      label: "Cloud development lane",
+-      namespace: "amof-system",
+-      deployProfile: "cloud-dev",
+-      publicUrl: "https://platform.amof.dev",
+-    },
+-  },
+-];
+-
+-function normalizeHost(hostname: string): string {
+-  return hostname.trim().toLowerCase();
+-}
+-
+-export function resolveOperatorEnvironmentConfig(hostname: string): OperatorEnvironmentConfig {
+-  const normalizedHost = normalizeHost(hostname);
+-  const matched = OPERATOR_ENVIRONMENT_CONFIGS.find((entry) => entry.hosts.includes(normalizedHost));
+-  return matched?.config ?? OPERATOR_ENVIRONMENT_CONFIGS[1].config;
+-}
+-
+-export function resolveOperatorEnvironmentResolution(hostname: string): OperatorEnvironmentResolution {
+-  const normalizedHost = normalizeHost(hostname);
+-  const matched = OPERATOR_ENVIRONMENT_CONFIGS.find((entry) => entry.hosts.includes(normalizedHost));
+-
+-  if (matched) {
+-    return {
+-      requestedHost: normalizedHost,
+-      matchedHost: normalizedHost,
+-      isFallbackLane: false,
+-      fallbackReason: null,
+-    };
+-  }
+-
+-  const fallback = OPERATOR_ENVIRONMENT_CONFIGS[1];
+-  return {
+-    requestedHost: normalizedHost,
+-    matchedHost: null,
+-    isFallbackLane: true,
+-    fallbackReason: `Host '${normalizedHost || "unknown"}' is not configured; defaulting to ${fallback.config.stageId}.`,
+-  };
+-}
+-
+-export const DEFAULT_OPERATOR_ENVIRONMENT_SNAPSHOT: OperatorEnvironmentScreenSnapshot = {
+-  screenId: OPERATOR_ENVIRONMENT_SCREEN_ID,
+-  ecosystemName: "amof-platform",
+-  stageId: "cloud-dev",
+-  environmentId: "cloud-dev",
+-  phase: "loading",
+-  state: {
+-    kind: "loading",
+-    message: "Loading operator session",
+-    retryable: true,
+-    hydratedAt: null,
+-  },
+-  resolution: {
+-    requestedHost: "localhost",
+-    matchedHost: null,
+-    isFallbackLane: true,
+-    fallbackReason: "Using the default cloud-dev lane until a host is resolved.",
+-  },
+-  auth: {
+-    authenticated: false,
+-    stepUpRequired: false,
+-    canLaunchSupabase: false,
+-    canLaunchN8n: false,
+-    sessionLabel: "Loading operator session",
+-  },
+-  runtime: {
+-    label: "Operator environment",
+-    namespace: "amof-system",
+-    deployProfile: "cloud-dev",
+-    publicUrl: "https://platform.amof.dev",
+-    launchUrls: {
+-      supabase: null,
+-      n8n: null,
+-    },
+-    launchUrlSources: {
+-      supabase: "missing",
+-      n8n: "missing",
+-    },
+-    observedState: "unknown",
+-    observedDetail: "Loading runtime truth for the selected operator lane.",
+-    latestReleaseId: null,
+-    latestRunId: null,
+-    lastUpdatedAt: null,
+-  },
+-  actions: [
+-    {
+-      kind: "launch_supabase",
+-      label: "Open Supabase Media",
+-      enabled: false,
+-      reason: "Runtime truth is still loading.",
+-      intent: { kind: "launch_supabase", launchUrl: null },
+-    },
+-    {
+-      kind: "launch_n8n",
+-      label: "Open n8n Ops",
+-      enabled: false,
+-      reason: "Runtime truth is still loading.",
+-      intent: { kind: "launch_n8n", launchUrl: null },
+-    },
+-    {
+-      kind: "refresh",
+-      label: "Refresh runtime truth",
+-      enabled: true,
+-      intent: { kind: "refresh" },
+-    },
+-    {
+-      kind: "request_step_up",
+-      label: "Request step-up",
+-      enabled: false,
+-      reason: "Session is still loading.",
+-      intent: { kind: "request_step_up", reason: "Session is still loading." },
+-    },
+-  ],
+-  timeline: [
+-    {
+-      id: "screen-opened",
+-      kind: "screen.opened",
+-      screenId: OPERATOR_ENVIRONMENT_SCREEN_ID,
+-      environmentId: "cloud-dev",
+-      at: "2026-03-26T00:00:00.000Z",
+-      summary: "Operator environment screen opened.",
+-    },
+-  ],
+-};
+-
+-export function screenPhaseFromState(state: ScreenState): ScreenPhase {
+-  return state.kind;
+-}
+-
+-export function screenStateFromPhase(
+-  phase: ScreenPhase,
+-  input: {
+-    message: string;
+-    hydratedAt?: string | null;
+-    previousKind?: Exclude<ScreenPhase, "refreshing">;
+-  },
+-): ScreenState {
+-  if (phase === "loading") {
+-    return {
+-      kind: "loading",
+-      message: input.message,
+-      retryable: true,
+-      hydratedAt: null,
+-    };
+-  }
+-  if (phase === "unauthenticated") {
+-    return {
+-      kind: "unauthenticated",
+-      message: input.message,
+-      retryable: true,
+-      hydratedAt: input.hydratedAt ?? null,
+-    };
+-  }
+-  if (phase === "ready") {
+-    return {
+-      kind: "ready",
+-      hydratedAt: input.hydratedAt ?? new Date().toISOString(),
+-      retryable: false,
+-    };
+-  }
+-  if (phase === "refreshing") {
+-    return {
+-      kind: "refreshing",
+-      hydratedAt: input.hydratedAt ?? new Date().toISOString(),
+-      previousKind: input.previousKind ?? "ready",
+-      retryable: true,
+-    };
+-  }
+-  if (phase === "step_up_required") {
+-    return {
+-      kind: "step_up_required",
+-      message: input.message,
+-      retryable: false,
+-      hydratedAt: input.hydratedAt ?? null,
+-    };
+-  }
+-  return {
+-    kind: "error",
+-    message: input.message,
+-    retryable: true,
+-    hydratedAt: input.hydratedAt ?? null,
+-  };
+-}
+diff --git a/repos/amof-thinking-assistant/src/lib/screen-runtime.ts b/repos/amof-thinking-assistant/src/lib/screen-runtime.ts
+deleted file mode 100644
+index e8aeb39..0000000
+--- a/repos/amof-thinking-assistant/src/lib/screen-runtime.ts
++++ /dev/null
+@@ -1,315 +0,0 @@
+-"use client";
+-
+-import type {
+-  OperatorEnvironmentConfig,
+-  OperatorEnvironmentScreenSnapshot,
+-  ScreenActionDescriptor,
+-  ScreenEnvironmentRuntime,
+-  ScreenEventKind,
+-  ScreenObservedState,
+-  ScreenPhase,
+-  ScreenState,
+-  ScreenTimelineEvent,
+-  ScreenLaunchUrlSource,
+-} from "@/lib/screen-contract";
+-import {
+-  OPERATOR_ENVIRONMENT_SCREEN_ID,
+-  resolveOperatorEnvironmentResolution,
+-  screenPhaseFromState,
+-  screenStateFromPhase,
+-} from "@/lib/screen-contract";
+-
+-export interface RawOperatorAuthSessionResponse {
+-  authenticated?: boolean;
+-  permissions?: {
+-    can_launch_supabase?: boolean;
+-    can_launch_n8n?: boolean;
+-  };
+-  capabilities?: {
+-    supabase_launch_url?: string | null;
+-    n8n_launch_url?: string | null;
+-  };
+-  step_up?: {
+-    active?: boolean;
+-    expires_at?: string | null;
+-  };
+-}
+-
+-export interface RawOperatorReleaseOverview {
+-  generated_at?: string;
+-  latest_release?: {
+-    release_id?: string | null;
+-    version?: string | null;
+-  };
+-  stages?: RawOperatorReleaseStage[];
+-}
+-
+-export interface RawOperatorReleaseStage {
+-  id?: string;
+-  environment?: RawOperatorReleaseEnvironment;
+-  environments?: RawOperatorReleaseEnvironment[];
+-}
+-
+-export interface RawOperatorReleaseEnvironment {
+-  id?: string;
+-  namespace?: string;
+-  public_base_url?: string | null;
+-  status?: string | null;
+-  summary?: string | null;
+-  urls?: Array<{
+-    url?: string | null;
+-  }>;
+-  current_release?: {
+-    release_id?: string | null;
+-    version?: string | null;
+-  };
+-  current_deployment?: {
+-    run_id?: string | null;
+-    finished_at?: string | null;
+-  };
+-}
+-
+-function mapObservedState(environment: RawOperatorReleaseEnvironment | undefined): ScreenObservedState {
+-  const status = String(environment?.status || "").toLowerCase();
+-  if (status === "healthy") {
+-    return "observed_live";
+-  }
+-  if (status === "deploying" || status === "running") {
+-    return "observed_not_ready";
+-  }
+-  if (status) {
+-    return "registered_only";
+-  }
+-  return "unknown";
+-}
+-
+-function findEnvironment(
+-  releaseOverview: RawOperatorReleaseOverview,
+-  config: OperatorEnvironmentConfig,
+-): RawOperatorReleaseEnvironment | undefined {
+-  const stages = Array.isArray(releaseOverview.stages) ? releaseOverview.stages : [];
+-  const exactStage = stages.find((stage) => stage.id === config.stageId);
+-  const stageCandidates = exactStage ? [exactStage] : stages;
+-
+-  for (const stage of stageCandidates) {
+-    const environments = [
+-      ...(stage.environment ? [stage.environment] : []),
+-      ...(Array.isArray(stage.environments) ? stage.environments : []),
+-    ];
+-    const exactEnvironment = environments.find((environment) => environment.id === config.environmentId);
+-    if (exactEnvironment) {
+-      return exactEnvironment;
+-    }
+-    if (stage.id === config.stageId && environments[0]) {
+-      return environments[0];
+-    }
+-  }
+-
+-  return undefined;
+-}
+-
+-export function deriveOperatorEnvironmentState(authSession: RawOperatorAuthSessionResponse, now: string): ScreenState {
+-  if (!authSession.authenticated) {
+-    return screenStateFromPhase("unauthenticated", {
+-      message: "Sign in to open the operator environment.",
+-      hydratedAt: now,
+-    });
+-  }
+-  if (authSession.step_up?.active) {
+-    return screenStateFromPhase("ready", {
+-      message: "Operator environment snapshot is ready.",
+-      hydratedAt: now,
+-    });
+-  }
+-  return screenStateFromPhase("step_up_required", {
+-    message: "Step-up is required before launch actions can proceed.",
+-    hydratedAt: now,
+-  });
+-}
+-
+-export function deriveOperatorEnvironmentActions(
+-  authSession: RawOperatorAuthSessionResponse,
+-  phase: ScreenPhase,
+-  state: ScreenState,
+-): ScreenActionDescriptor[] {
+-  const authenticated = Boolean(authSession.authenticated);
+-  const unauthenticated = state.kind === "unauthenticated";
+-  const stepUpActive = Boolean(authSession.step_up?.active);
+-  const canLaunchSupabase = Boolean(authSession.permissions?.can_launch_supabase);
+-  const canLaunchN8n = Boolean(authSession.permissions?.can_launch_n8n);
+-
+-  const launchReason = unauthenticated
+-    ? "Sign in to access operator launches."
+-    : stepUpActive
+-      ? null
+-      : "Step-up is required before opening operator surfaces.";
+-
+-  return [
+-    {
+-      kind: "launch_supabase",
+-      label: "Open Supabase Media",
+-      enabled: phase !== "loading" && phase !== "error" && authenticated && stepUpActive && canLaunchSupabase,
+-      reason: canLaunchSupabase
+-        ? launchReason
+-        : unauthenticated
+-          ? "Sign in to access operator launches."
+-          : "Supabase operator launch is not available for this lane.",
+-      intent: {
+-        kind: "launch_supabase",
+-        launchUrl: authSession.capabilities?.supabase_launch_url ?? null,
+-      },
+-    },
+-    {
+-      kind: "launch_n8n",
+-      label: "Open n8n Ops",
+-      enabled: phase !== "loading" && phase !== "error" && authenticated && stepUpActive && canLaunchN8n,
+-      reason: canLaunchN8n
+-        ? launchReason
+-        : unauthenticated
+-          ? "Sign in to access operator launches."
+-          : "n8n launch is not available for this lane.",
+-      intent: {
+-        kind: "launch_n8n",
+-        launchUrl: authSession.capabilities?.n8n_launch_url ?? null,
+-      },
+-    },
+-    {
+-      kind: "refresh",
+-      label: "Refresh runtime truth",
+-      enabled: phase !== "loading",
+-      reason: phase === "loading" ? "Runtime truth is still loading." : null,
+-      intent: { kind: "refresh" },
+-    },
+-    {
+-      kind: "request_step_up",
+-      label: stepUpActive ? "Step-up active" : "Request step-up",
+-      enabled: phase !== "loading" && authenticated && !stepUpActive,
+-      reason: unauthenticated
+-        ? "Sign in before requesting step-up."
+-        : stepUpActive
+-          ? "Step-up is already active."
+-          : null,
+-      intent: {
+-        kind: "request_step_up",
+-        reason: unauthenticated ? "Sign in before requesting step-up." : "Re-enter your password to enable step-up.",
+-      },
+-    },
+-  ];
+-}
+-
+-export function normalizeScreenTimelineEvent(input: {
+-  id: string;
+-  kind: ScreenEventKind;
+-  screenId: typeof OPERATOR_ENVIRONMENT_SCREEN_ID;
+-  environmentId: string;
+-  at: string;
+-  summary: string;
+-  detail?: string | null;
+-}): ScreenTimelineEvent {
+-  return input as ScreenTimelineEvent;
+-}
+-
+-export function normalizeOperatorEnvironmentSnapshot(args: {
+-  hostname: string;
+-  config: OperatorEnvironmentConfig;
+-  authSession: RawOperatorAuthSessionResponse;
+-  releaseOverview: RawOperatorReleaseOverview;
+-  now: string;
+-}): OperatorEnvironmentScreenSnapshot {
+-  const { hostname, config, authSession, releaseOverview, now } = args;
+-  const resolution = resolveOperatorEnvironmentResolution(hostname);
+-  const environment = findEnvironment(releaseOverview, config);
+-  const state = deriveOperatorEnvironmentState(authSession, now);
+-  const phase = screenPhaseFromState(state);
+-  const observedState = mapObservedState(environment);
+-  const runtime: ScreenEnvironmentRuntime = {
+-    label: config.label,
+-    namespace: environment?.namespace || config.namespace,
+-    deployProfile: config.deployProfile,
+-    publicUrl: environment?.public_base_url || environment?.urls?.[0]?.url || config.publicUrl || null,
+-    launchUrlSources: {
+-      supabase: authSession.capabilities?.supabase_launch_url ? "capability" : "missing",
+-      n8n: authSession.capabilities?.n8n_launch_url ? "capability" : "missing",
+-    } satisfies Record<"supabase" | "n8n", ScreenLaunchUrlSource>,
+-    launchUrls: {
+-      supabase: authSession.capabilities?.supabase_launch_url ?? null,
+-      n8n: authSession.capabilities?.n8n_launch_url ?? null,
+-    },
+-    observedState,
+-    observedDetail:
+-      environment?.summary ||
+-      (observedState === "observed_live"
+-        ? "Live runtime truth is available for the selected operator lane."
+-        : observedState === "observed_not_ready"
+-          ? "The selected lane is still converging on its current deployment."
+-          : "The lane is registered, but live runtime proof is partial."),
+-    latestReleaseId:
+-      environment?.current_release?.release_id ||
+-      environment?.current_release?.version ||
+-      releaseOverview.latest_release?.release_id ||
+-      releaseOverview.latest_release?.version ||
+-      null,
+-    latestRunId: environment?.current_deployment?.run_id || null,
+-    lastUpdatedAt:
+-      environment?.current_deployment?.finished_at ||
+-      releaseOverview.generated_at ||
+-      authSession.step_up?.expires_at ||
+-      now,
+-  };
+-
+-  const timeline = [
+-    normalizeScreenTimelineEvent({
+-      id: "screen-opened",
+-      kind: "screen.opened",
+-      screenId: OPERATOR_ENVIRONMENT_SCREEN_ID,
+-      environmentId: config.environmentId,
+-      at: now,
+-      summary: "Operator environment screen opened.",
+-    }),
+-    normalizeScreenTimelineEvent({
+-      id: "screen-loaded",
+-      kind: "screen.loaded",
+-      screenId: OPERATOR_ENVIRONMENT_SCREEN_ID,
+-      environmentId: config.environmentId,
+-      at: releaseOverview.generated_at || now,
+-      summary: `Runtime snapshot loaded for ${config.stageId}.`,
+-      detail: runtime.observedDetail,
+-    }),
+-    normalizeScreenTimelineEvent({
+-      id: "screen-refresh-completed",
+-      kind: "screen.refresh.completed",
+-      screenId: OPERATOR_ENVIRONMENT_SCREEN_ID,
+-      environmentId: config.environmentId,
+-      at: runtime.lastUpdatedAt || now,
+-      summary: runtime.latestReleaseId
+-        ? `Latest observed release is ${runtime.latestReleaseId}.`
+-        : "Release metadata is not available for the selected lane yet.",
+-      detail: runtime.latestRunId ? `Latest deployment run: ${runtime.latestRunId}` : null,
+-    }),
+-  ];
+-
+-  return {
+-    screenId: OPERATOR_ENVIRONMENT_SCREEN_ID,
+-    ecosystemName: config.ecosystemName,
+-    stageId: config.stageId,
+-    environmentId: config.environmentId,
+-    phase,
+-    state,
+-    resolution,
+-    auth: {
+-      authenticated: Boolean(authSession.authenticated),
+-      stepUpRequired: Boolean(authSession.authenticated) && !authSession.step_up?.active,
+-      canLaunchSupabase: Boolean(authSession.permissions?.can_launch_supabase),
+-      canLaunchN8n: Boolean(authSession.permissions?.can_launch_n8n),
+-      sessionLabel: !authSession.authenticated
+-        ? "Operator session unavailable"
+-        : authSession.step_up?.active
+-          ? "Operator session active"
+-          : "Operator session active, step-up pending",
+-    },
+-    runtime,
+-    actions: deriveOperatorEnvironmentActions(authSession, phase, state),
+-    timeline,
+-    error: null,
+-  };
+-}
+diff --git a/scripts/amof/api/auth.py b/scripts/amof/api/auth.py
+index 6045c53..db80c55 100644
+--- a/scripts/amof/api/auth.py
++++ b/scripts/amof/api/auth.py
+@@ -288,6 +288,14 @@ class SupabaseAuthService:
+         return self.is_console_user(user)
+ 
+     def permissions_for(self, user: Optional[AuthUser]) -> Dict[str, bool]:
++        if not self.auth_enabled:
++            return {
++                "can_access_console": True,
++                "can_operate": True,
++                "can_manage_settings": True,
++                "can_launch_n8n": bool(self.n8n_base_url),
++                "can_launch_supabase": bool(self.public_url),
++            }
+         can_access_console = self.is_console_user(user)
+         can_operate = self.is_operator_user(user)
+         return {
+diff --git a/scripts/amof/api/models/action.py b/scripts/amof/api/models/action.py
+index 315998b..3add169 100644
+--- a/scripts/amof/api/models/action.py
++++ b/scripts/amof/api/models/action.py
+@@ -44,6 +44,7 @@ class RunRequest(BaseModel):
+     mode: Optional[str] = "execute"
+     session_id: Optional[str] = None  # conversation session to resume (runs are children of sessions)
+     agent_id: Optional[str] = None  # which agent prompt to use (master, planner, devops, etc.)
++    runtime_profile: Optional[str] = None  # optional resolved-runtime profile, e.g. local_qwen
+     
+ class ActionResponse(BaseModel):
+     task_id: str
+diff --git a/scripts/amof/api/routers/ecosystem.py b/scripts/amof/api/routers/ecosystem.py
+index ed90b43..b829379 100644
+--- a/scripts/amof/api/routers/ecosystem.py
++++ b/scripts/amof/api/routers/ecosystem.py
+@@ -371,5 +371,15 @@ def run_agent(name: str, req: RunRequest, background_tasks: BackgroundTasks, run
+     # Session = conversation; run = this invocation. New conversation if no session_id.
+     session_id = req.session_id or str(uuid.uuid4())
+     run_id = run_mgr.create_run(name, "agent", ["amof", "agent", "..."], session_id=session_id)
+-    background_tasks.add_task(run_agent_for_ui, run_mgr, run_id, name, req.prompt, req.mode, session_id, req.agent_id)
++    background_tasks.add_task(
++        run_agent_for_ui,
++        run_mgr,
++        run_id,
++        name,
++        req.prompt,
++        req.mode,
++        req.runtime_profile,
++        session_id,
++        req.agent_id,
++    )
+     return {"task_id": run_id, "run_id": run_id, "session_id": session_id, "status": RUN_STATUS_QUEUED}
+diff --git a/scripts/amof/api/routers/release.py b/scripts/amof/api/routers/release.py
+index c85f820..20a7a6c 100644
+--- a/scripts/amof/api/routers/release.py
++++ b/scripts/amof/api/routers/release.py
+@@ -2383,6 +2383,8 @@ def release_lifecycle_action(
+                 target_profile=build_profile,
+                 lookup=build_target_lookup,
+             )
++            if not requested_profile and str(os.environ.get("AMOF_RELEASE_PROFILE") or "").strip() == "local":
++                build_profile = "local"
+         else:
+             build_profile = (
+                 requested_profile
+diff --git a/scripts/amof/api/routers/run.py b/scripts/amof/api/routers/run.py
+index 3fab826..395550e 100644
+--- a/scripts/amof/api/routers/run.py
++++ b/scripts/amof/api/routers/run.py
+@@ -157,19 +157,42 @@ async def stream_run_logs(run_id: str, request: Request, run_mgr: RunManager = D
+ 
+ @router.get("/{run_id}/session")
+ def get_run_session(run_id: str, run_mgr: RunManager = Depends(get_run_manager)):
+-    """Return session telemetry + messages for a completed run."""
++    """Return session telemetry + messages when the selected run has them.
++
++    Not every run creates a conversation/session payload. Build, deploy, and
++    other operational runs should degrade as an empty session surface rather
++    than producing noisy 404s in the browser.
++    """
+     run = run_mgr.get_run(run_id)
+     if not run:
+         raise HTTPException(status_code=404, detail="Run not found")
+ 
+     sid = run.session_id
+     if not sid:
+-        raise HTTPException(status_code=404, detail="No session linked to this run")
++        return {
++            "session_id": None,
++            "session_state": None,
++            "session_message": "No conversation session was produced for this run.",
++            "stop_reason": None,
++            "iterations_used": None,
++            "max_iterations": None,
++            "telemetry": {},
++            "messages": [],
++        }
+ 
+     root = get_workspace_root()
+     session_dir = root / ".amof" / "sessions" / sid
+     if not session_dir.exists():
+-        raise HTTPException(status_code=404, detail=f"Session directory not found: {sid}")
++        return {
++            "session_id": sid,
++            "session_state": None,
++            "session_message": "The run references a session, but no session payload is available.",
++            "stop_reason": None,
++            "iterations_used": None,
++            "max_iterations": None,
++            "telemetry": {},
++            "messages": [],
++        }
+ 
+     telemetry: Dict[str, Any] = {}
+     telemetry_path = session_dir / "telemetry.json"
+diff --git a/scripts/amof/api/services/agent_runner.py b/scripts/amof/api/services/agent_runner.py
+index 7212419..442d129 100644
+--- a/scripts/amof/api/services/agent_runner.py
++++ b/scripts/amof/api/services/agent_runner.py
+@@ -10,6 +10,7 @@ from amof.api.run_manager import (
+     RUN_STATUS_RUNNING,
+     RUN_STATUS_SUCCESS,
+     RUN_STATUS_FAILED,
++    RUN_STATUS_CANCELLED,
+ )
+ 
+ logger = logging.getLogger(__name__)
+@@ -48,8 +49,12 @@ def _is_supported_api_runner_model(model_id: str) -> bool:
+ #
+ # Master is intentionally excluded; per the Phase 2a contract we only let
+ # off-funnel non-master callers resolve to a local OpenAI-compatible
+-# endpoint. ``runner:<name>`` (delegated workers) are also excluded — they
+-# share the master cloud path so their cost remains comparable to master.
++# endpoint. ``runner:<name>`` (delegated workers) are excluded by default —
++# they share the master cloud path so their cost remains comparable to
++# master. Mini Ultra Plan 2 / Phase L2 adds an explicit opt-in path via
++# ``local_inference.runner_overrides`` that is gated on the runtime profile
++# (``"local_qwen"``); see :func:`_resolve_runner_local_clients`. Default
++# behaviour is unchanged when no opt-in is configured.
+ LOCAL_INFERENCE_ALLOWED_SOURCES = ("summarizer", "indexer")
+ 
+ # Default per-source fallback policy when ``local_inference`` is enabled
+@@ -58,6 +63,12 @@ LOCAL_INFERENCE_ALLOWED_SOURCES = ("summarizer", "indexer")
+ # globally or per source via ``agent.yaml``.
+ DEFAULT_LOCAL_FALLBACK_POLICY = "cloud"
+ 
++# Mini Ultra Plan 2 / Phase L2: the runtime profile name that activates
++# local-Qwen runner overrides. Holding the string in one constant makes
++# the gating check greppable and avoids stringly-typed drift across
++# agent_runner.py, the queue dispatcher, and tests.
++LOCAL_QWEN_RUNTIME_PROFILE = "local_qwen"
++
+ 
+ def _register_local_inference_clients(
+     authority: Any,
+@@ -184,6 +195,256 @@ def _register_local_inference_clients(
+     return registered
+ 
+ 
++def _resolve_runner_runpod_clients(
++    cfg: Dict[str, Any],
++    runtime_profile: Optional[str],
++    *,
++    log: Any = None,
++    env: Optional[Dict[str, str]] = None,
++) -> Dict[str, Any]:
++    """Build the runner-name → Runpod LLMClient map for Phase R1 opt-in.
++
++    Reads the top-level ``runpod`` block::
++
++        runpod:
++          enabled: false
++          base_url: "${RUNPOD_OPENAI_BASE_URL}"
++          api_key_env: "RUNPOD_API_KEY"
++          model: "qwen2.5-coder-32b-instruct"
++          timeout: 180
++          fallback: none
++          runner_overrides:
++            enabled_for_profile: ["clouddev_runpod_runner"]
++            allowed_runners: ["code"]
++
++    Behaviour mirrors :func:`_resolve_runner_local_clients` but routes
++    through the same :class:`LocalOpenAICompatibleClient` shape with
++    ``provider_id="runpod"``. The empty map is returned when:
++
++      * ``runpod.enabled`` is falsy (default in canonical agent.yaml),
++      * no ``runtime_profile`` is supplied,
++      * the profile is not in ``runner_overrides.enabled_for_profile``,
++      * ``base_url`` cannot be resolved from env (`${RUNPOD_OPENAI_BASE_URL}`
++        interpolation), or
++      * ``RUNPOD_API_KEY`` is not present in the environment.
++
++    Returning ``{}`` is the safe default — the runner factory then keeps
++    the cloud cascade and Runpod participation does not silently leak in.
++    """
++
++    overrides_clients: Dict[str, Any] = {}
++    if not runtime_profile:
++        return overrides_clients
++
++    block = cfg.get("runpod") if isinstance(cfg, dict) else None
++    if not isinstance(block, dict):
++        return overrides_clients
++    if not block.get("enabled"):
++        return overrides_clients
++
++    overrides_cfg = block.get("runner_overrides")
++    if not isinstance(overrides_cfg, dict):
++        return overrides_clients
++
++    enabled_profiles = overrides_cfg.get("enabled_for_profile") or []
++    if not isinstance(enabled_profiles, list) or runtime_profile not in enabled_profiles:
++        return overrides_clients
++
++    allowed_runners = overrides_cfg.get("allowed_runners") or []
++    if not isinstance(allowed_runners, list) or not allowed_runners:
++        return overrides_clients
++
++    import os
++    env_lookup = env if env is not None else os.environ
++
++    raw_base_url = overrides_cfg.get("base_url") or block.get("base_url") or ""
++    if isinstance(raw_base_url, str) and raw_base_url.startswith("${") and raw_base_url.endswith("}"):
++        var_name = raw_base_url[2:-1]
++        base_url = env_lookup.get(var_name, "")
++    else:
++        base_url = raw_base_url
++
++    api_key_env = block.get("api_key_env") or "RUNPOD_API_KEY"
++    api_key = env_lookup.get(api_key_env, "")
++
++    model = overrides_cfg.get("model") or block.get("model")
++    timeout = overrides_cfg.get("timeout") or block.get("timeout")
++
++    if not base_url or not api_key or not model:
++        if log is not None:
++            try:
++                log(
++                    f"[agent] runpod.runner_overrides skipped: "
++                    f"base_url_set={bool(base_url)} api_key_set={bool(api_key)} "
++                    f"model_set={bool(model)} (no silent fallback)"
++                )
++            except Exception:
++                pass
++        return overrides_clients
++
++    try:
++        from amof.orchestrator.llm.local_openai_compatible import (
++            LocalOpenAICompatibleClient,
++            DEFAULT_LOCAL_TIMEOUT_SECONDS,
++        )
++    except Exception as exc:
++        if log is not None:
++            try:
++                log(
++                    f"[agent] runpod.runner_overrides disabled: import failed ({exc})"
++                )
++            except Exception:
++                pass
++        return overrides_clients
++
++    effective_timeout = float(timeout or DEFAULT_LOCAL_TIMEOUT_SECONDS)
++
++    for runner_name in allowed_runners:
++        if not isinstance(runner_name, str) or not runner_name:
++            continue
++        try:
++            client = LocalOpenAICompatibleClient(
++                base_url=base_url,
++                model=model,
++                api_key=api_key,
++                timeout=effective_timeout,
++                provider_id="runpod",
++            )
++        except Exception as exc:
++            if log is not None:
++                try:
++                    log(
++                        f"[agent] runpod.runner_overrides: failed to build client "
++                        f"for runner '{runner_name}' ({exc})"
++                    )
++                except Exception:
++                    pass
++            continue
++        overrides_clients[runner_name] = client
++
++    return overrides_clients
++
++
++def _resolve_runner_local_clients(
++    cfg: Dict[str, Any],
++    runtime_profile: Optional[str],
++    *,
++    log: Any = None,
++) -> Dict[str, Any]:
++    """Build the runner-name → local LLMClient map for Phase L2 opt-in.
++
++    Reads the ``local_inference.runner_overrides`` block::
++
++        local_inference:
++          runner_overrides:
++            enabled_for_profile: ["local_qwen"]
++            allowed_runners: ["code"]
++            model: "qwen2.5-coder:7b-instruct"
++            # base_url / api_key / timeout / fallback inherit the
++            # surrounding local_inference block when omitted; an
++            # explicit value here overrides the inherited default.
++
++    Behaviour:
++      * If the block is absent, ``runtime_profile`` is missing, the
++        profile is not in ``enabled_for_profile``, or the surrounding
++        ``local_inference.enabled`` is falsy → returns ``{}``. The
++        default cloud cascade is preserved exactly. This is the
++        guarantee that Phase L2 never silently flips runner routing.
++      * Otherwise, build one
++        :class:`~amof.orchestrator.llm.local_openai_compatible.LocalOpenAICompatibleClient`
++        per runner name in ``allowed_runners`` (skipping any that
++        the runner factory does not know about — but that filtering
++        happens at the caller, not here). The same model/base_url is
++        used for every override unless an inner per-runner mapping is
++        supplied.
++
++    Returns a mapping ``{runner_name: LocalOpenAICompatibleClient}``.
++    The caller is responsible for handing this map to ``RunnerFactory``
++    and for emitting a single, truthful operator log line summarising
++    which runners were diverted.
++    """
++
++    overrides_clients: Dict[str, Any] = {}
++    if not runtime_profile:
++        return overrides_clients
++
++    block = cfg.get("local_inference") if isinstance(cfg, dict) else None
++    if not isinstance(block, dict):
++        return overrides_clients
++    if not block.get("enabled"):
++        return overrides_clients
++
++    overrides_cfg = block.get("runner_overrides")
++    if not isinstance(overrides_cfg, dict):
++        return overrides_clients
++
++    enabled_profiles = overrides_cfg.get("enabled_for_profile") or []
++    if not isinstance(enabled_profiles, list) or runtime_profile not in enabled_profiles:
++        return overrides_clients
++
++    allowed_runners = overrides_cfg.get("allowed_runners") or []
++    if not isinstance(allowed_runners, list) or not allowed_runners:
++        return overrides_clients
++
++    base_url = overrides_cfg.get("base_url") or block.get("base_url")
++    api_key = overrides_cfg.get("api_key") or block.get("api_key")
++    timeout = overrides_cfg.get("timeout") or block.get("timeout")
++    model = overrides_cfg.get("model")
++
++    if not base_url or not model:
++        if log is not None:
++            try:
++                log(
++                    "[agent] local_inference.runner_overrides: missing base_url "
++                    "or model; runner override skipped (no silent flip)"
++                )
++            except Exception:
++                pass
++        return overrides_clients
++
++    try:
++        from amof.orchestrator.llm.local_openai_compatible import (
++            LocalOpenAICompatibleClient,
++            DEFAULT_LOCAL_TIMEOUT_SECONDS,
++        )
++    except Exception as exc:
++        if log is not None:
++            try:
++                log(
++                    f"[agent] local_inference.runner_overrides disabled: import failed ({exc})"
++                )
++            except Exception:
++                pass
++        return overrides_clients
++
++    effective_timeout = float(timeout or DEFAULT_LOCAL_TIMEOUT_SECONDS)
++
++    for runner_name in allowed_runners:
++        if not isinstance(runner_name, str) or not runner_name:
++            continue
++        try:
++            client = LocalOpenAICompatibleClient(
++                base_url=base_url,
++                model=model,
++                api_key=api_key,
++                timeout=effective_timeout,
++                provider_id="local",
++            )
++        except Exception as exc:
++            if log is not None:
++                try:
++                    log(
++                        f"[agent] local_inference.runner_overrides: failed to build "
++                        f"client for runner '{runner_name}' ({exc})"
++                    )
++                except Exception:
++                    pass
++            continue
++        overrides_clients[runner_name] = client
++
++    return overrides_clients
++
++
+ def _build_api_runner_llm(cfg: Dict[str, Any]) -> Tuple[Any, str]:
+     from amof.orchestrator.llm.anthropic import AnthropicClient
+     from amof.orchestrator.llm.openai_client import OpenAIClient
+@@ -212,11 +473,38 @@ def _build_api_runner_llm(cfg: Dict[str, Any]) -> Tuple[Any, str]:
+ 
+     return client, model_id
+ 
+-def run_agent_for_ui(run_manager, run_id: str, ecosystem: str, prompt: str, mode: str = "build", session_id: Optional[str] = None, agent_id: Optional[str] = None) -> None:
++def run_agent_for_ui(
++    run_manager,
++    run_id: str,
++    ecosystem: str,
++    prompt: str,
++    mode: str = "build",
++    runtime_profile: Optional[str] = None,
++    session_id: Optional[str] = None,
++    agent_id: Optional[str] = None,
++    thread_id: Optional[str] = None,
++    arena_mode: Optional[str] = None,
++    team_id: Optional[str] = None,
++    delegation_id: Optional[str] = None,
++    backlog_item_id: Optional[str] = None,
++    trigger_kind: Optional[str] = None,
++    parent_run_id: Optional[str] = None,
++) -> None:
+     """
+     Run the AMOF agent natively within the API process, but optimized for UI consumption.
+     Unlike `cmd_agent`, this avoids CLI prompts, handles events cleanly, and 
+     separates chat from internal logs.
++
++    Mini Ultra Plan 2 / Phase L2: ``runtime_profile`` is now a first-class
++    argument. The queue dispatcher already passed it as the 6th positional
++    argument; previously the function signature only declared 7 params and
++    the dispatcher call would have raised ``TypeError`` at runtime. The
++    widened signature also accepts the trailing kwargs the dispatcher
++    surfaces (thread_id, arena_mode, ...) so call-site truth and function
++    truth agree. ``runtime_profile`` is the opt-in switch for L2's
++    per-runner local-Qwen routing — see :func:`_resolve_runner_local_clients`.
++    Other kwargs are accepted for call-site compatibility but are not
++    consumed here yet.
+     """
+     run_manager.update_status(run_id, RUN_STATUS_RUNNING)
+     
+@@ -374,11 +662,20 @@ def run_agent_for_ui(run_manager, run_id: str, ecosystem: str, prompt: str, mode
+                     # authority entirely (e.g. `amof agent` invocations
+                     # constructing Agent without an authority).
+                     source = payload.get("source") or "master"
++                    # Mini Ultra Plan 2 / Phase L2: forward the truthful
++                    # provider id (anthropic/openrouter/local/runpod/...)
++                    # the authority extracted from the resolved client.
++                    # Empty string is preserved (don't fabricate) so the
++                    # UI can distinguish "authority did not record one"
++                    # from any specific provider.
++                    provider = payload.get("provider", "") or ""
++                    provider_bit = f" via {provider}" if provider else ""
+                     run_manager.append_event(
+                         run_id, level="info", type="llm_call",
+-                        message=f"LLM call [{source}] ({model}, {tok_in}+{tok_out} tokens, ${cost:.4f})",
++                        message=f"LLM call [{source}{provider_bit}] ({model}, {tok_in}+{tok_out} tokens, ${cost:.4f})",
+                         payload={"model": model, "prompt_tokens": tok_in, "completion_tokens": tok_out,
+-                                 "cost": cost, "latency_ms": latency, "source": source},
++                                 "cost": cost, "latency_ms": latency, "source": source,
++                                 "provider": provider},
+                     )
+                 elif event_type in ("session_start", "session_end"):
+                     run_manager.append_event(
+@@ -398,9 +695,35 @@ def run_agent_for_ui(run_manager, run_id: str, ecosystem: str, prompt: str, mode
+                                 payload=telemetry_payload,
+                             )
+                 elif event_type == "error":
++                    # Mini Ultra Plan 2 / Phase L1 truthfulness fix:
++                    # forward structured provider attribution to SSE so
++                    # the right-rail and run detail can show the actual
++                    # provider/model/failure_class instead of a
++                    # message-only blob. Without this, `events.jsonl`
++                    # carried truthful fields (provider, failure_class,
++                    # failure_provider, status_code, resumable, model,
++                    # source) but the SSE rebroadcast collapsed to a
++                    # message-only string and the UI lost attribution.
++                    structured_payload: Dict[str, Any] = {
++                        "message": payload.get("message"),
++                    }
++                    for key in (
++                        "provider",
++                        "failure_class",
++                        "failure_provider",
++                        "status_code",
++                        "resumable",
++                        "model",
++                        "source",
++                        "stop_reason",
++                    ):
++                        value = payload.get(key)
++                        if value is not None:
++                            structured_payload[key] = value
+                     run_manager.append_event(
+                         run_id, level="error", type="error",
+                         message=f"Error: {payload.get('message')}",
++                        payload=structured_payload,
+                     )
+                 else:
+                     run_manager.append_event(run_id, level="info", type=event_type, message=str(payload))
+@@ -445,15 +768,16 @@ def run_agent_for_ui(run_manager, run_id: str, ecosystem: str, prompt: str, mode
+         # to fall through to the cloud client or re-raise. When the block
+         # is absent or `enabled: false`, this is a no-op and Phase 1/1b
+         # cloud-only behaviour is preserved exactly.
++        registered_local_sources: Dict[str, str] = {}
+         try:
+-            _registered_local = _register_local_inference_clients(
++            registered_local_sources = _register_local_inference_clients(
+                 inference_authority,
+                 cfg,
+                 log=lambda msg: run_manager.append_log(run_id, msg),
+             )
+-            if _registered_local:
++            if registered_local_sources:
+                 _summary = ", ".join(
+-                    f"{src}->{model}" for src, model in _registered_local.items()
++                    f"{src}->{model}" for src, model in registered_local_sources.items()
+                 )
+                 run_manager.append_log(
+                     run_id,
+@@ -466,6 +790,15 @@ def run_agent_for_ui(run_manager, run_id: str, ecosystem: str, prompt: str, mode
+             )
+ 
+         # 4. Setup Context and Tools
++        def _queue_stop_requested() -> bool:
++            try:
++                queue_store = getattr(run_manager, "queue_store", None)
++                if queue_store is None:
++                    return False
++                item = queue_store.load(run_id)
++                return bool(item and item.control.get("stop_requested"))
++            except Exception:
++                return False
+         
+         # Setup Vector Store
+         vector_store = None
+@@ -575,6 +908,90 @@ def run_agent_for_ui(run_manager, run_id: str, ecosystem: str, prompt: str, mode
+         runner_max_cost = max_cost * runner_cost_fraction
+         llm_ladder_cfg = cfg.get("llm_ladder", {}).get("roles", {})
+         worker_cascade = (llm_ladder_cfg.get("worker") or {}).get("cascade")
++
++        # Mini Ultra Plan 2 / Phase L2: build the per-runner local-client
++        # map BEFORE constructing the RunnerFactory so it can be threaded
++        # into runner Agents at spawn time. The map is empty when the
++        # opt-in conditions aren't met (no runtime_profile, profile not
++        # in enabled_for_profile, runner_overrides absent, ...). When
++        # populated, RunnerFactory.run_runner swaps the matching runner's
++        # ``model_clients["standard"]`` / ``["fast"]`` for the local
++        # client before constructing the worker Agent. Default routing
++        # is preserved exactly when the map is empty — no silent flip.
++        runner_local_clients = _resolve_runner_local_clients(
++            cfg,
++            runtime_profile,
++            log=lambda msg: run_manager.append_log(run_id, msg),
++        )
++
++        # Mini Ultra Plan 2 / Phase R1: parallel Runpod resolver. The two
++        # profiles are mutually exclusive in canonical config (each opt-in
++        # profile is registered against exactly one provider block), so
++        # in practice at most one of these returns a non-empty map. We
++        # union them with Runpod taking precedence for the same runner
++        # name only when an operator explicitly mis-configures the same
++        # profile in both places — which would be a configuration error
++        # we surface via the operator log line below rather than a silent
++        # collision. Default behaviour: empty map → cloud cascade
++        # preserved exactly.
++        runner_runpod_clients = _resolve_runner_runpod_clients(
++            cfg,
++            runtime_profile,
++            log=lambda msg: run_manager.append_log(run_id, msg),
++        )
++        if runner_runpod_clients:
++            collisions = set(runner_local_clients) & set(runner_runpod_clients)
++            if collisions:
++                run_manager.append_log(
++                    run_id,
++                    f"[agent] WARNING runner_overrides collision for "
++                    f"{sorted(collisions)} — Runpod wins (config error: same "
++                    f"profile registered against both local and runpod)",
++                )
++            runner_local_clients = {**runner_local_clients, **runner_runpod_clients}
++
++        local_runtime_sources: Dict[str, str] = dict(registered_local_sources)
++        for runner_name, client in runner_local_clients.items():
++            try:
++                local_runtime_sources[f"runner:{runner_name}"] = client.model_name()
++            except Exception:
++                local_runtime_sources[f"runner:{runner_name}"] = type(client).__name__
++        base_provider = (
++            getattr(base_llm, "provider", None)
++            or getattr(base_llm, "_provider", None)
++            or str(cfg.get("default_provider", "") or "")
++        )
++        local_inference_cfg = cfg.get("local_inference") if isinstance(cfg, dict) else None
++        fallback_policy = DEFAULT_LOCAL_FALLBACK_POLICY
++        if isinstance(local_inference_cfg, dict):
++            fallback_policy = str(local_inference_cfg.get("fallback") or fallback_policy)
++        runtime_mode = "cloud"
++        if local_runtime_sources:
++            runtime_mode = "mixed"
++            if base_provider == "local":
++                runtime_mode = "local"
++        run_manager.append_event(
++            run_id,
++            level="info",
++            type="llm_runtime_resolved",
++            message=(
++                f"Runtime profile {runtime_profile or 'default'} resolved "
++                f"to {runtime_mode} inference"
++            ),
++            payload={
++                "provider": base_provider or None,
++                "model": default_model,
++                "source": "master",
++                "ladder_head": default_model,
++                "active_profile": runtime_profile or "default",
++                "runtime_mode": runtime_mode,
++                "local_sources": local_runtime_sources,
++                "fallback_policy": (
++                    fallback_policy if local_runtime_sources else "none"
++                ),
++            },
++        )
++
+         if delegation_enabled and runners_config_path.exists():
+             try:
+                 from amof.orchestrator.runners import RunnerFactory
+@@ -586,6 +1003,7 @@ def run_agent_for_ui(run_manager, run_id: str, ecosystem: str, prompt: str, mode
+                     deploy_presets=cfg.get("deploy_presets"),
+                     role="worker",
+                     ticket_cwd=ticket_cwd,
++                    stop_checker=_queue_stop_requested,
+                 )
+                 runner_factory = RunnerFactory.from_config(
+                     config_path=runners_config_path,
+@@ -596,8 +1014,21 @@ def run_agent_for_ui(run_manager, run_id: str, ecosystem: str, prompt: str, mode
+                     max_cost_per_runner=runner_max_cost,
+                     verbose=False,
+                     cascade=worker_cascade,
++                    inference_authority=inference_authority,
++                    runner_local_clients=runner_local_clients,
+                 )
+                 run_manager.append_log(run_id, f"[agent] Runners loaded: {', '.join(runner_factory.runner_names)}")
++                if runner_local_clients:
++                    overridden = ", ".join(
++                        f"{name}->{client.model_name()}"
++                        for name, client in runner_local_clients.items()
++                        if name in runner_factory.runner_names
++                    ) or "(none of the configured runners matched)"
++                    run_manager.append_log(
++                        run_id,
++                        f"[agent] runtime_profile='{runtime_profile}' active local "
++                        f"runner overrides: {overridden}",
++                    )
+             except Exception as e:
+                 logger.warning("Runner factory init failed: %s", e)
+                 run_manager.append_log(run_id, f"[agent] Runner factory init failed (non-fatal): {e}")
+@@ -626,6 +1057,7 @@ def run_agent_for_ui(run_manager, run_id: str, ecosystem: str, prompt: str, mode
+             summarizer_llm=inference_authority.with_source("summarizer"),
+             vector_store=vector_store,
+             ticket_cwd=ticket_cwd,
++            stop_checker=_queue_stop_requested,
+         )
+         
+         # 5. Create Agent
+@@ -745,6 +1177,12 @@ def run_agent_for_ui(run_manager, run_id: str, ecosystem: str, prompt: str, mode
+             # after retries, and must not be reported as success.
+             if stop_reason_val == "completed":
+                 run_manager.update_status(run_id, RUN_STATUS_SUCCESS, exit_code=0)
++            elif stop_reason_val == "cancelled":
++                run_manager.append_log(
++                    run_id,
++                    "Run cancelled after stop request interrupted the active Shell tool.",
++                )
++                run_manager.update_status(run_id, RUN_STATUS_CANCELLED, exit_code=130)
+             else:
+                 run_manager.append_log(
+                     run_id,
+@@ -770,6 +1208,16 @@ def run_agent_for_ui(run_manager, run_id: str, ecosystem: str, prompt: str, mode
+                     if max_iterations_val is not None:
+                         merged_loop_state["max_iterations"] = max_iterations_val
+                     merged_loop_state["agent_stop_reason"] = stop_reason_val
++                    if stop_reason_val == "cancelled":
++                        merged_loop_state["cancel_requested"] = True
++                    # Mini Ultra Plan 2 / Phase L2: surface the runtime
++                    # profile that drove this run (e.g. "local_qwen") so
++                    # /runs/{id}.loop_state truthfully reports which
++                    # provider/runner override was in effect. Persisted
++                    # only when explicitly set by the caller — don't
++                    # invent a default.
++                    if runtime_profile:
++                        merged_loop_state["runtime_profile"] = runtime_profile
+ 
+                     # Project truthful provider failure attribution onto the
+                     # run record so /runs/{id}.loop_state surfaces the actual
+diff --git a/scripts/amof/commands/agent_cmd.py b/scripts/amof/commands/agent_cmd.py
+index 4a0ddf2..987e32f 100644
+--- a/scripts/amof/commands/agent_cmd.py
++++ b/scripts/amof/commands/agent_cmd.py
+@@ -587,7 +587,18 @@ def cmd_agent(
+                         "strong": AnthropicClient(api_key=anthropic_key, model=DEFAULT_TIERS["strong"]),
+                     }
+         except Exception as e:
+-            logger.debug("Fallback provider %s not available: %s", fallback_provider_name, e)
++            # Mini Ultra Plan 2 / Phase L1: surface alternate-provider
++            # build failures at WARNING (was DEBUG, which silently hid
++            # missing-key situations from operators). The
++            # `failure_class` tag aligns with the
++            # ``classify_provider_status``-derived taxonomy so the
++            # missing-fallback condition is greppable in operator logs
++            # alongside real provider errors.
++            logger.warning(
++                "Fallback provider %s unavailable (failure_class=provider_fallback_unavailable): %s",
++                fallback_provider_name,
++                e,
++            )
+ 
+         routing_config = cfg.get("routing", {})
+ 
+diff --git a/scripts/amof/orchestrator/agent.py b/scripts/amof/orchestrator/agent.py
+index 709380b..913ea12 100644
+--- a/scripts/amof/orchestrator/agent.py
++++ b/scripts/amof/orchestrator/agent.py
+@@ -25,6 +25,7 @@ from .agent_models import EcosystemCommand
+ from .context.summarizer import ContextSummarizer
+ from .events import EventLog
+ from .llm.base import LLMClient, LLMResponse, ProviderError, stop_reason_for_failure_class
++from .llm.inference_authority import _client_provider
+ from .model_router import ModelRouter
+ from .session import Session
+ from .telemetry import SessionTelemetry
+@@ -271,19 +272,44 @@ class Agent:
+ 
+             # Record telemetry. When an InferenceAuthority is wired in
+             # (live API path, Phase 1b), it owns both the per-step
+-            # `record_from_usage` + `record_agent_cost("master", ...)` and
++            # `record_from_usage` + `record_agent_cost(<source>, ...)` and
+             # the `llm_call` event emission below — so we deliberately do
+             # NOT call them again here, to avoid double-counting cost and
+             # duplicate llm_call entries in events.jsonl. CLI callers
+             # without authority keep the legacy in-Agent emission.
++            #
++            # Mini Ultra Plan 2 / Phase L2: honor the authority's
++            # ``default_source`` instead of hard-coding ``"master"``.
++            # When this Agent was constructed from RunnerFactory with a
++            # sibling authority obtained via
++            # ``parent_authority.with_source(f"runner:{name}")``, the
++            # source attribution must read ``runner:<name>`` end to end
++            # (CallMetrics, agent_costs, ``llm_call`` events, SSE
++            # rebroadcast). Falling back to "master" only when no
++            # authority is wired preserves CLI back-compat.
+             tier = self.model_router.active_tier if self.model_router else "default"
+             tool_calls_count = len(response.tool_calls) if response.tool_calls else 0
+             if self.inference_authority is not None:
++                authority_source = (
++                    getattr(self.inference_authority, "default_source", None)
++                    or "master"
++                )
++                # Mini Ultra Plan 2 / Phase L2: pass the truthful upstream
++                # provider extracted from the LLM that ACTUALLY served this
++                # call (``self.llm`` — possibly a runner-scoped local override
++                # client) instead of letting the authority default to the
++                # underlying cloud router. Without this, a runner using a
++                # local Qwen override would record ``provider="anthropic"``
++                # because the master authority's underlying is the cloud
++                # cascade. ``_client_provider`` returns "" when the active
++                # llm doesn't expose a provider, so the existing fallback to
++                # ``self._underlying`` still applies for unknown shapes.
+                 self.inference_authority.record_external_call(
+                     response.usage,
+-                    source="master",
++                    source=authority_source,
+                     tier=tier,
+                     tool_calls=tool_calls_count,
++                    provider=_client_provider(self.llm),
+                 )
+             else:
+                 self.telemetry.record_from_usage(response.usage, tier=tier)
+@@ -334,6 +360,13 @@ class Agent:
+             if response.has_tool_calls:
+                 # Execute tool calls and add results to conversation
+                 all_succeeded = self._handle_tool_calls(response)
++                if self.stop_reason == "cancelled":
++                    self.events.log(
++                        "stop_requested_honored",
++                        phase="tool_execution",
++                        reason="active_tool_cancelled",
++                    )
++                    return "Stop requested; active tool interrupted."
+ 
+                 # Update router with success/failure feedback
+                 if self.model_router:
+@@ -709,6 +742,8 @@ class Agent:
+         results = []
+         all_succeeded = True
+         for tc_request, result, duration_ms in execution_results:
++            if result.cancelled:
++                self.stop_reason = "cancelled"
+             if not result.success:
+                 all_succeeded = False
+                 # Categorize tool failures for better telemetry
+@@ -770,6 +805,8 @@ class Agent:
+             return "tool_guardrail"
+         
+         # Shell errors
++        if "cancelled" in error_lower and "stop request" in error_lower:
++            return "tool_cancelled"
+         if "timeout" in error_lower or "timed out" in error_lower:
+             return "tool_timeout"
+         if "command not found" in error_lower:
+diff --git a/scripts/amof/orchestrator/llm/inference_authority.py b/scripts/amof/orchestrator/llm/inference_authority.py
+index 93eea71..f3ca35f 100644
+--- a/scripts/amof/orchestrator/llm/inference_authority.py
++++ b/scripts/amof/orchestrator/llm/inference_authority.py
+@@ -73,6 +73,38 @@ SOURCE_FALLBACK_NONE = "none"
+ _VALID_FALLBACKS = {SOURCE_FALLBACK_CLOUD, SOURCE_FALLBACK_NONE}
+ 
+ 
++def _client_provider(client: Any) -> str:
++    """Best-effort truthful provider id for a resolved client.
++
++    Returns ``""`` when no truthful provider can be derived (legacy
++    custom clients used in tests). Order of preference:
++
++    1. ``client.provider`` (the canonical attribute used by
++       :class:`OpenAIClient` and :class:`LocalOpenAICompatibleClient`).
++    2. ``client._provider`` (back-compat for older client subclasses).
++    3. ``client.detect_active_provider()`` (ModelRouter exposes this so
++       cascaded calls report the cascade-elected upstream).
++
++    No string heuristics on class names — those would silently
++    misattribute (the IAL Phase 2a refactor explicitly removed them).
++    """
++    if client is None:
++        return ""
++    for attr in ("provider", "_provider"):
++        value = getattr(client, attr, None)
++        if isinstance(value, str) and value:
++            return value
++    detect = getattr(client, "detect_active_provider", None)
++    if callable(detect):
++        try:
++            value = detect()
++            if isinstance(value, str) and value:
++                return value
++        except Exception:
++            pass
++    return ""
++
++
+ class InferenceAuthority(LLMClient):
+     """Thin shared dispatch layer for live controlplane inference.
+ 
+@@ -214,7 +246,7 @@ class InferenceAuthority(LLMClient):
+         source: Optional[str] = None,
+     ) -> LLMResponse:
+         attrib = source or self._default_source
+-        client, used_fallback = self._dispatch(
++        response, used_fallback, served_provider = self._dispatch(
+             attrib,
+             lambda c: c.chat(
+                 system=system,
+@@ -224,8 +256,11 @@ class InferenceAuthority(LLMClient):
+                 temperature=temperature,
+             ),
+         )
+-        response = client  # _dispatch returns the response, not the client
+-        self._record(getattr(response, "usage", None), source=attrib)
++        self._record(
++            getattr(response, "usage", None),
++            source=attrib,
++            provider=served_provider,
++        )
+         if used_fallback:
+             self._emit_fallback_event(attrib)
+         return response
+@@ -240,7 +275,7 @@ class InferenceAuthority(LLMClient):
+         source: Optional[str] = None,
+     ) -> StructuredLLMResponse:
+         attrib = source or self._default_source
+-        response, used_fallback = self._dispatch(
++        response, used_fallback, served_provider = self._dispatch(
+             attrib,
+             lambda c: c.chat_structured(
+                 system=system,
+@@ -250,7 +285,11 @@ class InferenceAuthority(LLMClient):
+                 temperature=temperature,
+             ),
+         )
+-        self._record(getattr(response, "usage", None), source=attrib)
++        self._record(
++            getattr(response, "usage", None),
++            source=attrib,
++            provider=served_provider,
++        )
+         if used_fallback:
+             self._emit_fallback_event(attrib)
+         return response
+@@ -262,36 +301,44 @@ class InferenceAuthority(LLMClient):
+     def _dispatch(self, source: str, call):
+         """Invoke ``call`` against the resolved client with fallback policy.
+ 
+-        Returns ``(response, used_fallback)``. If a per-source client is
+-        registered and raises, the configured fallback policy decides
+-        whether to re-raise or retry against ``self._underlying``. The
+-        fallback path is deliberately explicit — there is no silent
+-        provider-swap and no synthesised response.
++        Returns ``(response, used_fallback, served_provider)`` where
++        ``served_provider`` is the truthful upstream provider id of the
++        client that actually served the call (after any fallback). If a
++        per-source client is registered and raises, the configured
++        fallback policy decides whether to re-raise or retry against
++        ``self._underlying``. The fallback path is deliberately explicit
++        — there is no silent provider-swap and no synthesised response.
++        Mini Ultra Plan 2 / Phase L2: the served provider is propagated
++        into telemetry + ``llm_call`` events so per-call attribution is
++        truthful even when fallback flipped from local/runpod back to
++        the cloud cascade.
+         """
+ 
+         client = self._resolve_client(source)
+         if client is self._underlying:
+-            return call(client), False
++            return call(client), False, _client_provider(client)
+ 
+         try:
+-            return call(client), False
++            return call(client), False, _client_provider(client)
+         except Exception as exc:
+             policy = self._source_fallback.get(source, SOURCE_FALLBACK_CLOUD)
+             if policy == SOURCE_FALLBACK_NONE:
+                 logger.warning(
+-                    "InferenceAuthority: source=%s local client failed and "
++                    "InferenceAuthority: source=%s %s client failed and "
+                     "fallback='none' — re-raising: %s",
+                     source,
++                    _client_provider(client) or "alt",
+                     exc,
+                 )
+                 raise
+             logger.warning(
+-                "InferenceAuthority: source=%s local client failed; "
++                "InferenceAuthority: source=%s %s client failed; "
+                 "falling back to underlying cloud client: %s",
+                 source,
++                _client_provider(client) or "alt",
+                 exc,
+             )
+-            return call(self._underlying), True
++            return call(self._underlying), True, _client_provider(self._underlying)
+ 
+     def _emit_fallback_event(self, source: str) -> None:
+         """Record a ``llm_local_fallback`` event for operator visibility."""
+@@ -317,6 +364,7 @@ class InferenceAuthority(LLMClient):
+         source: Optional[str] = None,
+         tier: Optional[str] = None,
+         tool_calls: int = 0,
++        provider: Optional[str] = None,
+     ) -> None:
+         """Record a call that was already invoked outside the authority.
+ 
+@@ -326,25 +374,37 @@ class InferenceAuthority(LLMClient):
+         response is in hand, the Agent hands the resulting ``Usage`` to
+         the authority via this method so the same telemetry + event
+         emission path is exercised as for ``chat()`` / ``chat_structured``
+-        calls. This is the seam that makes raw ``events.jsonl`` master
+-        entries carry ``source="master"`` without double-emitting.
++        calls. This is the seam that makes raw ``events.jsonl`` master /
++        runner entries carry their truthful ``source`` without
++        double-emitting.
+ 
+         Args:
+             usage: Provider-reported usage for the just-completed call.
+                 ``None`` is a no-op (e.g. dry-run / timeout responses).
+             source: Source attribution to record under. Defaults to the
+-                authority's ``default_source``.
++                authority's ``default_source`` (``"master"`` for the root
++                authority; ``"runner:<name>"`` for sibling authorities
++                obtained via :meth:`with_source` and handed to a runner
++                Agent in Phase L2).
+             tier: Optional tier label for ``record_from_usage``. Falls
+                 back to ``source`` when not provided so back-compat with
+                 the bypass callsites is preserved.
+             tool_calls: Number of tool calls produced by this response.
++            provider: Optional explicit provider id. When omitted, the
++                authority extracts it from ``self._underlying`` (the
++                client that actually served the call from Agent.run).
++                This makes ``llm_call`` events truthful about which
++                upstream answered even on the master/runner path.
+         """
+ 
++        if provider is None:
++            provider = _client_provider(self._underlying)
+         self._record(
+             usage,
+             source=source or self._default_source,
+             tier=tier,
+             tool_calls=tool_calls,
++            provider=provider,
+         )
+ 
+     def model_name(self) -> str:
+@@ -412,6 +472,7 @@ class InferenceAuthority(LLMClient):
+         source: str,
+         tier: Optional[str] = None,
+         tool_calls: int = 0,
++        provider: str = "",
+     ) -> None:
+         """Record source-attributed telemetry + a normalised llm_call event.
+ 
+@@ -423,6 +484,12 @@ class InferenceAuthority(LLMClient):
+         for off-funnel callers (summarizer / indexer), where source and
+         tier are the same logical bucket. The master path supplies the
+         real ``ModelRouter`` tier so per-tier metrics remain truthful.
++
++        ``provider`` is the truthful upstream id of the client that
++        served the call (``"local"``, ``"runpod"``, ``"openrouter"``,
++        ``"anthropic"``, etc.). Mini Ultra Plan 2 / Phase L2 added this
++        so ``CallMetrics`` and the ``llm_call`` SSE rebroadcast carry
++        per-call provider attribution end to end.
+         """
+ 
+         if usage is None:
+@@ -432,7 +499,9 @@ class InferenceAuthority(LLMClient):
+ 
+         if self._telemetry is not None:
+             try:
+-                self._telemetry.record_from_usage(usage, tier=effective_tier)
++                self._telemetry.record_from_usage(
++                    usage, tier=effective_tier, provider=provider
++                )
+             except Exception as exc:
+                 logger.debug(
+                     "authority telemetry record_from_usage failed for source=%s tier=%s: %s",
+@@ -464,6 +533,7 @@ class InferenceAuthority(LLMClient):
+                     latency_ms=getattr(usage, "latency_ms", 0) or 0,
+                     tool_calls=tool_calls,
+                     source=source,
++                    provider=provider,
+                 )
+             except Exception as exc:
+                 logger.debug(
+diff --git a/scripts/amof/orchestrator/llm/openai_client.py b/scripts/amof/orchestrator/llm/openai_client.py
+index d189c2c..1b7128d 100644
+--- a/scripts/amof/orchestrator/llm/openai_client.py
++++ b/scripts/amof/orchestrator/llm/openai_client.py
+@@ -188,14 +188,20 @@ class OpenAIClient(LLMClient):
+ 
+         choice = response.choices[0] if response.choices else None
+         if not choice or not choice.message:
+-            raise ValueError("OpenAI structured output returned no choices.")
++            raise ValueError(
++                f"{self._provider_label()} structured output returned no choices."
++            )
+ 
+         parsed = getattr(choice.message, "parsed", None)
+         if parsed is None:
+             refusal = getattr(choice.message, "refusal", None)
+             if refusal:
+-                raise ValueError(f"OpenAI structured output refusal: {refusal}")
+-            raise ValueError("OpenAI structured output did not include parsed content.")
++                raise ValueError(
++                    f"{self._provider_label()} structured output refusal: {refusal}"
++                )
++            raise ValueError(
++                f"{self._provider_label()} structured output did not include parsed content."
++            )
+ 
+         usage = self._build_usage(response, latency_ms)
+         return StructuredLLMResponse(
+@@ -212,7 +218,23 @@ class OpenAIClient(LLMClient):
+         return self._provider
+ 
+     def _provider_label(self) -> str:
+-        return "OpenRouter" if self._provider == "openrouter" else "OpenAI"
++        """Truthful human-readable provider label for log/error messages.
++
++        ``self._provider`` is set at construction time by the concrete
++        subclass / model-id sniff in :meth:`__init__`. Subclasses that
++        speak the OpenAI Chat Completions wire protocol but represent a
++        different upstream (``LocalOpenAICompatibleClient`` for
++        ``local`` / ``runpod``) inherit this method, so error and log
++        text never says ``OpenAI`` for a non-OpenAI provider.
++        """
++        labels = {
++            "openrouter": "OpenRouter",
++            "openai": "OpenAI",
++            "local": "Local",
++            "runpod": "Runpod",
++        }
++        provider = self._provider or "provider"
++        return labels.get(provider, provider.title())
+ 
+     def _wrap_provider_error(self, exc: BaseException) -> ProviderError:
+         status_code = getattr(exc, "status_code", None)
+diff --git a/scripts/amof/orchestrator/model_router.py b/scripts/amof/orchestrator/model_router.py
+index 891d079..00fd441 100644
+--- a/scripts/amof/orchestrator/model_router.py
++++ b/scripts/amof/orchestrator/model_router.py
+@@ -501,6 +501,29 @@ class ModelRouter:
+         client = self._resolve(self._last_tier_used or self._current_tier)
+         return client.model_name()
+ 
++    def detect_active_provider(self) -> str:
++        """Return the provider id of the currently elected upstream client.
++
++        Mini Ultra Plan 2 / Phase L2: the InferenceAuthority's
++        ``_client_provider`` helper consults this method to derive a
++        truthful per-call provider attribution when the LLMClient handed
++        to ``Agent`` is a router rather than a single client. Without
++        this hook, telemetry and ``llm_call`` events on the cloud master
++        path would record an empty provider, defeating the truthful-
++        attribution contract introduced for runner overrides.
++
++        Returns ``""`` when no per-tier client exposes a provider — the
++        helper treats that as "no truthful answer" and avoids inventing
++        one.
++        """
++        client = self._resolve(self._last_tier_used or self._current_tier)
++        for attr in ("provider", "_provider"):
++            value = getattr(client, attr, None)
++            if isinstance(value, str) and value:
++                return value
++        primary = getattr(self, "_primary_provider", "") or ""
++        return primary if isinstance(primary, str) else ""
++
+     def context_window(self) -> int:
+         """Return context window of the currently active tier."""
+         client = self._resolve(self._last_tier_used or self._current_tier)
+diff --git a/scripts/amof/orchestrator/runners.py b/scripts/amof/orchestrator/runners.py
+index c0afee9..ecfa9a8 100644
+--- a/scripts/amof/orchestrator/runners.py
++++ b/scripts/amof/orchestrator/runners.py
+@@ -87,6 +87,8 @@ class RunnerFactory:
+         max_cost_per_runner: float = 2.00,
+         verbose: bool = False,
+         cascade: Optional[List[str]] = None,
++        inference_authority: Optional[Any] = None,
++        runner_local_clients: Optional[Dict[str, LLMClient]] = None,
+     ):
+         """Initialize the factory.
+ 
+@@ -99,6 +101,20 @@ class RunnerFactory:
+             max_cost_per_runner: Cost cap per runner invocation.
+             verbose: Show per-iteration tool call details.
+             cascade: Optional cascade of model identifiers for the worker.
++            inference_authority: Mini Ultra Plan 2 / Phase L2 — the run's
++                shared :class:`InferenceAuthority`. When supplied, each
++                runner Agent is constructed with a sibling authority via
++                ``inference_authority.with_source(f"runner:{name}")`` so
++                per-call telemetry / events / SSE rebroadcasts attribute
++                to ``runner:<name>`` end to end. When ``None`` (CLI
++                back-compat), runners use the legacy in-Agent telemetry
++                emission and source attribution defaults to ``"master"``.
++            runner_local_clients: Mini Ultra Plan 2 / Phase L2 opt-in
++                map of ``{runner_name: LLMClient}``. When a runner is
++                spawned and its name is present here, the local client
++                replaces ``model_clients["standard"]`` and ``["fast"]``
++                for that runner only. Other runners keep the unchanged
++                cloud cascade. Empty/None = no override (default).
+         """
+         self._runners = runners
+         self._model_clients = model_clients
+@@ -108,6 +124,10 @@ class RunnerFactory:
+         self._max_cost_per_runner = max_cost_per_runner
+         self._verbose = verbose
+         self._cascade = cascade
++        self._inference_authority = inference_authority
++        self._runner_local_clients: Dict[str, LLMClient] = (
++            dict(runner_local_clients) if runner_local_clients else {}
++        )
+ 
+     @classmethod
+     def from_config(
+@@ -120,11 +140,15 @@ class RunnerFactory:
+         max_cost_per_runner: float = 2.00,
+         verbose: bool = False,
+         cascade: Optional[List[str]] = None,
++        inference_authority: Optional[Any] = None,
++        runner_local_clients: Optional[Dict[str, LLMClient]] = None,
+     ) -> RunnerFactory:
+         """Load runner definitions from a YAML config file.
+ 
+         Args:
+             config_path: Path to runners.yaml.
++            inference_authority: see :meth:`__init__`.
++            runner_local_clients: see :meth:`__init__`.
+         """
+         runners: Dict[str, RunnerConfig] = {}
+ 
+@@ -147,6 +171,8 @@ class RunnerFactory:
+             max_cost_per_runner=max_cost_per_runner,
+             verbose=verbose,
+             cascade=cascade,
++            inference_authority=inference_authority,
++            runner_local_clients=runner_local_clients,
+         )
+ 
+     @property
+@@ -209,17 +235,72 @@ class RunnerFactory:
+         telemetry = SessionTelemetry(max_cost=self._max_cost_per_runner)
+         events = EventLog(session_id=session.id)
+ 
++        # Mini Ultra Plan 2 / Phase L2: opt-in local-client override.
++        # When ``runner_local_clients[name]`` is set (gated on
++        # runtime_profile + allowed_runners back in agent_runner.py), the
++        # local OpenAI-compatible client replaces the standard tier for
++        # this runner only. Default routing for every other runner is
++        # untouched. We also surface ``provider="local"`` (or whichever
++        # provider_id the override carries) into telemetry/events because
++        # the runner Agent uses the override directly without going
++        # through the InferenceAuthority dispatch path.
++        override_client = self._runner_local_clients.get(name)
++        local_clients_for_router = dict(self._model_clients)
++        if override_client is not None:
++            local_clients_for_router["standard"] = override_client
++            local_clients_for_router["fast"] = override_client
++            logger.info(
++                "RunnerFactory: runner=%s using local override client model=%s",
++                name,
++                override_client.model_name(),
++            )
++
+         # 4. Create a ModelRouter with independent state but shared clients
+-        # Use the worker cascade if provided, otherwise default logic
++        # Use the worker cascade if provided, otherwise default logic.
++        # When an override is present we deliberately drop the cascade so
++        # the local client is the only path — cascade fallbacks would
++        # silently re-introduce the cloud provider, breaking the L2
++        # "no silent fallback" rule.
+         router = ModelRouter(
+-            models=dict(self._model_clients),
++            models=local_clients_for_router,
+             default_tier=config.default_tier,
+-            cascade=self._cascade,
++            cascade=None if override_client is not None else self._cascade,
+         )
+ 
++        if override_client is not None:
++            primary_llm = override_client
++        elif self._cascade:
++            primary_llm = router.select_for_phase("explore")
++        else:
++            primary_llm = local_clients_for_router.get(
++                config.default_tier, local_clients_for_router.get("standard")
++            )
++
++        # Mini Ultra Plan 2 / Phase L2: thread a source-scoped sibling
++        # InferenceAuthority into the runner Agent so per-call telemetry
++        # and ``llm_call`` events attribute to ``runner:<name>`` end to
++        # end, including the truthful upstream provider extracted from
++        # the (possibly overridden) primary_llm. When the parent did not
++        # supply an authority (CLI back-compat), the runner Agent stays
++        # on the legacy in-Agent telemetry emission path.
++        runner_authority = None
++        if self._inference_authority is not None:
++            try:
++                runner_authority = self._inference_authority.with_source(
++                    f"runner:{name}"
++                )
++            except Exception as exc:  # pragma: no cover - defensive
++                logger.debug(
++                    "RunnerFactory: with_source failed for runner=%s (%s); "
++                    "falling back to legacy telemetry emission",
++                    name,
++                    exc,
++                )
++                runner_authority = None
++
+         # 5. Create the runner agent
+         agent = Agent(
+-            llm=router.select_for_phase("explore") if self._cascade else self._model_clients.get(config.default_tier, self._model_clients.get("standard")),
++            llm=primary_llm,
+             tools=filtered_registry,
+             system_prompt=system_prompt,
+             session=session,
+@@ -228,6 +309,7 @@ class RunnerFactory:
+             max_iterations=config.max_iterations,
+             verbose=self._verbose,
+             model_router=router,
++            inference_authority=runner_authority,
+         )
+ 
+         # 6. Build user message with task + optional context
+diff --git a/scripts/amof/orchestrator/telemetry.py b/scripts/amof/orchestrator/telemetry.py
+index 92a6bca..7797eba 100644
+--- a/scripts/amof/orchestrator/telemetry.py
++++ b/scripts/amof/orchestrator/telemetry.py
+@@ -29,10 +29,18 @@ class CallMetrics:
+     latency_ms: int
+     tool_calls_count: int = 0
+     tier: str = "default"  # model tier: fast/standard/strong/default
++    # Mini Ultra Plan 2 / Phase L2: truthful upstream provider attribution
++    # (anthropic / openai / openrouter / local / runpod). Default ``""`` so
++    # legacy CLI emissions that bypass the InferenceAuthority do not have
++    # to backfill — when the authority is wired (live API path) it always
++    # supplies the provider extracted from the resolved client.
++    provider: str = ""
+ 
+     def summary_line(self) -> str:
++        provider_bit = f"{self.provider}/" if self.provider else ""
+         return (
+-            f"[{self.tier}:{self.model}] {self.prompt_tokens}+{self.completion_tokens} tokens "
++            f"[{self.tier}:{provider_bit}{self.model}] "
++            f"{self.prompt_tokens}+{self.completion_tokens} tokens "
+             f"({self.context_used_pct:.1f}% ctx) ${self.estimated_cost:.4f} "
+             f"{self.latency_ms}ms"
+         )
+@@ -136,8 +144,24 @@ class SessionTelemetry:
+         tm.cost += metrics.estimated_cost
+         tm.model_name = metrics.model
+ 
+-    def record_from_usage(self, usage, tier: str = "default") -> CallMetrics:
+-        """Record metrics from an LLMResponse.usage object."""
++    def record_from_usage(
++        self,
++        usage,
++        tier: str = "default",
++        provider: str = "",
++    ) -> CallMetrics:
++        """Record metrics from an LLMResponse.usage object.
++
++        Args:
++            usage: The provider-reported usage object.
++            tier: Model tier label (fast/standard/strong/default).
++            provider: Truthful upstream provider id supplied by the
++                InferenceAuthority (e.g. "anthropic", "openrouter",
++                "local", "runpod"). Default ``""`` for legacy CLI callers
++                that record telemetry directly without going through the
++                authority — they do not have a single resolved provider
++                handy and historically have not surfaced one.
++        """
+         metrics = CallMetrics(
+             timestamp=time.time(),
+             model=usage.model,
+@@ -147,6 +171,7 @@ class SessionTelemetry:
+             estimated_cost=usage.estimated_cost,
+             latency_ms=usage.latency_ms,
+             tier=tier,
++            provider=provider,
+         )
+         self.record(metrics)
+         return metrics
+diff --git a/scripts/amof/orchestrator/tools/base.py b/scripts/amof/orchestrator/tools/base.py
+index 950818b..64cbbaf 100644
+--- a/scripts/amof/orchestrator/tools/base.py
++++ b/scripts/amof/orchestrator/tools/base.py
+@@ -37,6 +37,7 @@ class ToolResult:
+     success: bool
+     output: str
+     error: Optional[str] = None
++    cancelled: bool = False
+ 
+     def to_text(self) -> str:
+         """Convert to text for LLM consumption."""
+@@ -522,6 +523,7 @@ class ToolRegistry:
+                 success=result.success,
+                 output=truncated + f"\n\n... (output truncated at {self.max_output_chars} chars, total was {len(result.output)})",
+                 error=result.error,
++                cancelled=result.cancelled,
+             )
+ 
+         return result
+@@ -638,6 +640,7 @@ def create_default_registry(
+     vector_store: Optional[Any] = None,
+     ecosystem_name: str = "default_ecosystem",
+     ticket_cwd: Optional[Path] = None,
++    stop_checker: Optional[Any] = None,
+ ) -> ToolRegistry:
+     """Create a registry with tools appropriate for the given role.
+ 
+@@ -667,7 +670,12 @@ def create_default_registry(
+     if role in ("worker", "all"):
+         for tool_cls in [ReadTool, WriteTool, StrReplaceTool, DeleteTool, GrepTool, GlobTool, LSTool]:
+             registry.register(tool_cls())
+-        registry.register(ShellTool(default_cwd=str(ticket_cwd) if ticket_cwd else None))
++        registry.register(
++            ShellTool(
++                default_cwd=str(ticket_cwd) if ticket_cwd else None,
++                stop_checker=stop_checker,
++            )
++        )
+         registry.register(GitCheckpointTool())
+         registry.register(ReadLintsTool(linter=linter))
+ 
+diff --git a/scripts/amof/orchestrator/tools/shell.py b/scripts/amof/orchestrator/tools/shell.py
+index f571512..1c7e236 100644
+--- a/scripts/amof/orchestrator/tools/shell.py
++++ b/scripts/amof/orchestrator/tools/shell.py
+@@ -10,11 +10,12 @@ from __future__ import annotations
+ import logging
+ import os
+ import re
++import select
+ import signal
+ import subprocess
+ import time
+ from pathlib import Path
+-from typing import Any, Dict, Optional
++from typing import Any, Callable, Dict, Optional
+ 
+ from .base import Tool, ToolResult
+ 
+@@ -83,8 +84,13 @@ class ShellTool(Tool):
+         "required": ["command"],
+     }
+ 
+-    def __init__(self, default_cwd: Optional[str] = None):
++    def __init__(
++        self,
++        default_cwd: Optional[str] = None,
++        stop_checker: Optional[Callable[[], bool]] = None,
++    ):
+         self._default_cwd = default_cwd
++        self._stop_checker = stop_checker
+ 
+     def execute(
+         self,
+@@ -113,30 +119,103 @@ class ShellTool(Tool):
+         start = time.monotonic()
+ 
+         try:
+-            proc = subprocess.run(
++            if self._stop_checker and self._stop_checker():
++                elapsed_ms = int((time.monotonic() - start) * 1000)
++                return ToolResult(
++                    success=False,
++                    output="",
++                    error=f"Command cancelled before start due to stop request ({elapsed_ms}ms elapsed)",
++                    cancelled=True,
++                )
++
++            proc = subprocess.Popen(
+                 clean_command,
+                 shell=True,
+-                capture_output=True,
+-                text=True,
+-                timeout=timeout_secs,
++                stdout=subprocess.PIPE,
++                stderr=subprocess.STDOUT,
+                 cwd=cwd,
+                 env=None,  # inherit current env
+                 start_new_session=True,  # own process group for clean kills
+             )
++            assert proc.stdout is not None
++            os.set_blocking(proc.stdout.fileno(), False)
++
++            deadline_at = time.monotonic() + timeout_secs
++            output_chunks: list[bytes] = []
++            stop_terminate_requested_at: Optional[float] = None
++            stop_kill_requested = False
++            cancelled = False
++            timed_out = False
++
++            def _drain_pending() -> None:
++                try:
++                    chunk = proc.stdout.read()
++                except (BlockingIOError, ValueError):
++                    chunk = None
++                if chunk:
++                    output_chunks.append(chunk)
++
++            while True:
++                ready, _, _ = select.select([proc.stdout], [], [], 0.2)
++                if ready:
++                    _drain_pending()
++
++                if self._stop_checker and self._stop_checker() and proc.poll() is None:
++                    cancelled = True
++                    if stop_terminate_requested_at is None:
++                        proc.terminate()
++                        stop_terminate_requested_at = time.monotonic()
++                    elif (
++                        not stop_kill_requested
++                        and time.monotonic() - stop_terminate_requested_at >= 5.0
++                    ):
++                        proc.kill()
++                        stop_kill_requested = True
++
++                if (
++                    not cancelled
++                    and proc.poll() is None
++                    and time.monotonic() >= deadline_at
++                ):
++                    timed_out = True
++                    proc.terminate()
++                    stop_terminate_requested_at = time.monotonic()
++
++                if proc.poll() is not None:
++                    _drain_pending()
++                    break
++
++            return_code = proc.wait()
+             elapsed_ms = int((time.monotonic() - start) * 1000)
+-
+-            output_parts = []
+-            if proc.stdout:
+-                output_parts.append(proc.stdout)
+-            if proc.stderr:
+-                output_parts.append(proc.stderr)
+-            output = "\n".join(output_parts).rstrip()
++            output = b"".join(output_chunks).decode("utf-8", errors="replace").rstrip()
++            proc.stdout.close()
+ 
+             # Filter kubectl/helm noise to save context tokens
+             cmd_base = clean_command.split()[0] if clean_command.strip() else ""
+             if cmd_base in ("kubectl", "helm", "k"):
+                 output = _filter_kubectl_stderr(output)
+ 
++            if cancelled:
++                return ToolResult(
++                    success=False,
++                    output=(
++                        f"Exit code: 130\n\n{output}\n\n"
++                        f"Command cancelled after {elapsed_ms}ms due to stop request."
++                    ).strip(),
++                    error="Command cancelled due to stop request",
++                    cancelled=True,
++                )
++
++            if timed_out:
++                return ToolResult(
++                    success=False,
++                    output=(
++                        f"Exit code: 124\n\n{output}\n\n"
++                        f"Command timed out after {timeout_secs}s ({elapsed_ms}ms elapsed)."
++                    ).strip(),
++                    error=f"Command timed out after {timeout_secs}s ({elapsed_ms}ms elapsed)",
++                )
++
+             if proc.returncode == 0:
+                 return ToolResult(
+                     success=True,
+@@ -145,17 +224,9 @@ class ShellTool(Tool):
+             else:
+                 return ToolResult(
+                     success=False,
+-                    output=f"Exit code: {proc.returncode}\n\n{output}\n\nCommand completed in {elapsed_ms}ms.",
+-                    error=f"Command exited with code {proc.returncode}",
++                    output=f"Exit code: {return_code}\n\n{output}\n\nCommand completed in {elapsed_ms}ms.",
++                    error=f"Command exited with code {return_code}",
+                 )
+-
+-        except subprocess.TimeoutExpired:
+-            elapsed_ms = int((time.monotonic() - start) * 1000)
+-            return ToolResult(
+-                success=False,
+-                output="",
+-                error=f"Command timed out after {timeout_secs}s ({elapsed_ms}ms elapsed)",
+-            )
+         except FileNotFoundError:
+             cmd_name = clean_command.split()[0] if clean_command.strip() else "unknown"
+             ex = _get_explainer()
+diff --git a/scripts/amof/queue/dispatcher.py b/scripts/amof/queue/dispatcher.py
+index d3de0cc..52be986 100644
+--- a/scripts/amof/queue/dispatcher.py
++++ b/scripts/amof/queue/dispatcher.py
+@@ -498,7 +498,7 @@ class QueueDispatcher:
+         else:
+             self.run_manager.append_log(
+                 run_id,
+-                "Stop requested for active task; current runtime can only honor it at queue boundaries.",
++                "Stop requested for active task; runtime will honor it at the next supported interruption point.",
+             )
+             self._stop_active_cluster_builder(run_id)
+             process = self._active_process
+@@ -1029,10 +1029,12 @@ class QueueDispatcher:
+             payload.get("parent_run_id"),
+         )
+         if self._stop_requested(task.run_id):
+-            self.run_manager.append_log(
+-                task.run_id,
+-                "Stop was requested during agent execution, but the current in-process runtime is non-interruptible.",
+-            )
++            run = self.run_manager.get_run(task.run_id)
++            if run is None or run.status != RUN_STATUS_CANCELLED:
++                self.run_manager.append_log(
++                    task.run_id,
++                    "Stop was requested during agent execution and was honored only after the active step finished.",
++                )
+ 
+     def _run_batch_task(self, task: QueueTaskRecord, payload: Dict[str, Any]) -> None:
+         workspace_root = get_workspace_root()
+
+# Untracked file archive: tests/test_runner_local_overrides.py
+diff --git a/tests/test_runner_local_overrides.py b/tests/test_runner_local_overrides.py
+new file mode 100644
+index 0000000..ab18cf4
+--- /dev/null
++++ b/tests/test_runner_local_overrides.py
+@@ -0,0 +1,347 @@
++"""Mini Ultra Plan 2 / Phase L2 — runner-scoped local override tests.
++
++These tests pin down the opt-in semantics of
++:func:`amof.api.services.agent_runner._resolve_runner_local_clients` and
++the per-runner local-client swap inside
++:meth:`amof.orchestrator.runners.RunnerFactory.run_runner`.
++
++The L2 contract has one rule that must never silently drift:
++
++    The default cloud cascade is preserved exactly UNLESS all three
++    conditions are met:
++
++      1. ``local_inference.enabled`` is truthy.
++      2. ``runtime_profile`` is one of ``runner_overrides.enabled_for_profile``.
++      3. The runner being spawned is in ``runner_overrides.allowed_runners``.
++
++If any condition is missing, no override happens. These tests fail loud
++the moment that contract regresses.
++"""
++
++from __future__ import annotations
++
++import sys
++import types
++import unittest
++from pathlib import Path
++from typing import Any, Dict, List, Optional
++
++
++_REPO_ROOT = Path(__file__).resolve().parents[1]
++_SCRIPTS = _REPO_ROOT / "scripts"
++if str(_SCRIPTS) not in sys.path:
++    sys.path.insert(0, str(_SCRIPTS))
++
++
++class _FakeUsage:
++    def __init__(self) -> None:
++        self.model = "qwen2.5-coder:7b-instruct"
++        self.prompt_tokens = 10
++        self.completion_tokens = 5
++        self.estimated_cost = 0.0
++        self.latency_ms = 1
++
++
++class _FakeLLMResponse:
++    def __init__(self) -> None:
++        self.usage = _FakeUsage()
++        self.text = "ok"
++        self.tool_calls = []
++        self.stop_reason = "completed"
++
++
++class _RecordingLLMClient:
++    """Minimal LLMClient stand-in that records ``chat`` invocations.
++
++    Intentionally not a subclass of ``LLMClient`` — the production code
++    only relies on duck-typed ``chat`` / ``chat_structured`` /
++    ``model_name`` / ``provider`` attribute, so the test surface stays
++    truthful about the contract instead of leaking implementation.
++    """
++
++    def __init__(self, *, provider: str, model: str) -> None:
++        self.provider = provider
++        self._model = model
++        self.calls: List[Dict[str, Any]] = []
++
++    def chat(
++        self,
++        system: str,
++        messages: List[Dict[str, Any]],
++        tools: Optional[List[Dict[str, Any]]] = None,
++        max_tokens: int = 8192,
++        temperature: float = 0.0,
++    ) -> _FakeLLMResponse:
++        self.calls.append({"system": system, "messages": messages, "tools": tools})
++        return _FakeLLMResponse()
++
++    def chat_structured(self, *args, **kwargs):
++        raise NotImplementedError
++
++    def model_name(self) -> str:
++        return self._model
++
++    def context_window(self) -> int:
++        return 32000
++
++    def supports_prefill(self) -> bool:
++        return False
++
++    def is_thinking_model(self) -> bool:
++        return False
++
++
++class TestResolveRunnerLocalClients(unittest.TestCase):
++    """``_resolve_runner_local_clients`` must NEVER opt-in by accident."""
++
++    def setUp(self) -> None:
++        from amof.api.services import agent_runner
++        self.resolve = agent_runner._resolve_runner_local_clients
++
++    def _cfg(self, **overrides) -> Dict[str, Any]:
++        base = {
++            "local_inference": {
++                "enabled": True,
++                "base_url": "http://qwen.local:11434/v1",
++                "api_key": "local",
++                "timeout": 30,
++                "runner_overrides": {
++                    "enabled_for_profile": ["local_qwen"],
++                    "allowed_runners": ["code"],
++                    "model": "qwen2.5-coder:7b-instruct",
++                },
++            },
++        }
++        base["local_inference"].update(overrides)
++        return base
++
++    def test_no_runtime_profile_returns_empty(self) -> None:
++        self.assertEqual(self.resolve(self._cfg(), None), {})
++        self.assertEqual(self.resolve(self._cfg(), ""), {})
++
++    def test_wrong_runtime_profile_returns_empty(self) -> None:
++        self.assertEqual(self.resolve(self._cfg(), "default"), {})
++        self.assertEqual(self.resolve(self._cfg(), "clouddev_runpod_runner"), {})
++
++    def test_local_inference_disabled_returns_empty(self) -> None:
++        cfg = self._cfg(enabled=False)
++        self.assertEqual(self.resolve(cfg, "local_qwen"), {})
++
++    def test_runner_overrides_block_absent_returns_empty(self) -> None:
++        cfg = {"local_inference": {"enabled": True, "base_url": "x", "api_key": "y"}}
++        self.assertEqual(self.resolve(cfg, "local_qwen"), {})
++
++    def test_missing_model_returns_empty(self) -> None:
++        cfg = self._cfg()
++        cfg["local_inference"]["runner_overrides"]["model"] = ""
++        self.assertEqual(self.resolve(cfg, "local_qwen"), {})
++
++    def test_missing_base_url_returns_empty(self) -> None:
++        cfg = self._cfg()
++        cfg["local_inference"]["base_url"] = ""
++        self.assertEqual(self.resolve(cfg, "local_qwen"), {})
++
++    def test_only_allowed_runners_get_overridden(self) -> None:
++        cfg = self._cfg()
++        cfg["local_inference"]["runner_overrides"]["allowed_runners"] = ["code", "debug"]
++        result = self.resolve(cfg, "local_qwen")
++        self.assertEqual(set(result.keys()), {"code", "debug"})
++        for client in result.values():
++            self.assertEqual(client.provider, "local")
++            self.assertTrue(client.model_name().startswith("local/"))
++
++    def test_unknown_profile_does_not_match_explicit_list(self) -> None:
++        cfg = self._cfg()
++        cfg["local_inference"]["runner_overrides"]["enabled_for_profile"] = []
++        self.assertEqual(self.resolve(cfg, "local_qwen"), {})
++
++
++class TestRunnerFactoryLocalOverride(unittest.TestCase):
++    """``RunnerFactory.run_runner`` must wire the override + per-runner authority.
++
++    We don't spin up a real Agent loop here (that exists elsewhere) — we
++    monkey-patch ``Agent`` for the duration of the test so we can inspect
++    exactly what kwargs ``RunnerFactory`` constructs the runner Agent
++    with. That is the seam Phase L2 cares about; the rest of the Agent
++    behaviour is covered by the existing agent test suite.
++    """
++
++    def setUp(self) -> None:
++        from amof.orchestrator import runners as runners_mod
++        from amof.orchestrator.tools.base import ToolRegistry, Guardrails
++        self.runners_mod = runners_mod
++
++        self.cloud_client = _RecordingLLMClient(
++            provider="anthropic", model="claude-sonnet-test"
++        )
++        self.local_client = _RecordingLLMClient(
++            provider="local", model="local/qwen.local:11434/qwen2.5-coder:7b-instruct"
++        )
++
++        runner_cfg = runners_mod.RunnerConfig(
++            name="code",
++            prompt_path="prompts/runners/code.md",
++            tool_names=[],
++            description="test code runner",
++            default_tier="standard",
++            max_iterations=1,
++        )
++        debug_cfg = runners_mod.RunnerConfig(
++            name="debug",
++            prompt_path="prompts/runners/debug.md",
++            tool_names=[],
++            description="test debug runner",
++            default_tier="standard",
++            max_iterations=1,
++        )
++        self.factory = runners_mod.RunnerFactory(
++            runners={"code": runner_cfg, "debug": debug_cfg},
++            model_clients={"standard": self.cloud_client, "fast": self.cloud_client},
++            parent_tools=ToolRegistry(guardrails=Guardrails()),
++            workspace_root=Path.cwd(),
++            runner_local_clients={"code": self.local_client},
++        )
++
++        self._orig_agent = runners_mod.Agent
++        self.captured_init: Dict[str, Any] = {}
++
++        class _StubAgent:
++            stop_reason = "completed"
++
++            def __init__(stub_self, **kwargs):
++                self.captured_init.clear()
++                self.captured_init.update(kwargs)
++                stub_self.kwargs = kwargs
++
++            def run(stub_self, _msg):
++                return "ok"
++
++        runners_mod.Agent = _StubAgent
++
++    def tearDown(self) -> None:
++        self.runners_mod.Agent = self._orig_agent
++
++    def test_overridden_runner_receives_local_client(self) -> None:
++        result = self.factory.run_runner("code", task="trivial")
++        self.assertTrue(result.success)
++        self.assertIs(self.captured_init["llm"], self.local_client)
++        self.assertEqual(self.captured_init["llm"].provider, "local")
++
++    def test_non_overridden_runner_keeps_cloud_client(self) -> None:
++        self.factory.run_runner("debug", task="trivial")
++        self.assertIs(self.captured_init["llm"], self.cloud_client)
++        self.assertEqual(self.captured_init["llm"].provider, "anthropic")
++
++    def test_no_authority_means_no_runner_authority(self) -> None:
++        self.factory.run_runner("code", task="trivial")
++        self.assertIsNone(self.captured_init["inference_authority"])
++
++    def test_authority_yields_runner_scoped_sibling(self) -> None:
++        captured_sources: List[str] = []
++
++        class _FakeAuthority:
++            default_source = "master"
++
++            def with_source(_self, source: str):
++                captured_sources.append(source)
++                sibling = types.SimpleNamespace(default_source=source)
++                return sibling
++
++        self.factory._inference_authority = _FakeAuthority()
++        self.factory.run_runner("code", task="trivial")
++        self.assertEqual(captured_sources, ["runner:code"])
++        self.assertEqual(
++            self.captured_init["inference_authority"].default_source, "runner:code"
++        )
++
++
++class TestResolveRunnerRunpodClients(unittest.TestCase):
++    """Mini Ultra Plan 2 / Phase R1: Runpod opt-in must be just as strict.
++
++    Mirrors the L2 contract for ``runpod`` block, with the additional
++    rules that ``enabled: false`` and a missing ``RUNPOD_API_KEY`` env
++    var are both no-op gates. The default canonical config ships with
++    ``enabled: false``, so a baseline ``runpod`` block must NEVER yield
++    runner overrides without an explicit operator opt-in. These tests
++    pin that down.
++    """
++
++    def setUp(self) -> None:
++        from amof.api.services import agent_runner
++        self.resolve = agent_runner._resolve_runner_runpod_clients
++
++    def _cfg(self, **overrides) -> Dict[str, Any]:
++        base = {
++            "runpod": {
++                "enabled": True,
++                "base_url": "${RUNPOD_OPENAI_BASE_URL}",
++                "api_key_env": "RUNPOD_API_KEY",
++                "model": "qwen2.5-coder-32b-instruct",
++                "timeout": 180,
++                "fallback": "none",
++                "runner_overrides": {
++                    "enabled_for_profile": ["clouddev_runpod_runner"],
++                    "allowed_runners": ["code"],
++                },
++            }
++        }
++        base["runpod"].update(overrides)
++        return base
++
++    def _env(self, **kwargs) -> Dict[str, str]:
++        return dict(kwargs)
++
++    def test_disabled_block_returns_empty(self) -> None:
++        cfg = self._cfg(enabled=False)
++        env = self._env(
++            RUNPOD_API_KEY="secret",
++            RUNPOD_OPENAI_BASE_URL="https://api.runpod.ai/v2/x/openai/v1",
++        )
++        self.assertEqual(
++            self.resolve(cfg, "clouddev_runpod_runner", env=env), {}
++        )
++
++    def test_no_runtime_profile_returns_empty(self) -> None:
++        env = self._env(
++            RUNPOD_API_KEY="secret",
++            RUNPOD_OPENAI_BASE_URL="https://api.runpod.ai/v2/x/openai/v1",
++        )
++        self.assertEqual(self.resolve(self._cfg(), None, env=env), {})
++
++    def test_wrong_profile_returns_empty(self) -> None:
++        env = self._env(
++            RUNPOD_API_KEY="secret",
++            RUNPOD_OPENAI_BASE_URL="https://api.runpod.ai/v2/x/openai/v1",
++        )
++        self.assertEqual(self.resolve(self._cfg(), "local_qwen", env=env), {})
++
++    def test_missing_api_key_returns_empty(self) -> None:
++        env = self._env(
++            RUNPOD_OPENAI_BASE_URL="https://api.runpod.ai/v2/x/openai/v1"
++        )
++        self.assertEqual(
++            self.resolve(self._cfg(), "clouddev_runpod_runner", env=env), {}
++        )
++
++    def test_missing_base_url_returns_empty(self) -> None:
++        env = self._env(RUNPOD_API_KEY="secret")
++        self.assertEqual(
++            self.resolve(self._cfg(), "clouddev_runpod_runner", env=env), {}
++        )
++
++    def test_happy_path_yields_runpod_client_per_runner(self) -> None:
++        env = self._env(
++            RUNPOD_API_KEY="secret",
++            RUNPOD_OPENAI_BASE_URL="https://api.runpod.ai/v2/x/openai/v1",
++        )
++        cfg = self._cfg()
++        cfg["runpod"]["runner_overrides"]["allowed_runners"] = ["code", "debug"]
++        result = self.resolve(cfg, "clouddev_runpod_runner", env=env)
++        self.assertEqual(set(result.keys()), {"code", "debug"})
++        for client in result.values():
++            self.assertEqual(client.provider, "runpod")
++            self.assertTrue(client.model_name().startswith("runpod/"))
++
++
++if __name__ == "__main__":
++    unittest.main()
+
+# Untracked file archive: tests/test_shell_interruptibility.py
+diff --git a/tests/test_shell_interruptibility.py b/tests/test_shell_interruptibility.py
+new file mode 100644
+index 0000000..560aab3
+--- /dev/null
++++ b/tests/test_shell_interruptibility.py
+@@ -0,0 +1,106 @@
++from __future__ import annotations
++
++import sys
++import tempfile
++import time
++import unittest
++from pathlib import Path
++
++sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
++
++from amof.orchestrator.agent import Agent  # noqa: E402
++from amof.orchestrator.events import EventLog  # noqa: E402
++from amof.orchestrator.llm.base import LLMResponse, ToolCallRequest, Usage  # noqa: E402
++from amof.orchestrator.session import Session  # noqa: E402
++from amof.orchestrator.telemetry import SessionTelemetry  # noqa: E402
++from amof.orchestrator.tools.base import Tool, ToolRegistry, ToolResult  # noqa: E402
++from amof.orchestrator.tools.shell import ShellTool  # noqa: E402
++
++
++class TestShellToolInterruptibility(unittest.TestCase):
++    def test_shell_tool_honors_stop_checker(self) -> None:
++        started_at = time.monotonic()
++        tool = ShellTool(
++            stop_checker=lambda: (time.monotonic() - started_at) >= 0.5
++        )
++
++        result = tool.execute(
++            "python3 -c \"import time; print('START', flush=True); "
++            "time.sleep(10); print('DONE', flush=True)\"",
++            timeout=30,
++        )
++
++        self.assertFalse(result.success)
++        self.assertTrue(result.cancelled)
++        self.assertIn("START", result.output)
++        self.assertNotIn("DONE", result.output)
++        self.assertIn("stop request", (result.error or "").lower())
++
++
++class _CancelTool(Tool):
++    name = "CancelTool"
++    description = "Synthetic cancellation tool for agent-loop tests."
++    parameters = {
++        "type": "object",
++        "properties": {},
++        "required": [],
++    }
++
++    def execute(self, **params):
++        return ToolResult(
++            success=False,
++            output="Exit code: 130\n\nCancelled during active tool work.",
++            error="Command cancelled due to stop request",
++            cancelled=True,
++        )
++
++
++class _SingleToolLLM:
++    def chat(self, system, messages, tools=None, max_tokens=8192, temperature=0.0):
++        return LLMResponse(
++            text=None,
++            tool_calls=[
++                ToolCallRequest(id="cancel-1", name="CancelTool", arguments={})
++            ],
++            usage=Usage(
++                model="local/test",
++                prompt_tokens=10,
++                completion_tokens=5,
++                latency_ms=1,
++                estimated_cost=0.0,
++            ),
++            stop_reason="tool_use",
++        )
++
++    def model_name(self) -> str:
++        return "local/test"
++
++    def context_window(self) -> int:
++        return 32000
++
++
++class TestAgentCancellationOnCancelledTool(unittest.TestCase):
++    def test_agent_sets_cancelled_stop_reason(self) -> None:
++        registry = ToolRegistry()
++        registry.register(_CancelTool())
++
++        events_dir = Path(tempfile.mkdtemp(prefix="amof-shell-cancel-events-"))
++        agent = Agent(
++            llm=_SingleToolLLM(),
++            tools=registry,
++            system_prompt="test",
++            session=Session(),
++            telemetry=SessionTelemetry(),
++            events=EventLog(session_id="cancelled-tool", runs_dir=events_dir),
++            verbose=False,
++            max_iterations=3,
++        )
++
++        result = agent.run("trigger cancellation")
++
++        self.assertEqual(agent.stop_reason, "cancelled")
++        self.assertIn("Stop requested", result)
++
++
++if __name__ == "__main__":
++    unittest.main()
