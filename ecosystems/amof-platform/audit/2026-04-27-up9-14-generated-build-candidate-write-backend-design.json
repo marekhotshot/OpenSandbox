@@ -1,0 +1,49 @@
+{
+  "slice": "ultra-plan-9-generated-build-contract-phase-14-candidate-write-backend-design",
+  "result": "backend_candidate_write_mutation_boundary_designed_no_endpoint_implemented",
+  "scope": "backend design for generated_build.promote_candidate.v1 only; no backend mutation endpoint, no UI execution, no deploy/release wiring, no cloud-dev, no deploy-admitted writes",
+  "artifacts_created": [
+    "contracts/generated-build-candidate-write-backend-boundary.md"
+  ],
+  "artifacts_modified": [
+    "contracts/INDEX.md",
+    "contracts/generated-build-candidate-write-contract.md",
+    "contracts/generated-build-candidate-write-request.schema.json",
+    "contracts/generated-build-candidate-write-result.schema.json",
+    "contracts/examples/generated-build-candidate-write-request.example.json",
+    "contracts/examples/generated-build-candidate-write-result.example.json",
+    "contracts/examples/generated-build-candidate-write-refused.example.json"
+  ],
+  "backend_action": {
+    "action": "generated_build.promote_candidate.v1",
+    "recommended_method": "POST",
+    "recommended_path": "/api/v1/control/generated-builds/candidates/promote",
+    "public_readonly_paths_preserved": [
+      "GET /api/v1/generated-builds",
+      "GET /api/v1/generated-builds/artifact",
+      "GET /api/v1/generated-builds/admission-preview"
+    ]
+  },
+  "safety_decisions": {
+    "control_prefix_only": true,
+    "domain_refusals_are_command_results": true,
+    "idempotency_required": true,
+    "artifact_proof_status_mutated": false,
+    "deploy_admission_created": false,
+    "release_admission_created": false
+  },
+  "minimal_contract_adjustments": [
+    "request schema accepts optional idempotency_key",
+    "result schema accepts idempotency_key and replayed",
+    "candidate-write contract lists idempotency and backend principal refusal conditions"
+  ],
+  "out_of_scope_held": [
+    "backend endpoint implementation",
+    "UI execution",
+    "deploy/release wiring",
+    "deploy-admitted writes",
+    "cloud-dev",
+    "new generated-build features"
+  ],
+  "next_slice": "ultra-plan-9-generated-build-contract-phase-15-candidate-write-backend-endpoint-local-only"
+}

@@ -44,6 +44,12 @@ The action MUST NOT write:
 - generated Dockerfiles
 - generated-build artifact proof status
 
+Backend exposure MUST be retry-safe. A backend caller may provide
+`idempotency_key`; if omitted, the backend must derive one from the normalized
+request. Replays with the same key and same normalized request return the
+original result. Reuse of the same key for a different request must refuse with
+`idempotency_key_conflict`.
+
 ## Preconditions
 
 The write action MUST validate all of:
@@ -86,15 +92,18 @@ On failure:
 - result status is `refused`;
 - refusal conditions and missing prerequisites are returned.
 
-## Operator Confirmation Requirements
+## Request And Operator Confirmation Requirements
+
+The request MUST include:
+
+- top-level `target_ecosystem`
+- top-level `target_service`
+- `artifact_ref.artifact_path`
 
 The operator confirmation MUST include:
 
 - `confirmed_by`
 - `confirmed_at`
-- `target_ecosystem`
-- `target_service`
-- `artifact_path`
 - `confirmed_image_digest`
 - `confirmed_runtime_family`
 - `confirmed_template_id`
@@ -132,8 +141,11 @@ The action MUST refuse when any of these are true:
 - `operator_confirmation_missing`
 - `operator_confirmation_digest_mismatch`
 - `operator_confirmation_target_mismatch`
+- `operator_confirmation_principal_mismatch`
 - `required_acknowledgement_missing`
 - `active_candidate_exists_without_supersede`
+- `supersede_candidate_mismatch`
+- `idempotency_key_conflict`
 - `candidate_store_write_failed`
 - `audit_write_failed`
 

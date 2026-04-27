@@ -2,6 +2,8 @@
   "action": "generated_build.promote_candidate.v1",
   "result": "candidate_created",
   "candidate_id": "gbc-example-python-api-20260427T080000Z",
+  "idempotency_key": "up9-14-example-python-api-20260427T092000Z",
+  "replayed": false,
   "artifact_ref": {
     "artifact_path": ".amof/generated-builds/python/python/artifact.json",
     "repo_path": "/tmp/up9-3-fixtures/python",

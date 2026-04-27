@@ -27,6 +27,7 @@
     },
     "target_ecosystem": { "type": "string", "minLength": 1 },
     "target_service": { "type": "string", "minLength": 1 },
+    "idempotency_key": { "type": "string", "minLength": 8 },
     "supersede_candidate_id": { "type": "string" },
     "operator_confirmation": {
       "type": "object",

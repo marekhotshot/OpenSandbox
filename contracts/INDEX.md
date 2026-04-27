@@ -56,6 +56,7 @@ Status values used here: `canonical`, `wave`, `reservoir`, `placeholder`, `noise
 - [generated-build-admission-policy.md](generated-build-admission-policy.md)
 - [generated-build-admission-policy.schema.json](generated-build-admission-policy.schema.json)
 - [generated-build-candidate-write-contract.md](generated-build-candidate-write-contract.md)
+- [generated-build-candidate-write-backend-boundary.md](generated-build-candidate-write-backend-boundary.md)
 - [generated-build-candidate-write-request.schema.json](generated-build-candidate-write-request.schema.json)
 - [generated-build-candidate-write-result.schema.json](generated-build-candidate-write-result.schema.json)
 - [examples/generated-build-contract-python-fastapi.example.json](examples/generated-build-contract-python-fastapi.example.json)

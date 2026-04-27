@@ -1,6 +1,8 @@
 {
   "action": "generated_build.promote_candidate.v1",
   "result": "refused",
+  "idempotency_key": "up9-14-example-node-web-20260427T092000Z",
+  "replayed": false,
   "artifact_ref": {
     "artifact_path": ".amof/generated-builds/node/root/artifact.json",
     "repo_path": "/workspace/repos/example-node",
