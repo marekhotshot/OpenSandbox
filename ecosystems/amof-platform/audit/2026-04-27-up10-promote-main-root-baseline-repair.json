@@ -1,0 +1,31 @@
+{
+  "slice": "ultra-plan-10-repair-root-promote-main-baseline-for-clean-origin-main",
+  "result": "root_manifest_restored_for_clean_baseline_promote_main_resolution",
+  "scope": "root wrapper/config/audit shell manifest repair only; no candidate backend mutation, no feature work, no deploy/release, no cloud-dev, no generated-build expansion",
+  "failure_before": {
+    "command": "python3 scripts/amof.py promote-main --repo amof --ticket-id UP9-13 --candidate-branch feat/UP9-13 --source-sha <repos/amof HEAD> --expected-main-sha <repos/amof origin/main> --dry-run",
+    "exit_code": 1,
+    "message": "[promote-main] Ecosystem could not be resolved.",
+    "cause": "clean root origin/main contained ecosystems/amof-platform/audit but no ecosystems/amof-platform/ecosystem.yaml, so load_manifest('amof-platform') could not resolve the manifest before promote-main validation."
+  },
+  "repair_decision": {
+    "chosen": "restore minimal root ecosystem manifest presence",
+    "reason": "root is wrapper/config/audit shell; ecosystem.yaml is workspace configuration, not product implementation truth. promote-main needs repo path mapping to canonical repos/amof.",
+    "not_chosen": [
+      "teaching promote-main to special-case amof-platform without a manifest",
+      "using main-helper assumptions",
+      "reintroducing root scripts/amof implementation"
+    ]
+  },
+  "files_changed": [
+    "ecosystems/amof-platform/ecosystem.yaml",
+    "ecosystems/amof-platform/audit/2026-04-27-up10-promote-main-root-baseline-repair.json"
+  ],
+  "expected_after": {
+    "amof_doctor": "PASS",
+    "promote_main_dry_run": "passes validation from root clean baseline",
+    "canonical_amof_code": "repos/amof",
+    "canonical_ui_code": "repos/amof-ui",
+    "root_role": "wrapper/config/audit shell"
+  }
+}

@@ -1,0 +1,41 @@
+name: amof-platform
+description: "AMOF platform root workspace manifest. Root is wrapper/config/audit shell; active implementation lives in repos/amof and repos/amof-ui."
+
+workspace:
+  branch_prefix: "workspace/"
+  repo_branch_prefix: "feat/"
+
+guardrails:
+  no_touch_paths:
+    - ".git/*"
+    - "repos/*/.git/*"
+    - ".amof-worktrees/*/.git/*"
+
+repos:
+  - name: amof
+    url: "https://github.com/marekhotshot/amof.git"
+    branch: main
+    path: repos/amof
+    readonly: false
+    enabled: true
+
+  - name: amof-ui
+    url: "https://github.com/marekhotshot/amof-ui.git"
+    branch: main
+    path: repos/amof-ui
+    readonly: false
+    enabled: true
+
+  - name: gmd-app
+    url: "https://github.com/marekhotshot/google-microservices-demo.git"
+    branch: main
+    path: repos/gmd-app
+    readonly: false
+    enabled: true
+
+  - name: opensandbox
+    url: "https://github.com/marekhotshot/OpenSandbox.git"
+    branch: main
+    path: .
+    readonly: false
+    enabled: true
