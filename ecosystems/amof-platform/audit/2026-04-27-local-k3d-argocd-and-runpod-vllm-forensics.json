@@ -1,0 +1,79 @@
+{
+  "slice": "local-k3d-argocd-registry-mirror-fix_and_runpod-minimax-worker-log-forensics-or-known-good-vllm-template",
+  "task_1_argocd": {
+    "result": "restored",
+    "scope": "local k3d ArgoCD image-pull repair only",
+    "images_mirrored": [
+      {
+        "source": "quay.io/argoproj/argocd:v3.3.8",
+        "cluster_ref": "k3d-amof-registry:5000/mirror/quay.io/argoproj/argocd:v3.3.8"
+      },
+      {
+        "source": "ghcr.io/dexidp/dex:v2.43.0",
+        "host_pull_source": "docker.io/dexidp/dex:v2.43.0",
+        "cluster_ref": "k3d-amof-registry:5000/mirror/ghcr.io/dexidp/dex:v2.43.0",
+        "note": "ghcr.io anonymous host pull returned denied; mirrored equivalent public dex image under the original ref namespace in the local registry."
+      },
+      {
+        "source": "public.ecr.aws/docker/library/redis:8.2.3-alpine",
+        "cluster_ref": "k3d-amof-registry:5000/mirror/public.ecr.aws/docker/library/redis:8.2.3-alpine"
+      }
+    ],
+    "patched_workloads": [
+      "deployment/argocd-applicationset-controller",
+      "deployment/argocd-dex-server",
+      "deployment/argocd-notifications-controller",
+      "deployment/argocd-redis",
+      "deployment/argocd-repo-server",
+      "deployment/argocd-server",
+      "statefulset/argocd-application-controller"
+    ],
+    "rollout_proof": {
+      "all_pods_running": true,
+      "pod_count": 7,
+      "namespace": "argocd"
+    },
+    "blocker": null
+  },
+  "task_2_runpod": {
+    "result": "forensics_and_replacement_attempt_completed_but_endpoint_unusable",
+    "scope": "RunPod forensic/replay only; no AMOF integration changes, no UI work, no provider architecture",
+    "minimax_failure_class": "serverless_vllm_worker_exited_before_openai_health",
+    "minimax_evidence": {
+      "endpoint_id": "vllm-lzf43qly83gkad",
+      "template_id": "yy3ytzil4a",
+      "worker_id": "q3ilvd7mgyqwr6",
+      "desired_status": "EXITED",
+      "models_probe": "timeout/no bytes",
+      "cleanup": "endpoint and temporary template deleted"
+    },
+    "replacement_attempt": {
+      "decision": "replace_with_known_good_vllm_model_for_first_proof",
+      "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+      "image": "runpod/worker-vllm:stable-cuda12.1.0",
+      "endpoint_id": "vllm-gpj7pmpvwzw1f5",
+      "template_id": "j09233eb0q",
+      "worker_id": "y0bn670hpi1cu9",
+      "desired_status": "EXITED",
+      "models_probe_attempts": 9,
+      "models_probe_result": "all timed out",
+      "cost_per_hour_usd_observed": 0.86,
+      "cleanup": "endpoint and temporary template deleted"
+    },
+    "final_runpod_resource_counts": {
+      "endpoints": 0,
+      "pods": 0,
+      "templates": 1,
+      "remaining_template": "amof-mvp-pytorch-cuda121"
+    },
+    "verdict": "replay_later",
+    "blocker": "RunPod Serverless vLLM worker exits before OpenAI-compatible /models health for both MiniMax M2.5 and Qwen2.5-Coder-7B attempts. Need worker logs or a known-good serverless vLLM template/config from RunPod console before retrying."
+  },
+  "out_of_scope_held": [
+    "cloud-dev",
+    "feature work",
+    "AMOF UI redesign",
+    "RunPod provider architecture",
+    "deploy/release work"
+  ]
+}
