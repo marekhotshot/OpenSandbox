@@ -239,6 +239,15 @@ apidocs/
 .amof/cache/
 .amof/release-environments/
 
+# AMOF local workspace material (checked-out member repos, recovery lanes,
+# local venvs, runtime scratch). These are local operator state, not root
+# OpenSandbox source truth.
+repos/
+.amof-tmp/
+_lanes/
+.venv/
+env
+
 kubeconfig
 
 # Kubeconfigs (contain cluster credentials)
@@ -268,6 +277,11 @@ journal-pack-*/
 
 # Local recovery artifacts and ephemeral test outputs
 backups/ultra-plan-3/
+
+# promote-main writes detailed local audit JSON per attempted promotion.
+# Keep substantive session/audit receipts explicit; ignore generated
+# promote-main protocol records by default.
+ecosystems/*/audit/*-promote-main-*.json
 
 # Test results
 test-results/
