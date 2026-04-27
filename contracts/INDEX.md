@@ -58,6 +58,8 @@ Status values used here: `canonical`, `wave`, `reservoir`, `placeholder`, `noise
 - [generated-build-candidate-write-contract.md](generated-build-candidate-write-contract.md)
 - [generated-build-candidate-write-backend-boundary.md](generated-build-candidate-write-backend-boundary.md)
 - [generated-build-candidate-promotion-operator-ui.md](generated-build-candidate-promotion-operator-ui.md)
+- [generated-build-release-admission-preview.md](generated-build-release-admission-preview.md)
+- [generated-build-release-admission-preview.schema.json](generated-build-release-admission-preview.schema.json)
 - [generated-build-candidate-write-request.schema.json](generated-build-candidate-write-request.schema.json)
 - [generated-build-candidate-write-result.schema.json](generated-build-candidate-write-result.schema.json)
 - [examples/generated-build-contract-python-fastapi.example.json](examples/generated-build-contract-python-fastapi.example.json)
@@ -70,6 +72,9 @@ Status values used here: `canonical`, `wave`, `reservoir`, `placeholder`, `noise
 - [examples/generated-build-candidate-write-request.example.json](examples/generated-build-candidate-write-request.example.json)
 - [examples/generated-build-candidate-write-result.example.json](examples/generated-build-candidate-write-result.example.json)
 - [examples/generated-build-candidate-write-refused.example.json](examples/generated-build-candidate-write-refused.example.json)
+- [examples/generated-build-release-admission-candidate-only.example.json](examples/generated-build-release-admission-candidate-only.example.json)
+- [examples/generated-build-release-admission-preview-admitted.example.json](examples/generated-build-release-admission-preview-admitted.example.json)
+- [examples/generated-build-release-admission-refused.example.json](examples/generated-build-release-admission-refused.example.json)
 
 ### Boundary
 - [opensandbox-first-boundary.md](opensandbox-first-boundary.md)

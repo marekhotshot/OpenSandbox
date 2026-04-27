@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://amof.dev/contracts/generated-build-release-admission-preview.schema.json",
+  "title": "Generated Build Release Admission Preview",
+  "type": "object",
+  "required": [
+    "result_kind",
+    "candidate_id",
+    "candidate_status",
+    "artifact_ref",
+    "target_ecosystem",
+    "target_service",
+    "image_digest",
+    "artifact_proof_status",
+    "candidate_admission_status",
+    "release_admission_preview_status",
+    "would_create_release_admission",
+    "would_create_deploy_admission",
+    "reasons",
+    "missing_prerequisites",
+    "refusal_conditions",
+    "evidence_summary",
+    "preview_context",
+    "evaluated_at"
+  ],
+  "properties": {
+    "result_kind": {
+      "type": "string",
+      "const": "generated_build_release_admission_preview"
+    },
+    "candidate_id": { "type": "string" },
+    "candidate_status": { "type": "string" },
+    "artifact_ref": {
+      "type": "object",
+      "required": ["artifact_path", "repo_path", "service", "image_digest"],
+      "properties": {
+        "artifact_path": { "type": "string" },
+        "repo_path": { "type": "string" },
+        "service": { "type": "string" },
+        "image_digest": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "target_ecosystem": { "type": "string" },
+    "target_service": { "type": "string" },
+    "image_digest": { "type": "string" },
+    "artifact_proof_status": { "type": "string" },
+    "candidate_admission_status": { "type": "string" },
+    "release_admission_preview_status": {
+      "type": "string",
+      "enum": ["release_candidate_only", "release_admitted_preview", "refused", "unavailable"]
+    },
+    "would_create_release_admission": { "type": "boolean", "const": false },
+    "would_create_deploy_admission": { "type": "boolean", "const": false },
+    "reasons": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "missing_prerequisites": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "refusal_conditions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "evidence_summary": {
+      "type": "object",
+      "required": [
+        "build_contract_kind",
+        "runtime_family",
+        "confidence",
+        "template_id",
+        "has_build_proof",
+        "has_runtime_proof",
+        "liveness_signal",
+        "risk_flags"
+      ],
+      "properties": {
+        "build_contract_kind": { "type": "string" },
+        "runtime_family": { "type": "string" },
+        "confidence": { "type": "string" },
+        "template_id": { "type": "string" },
+        "has_build_proof": { "type": "boolean" },
+        "has_runtime_proof": { "type": "boolean" },
+        "liveness_signal": { "type": ["string", "null"] },
+        "risk_flags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "preview_context": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "evaluated_at": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

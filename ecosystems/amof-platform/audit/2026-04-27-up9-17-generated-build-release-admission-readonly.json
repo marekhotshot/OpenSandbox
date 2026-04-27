@@ -1,0 +1,70 @@
+{
+  "slice": "ultra-plan-9-release-admission-readonly-lane-closeout-with-local-rollout",
+  "result": "release_admission_readonly_boundary_implemented_and_proven_with_local_rollout",
+  "scope": "readonly generated-build release-admission preview only; no release/deploy execution, no deploy-admitted mutation writes, no cloud-dev, no non-local rollout",
+  "artifacts_created": [
+    "contracts/generated-build-release-admission-preview.md",
+    "contracts/generated-build-release-admission-preview.schema.json",
+    "contracts/examples/generated-build-release-admission-candidate-only.example.json",
+    "contracts/examples/generated-build-release-admission-preview-admitted.example.json",
+    "contracts/examples/generated-build-release-admission-refused.example.json"
+  ],
+  "artifacts_modified": [
+    "contracts/INDEX.md"
+  ],
+  "preview_status_model": [
+    "release_candidate_only",
+    "release_admitted_preview",
+    "refused",
+    "unavailable"
+  ],
+  "forbidden_writes": [
+    "release admission records",
+    "deploy admission records",
+    "chart values",
+    "lifecycle records",
+    "generated-build artifacts",
+    "candidate records"
+  ],
+  "implementation": {
+    "backend_repo": "repos/amof",
+    "ui_repo": "repos/amof-ui",
+    "backend_files": [
+      "scripts/amof/generated_build/release_admission.py",
+      "scripts/amof/generated_build/__init__.py",
+      "scripts/amof/api/routers/generated_build.py",
+      "tests/test_generated_build_api.py"
+    ],
+    "ui_files": [
+      "src/hooks/useGeneratedBuilds.ts",
+      "src/components/generated-builds-page.tsx"
+    ],
+    "readonly_endpoint": "GET /api/v1/generated-builds/candidates/{candidate_id}/release-admission-preview"
+  },
+  "proof": {
+    "backend_tests": "PYTHONPATH=scripts /tmp/amof-up9-15-venv/bin/python -m pytest tests/test_generated_build_api.py -q",
+    "backend_tests_result": "17 passed",
+    "ui_build": "docker run node:20 npm run build",
+    "browser": {
+      "result": "passed",
+      "candidate_only_preview_seen": true,
+      "existing_release_conflict_refusal_seen": true,
+      "release_admitted_preview_seen": true,
+      "candidate_state_visible": true,
+      "safety_copy_visible": true,
+      "forbidden_exact_buttons_absent": true,
+      "screenshot": ".amof-tmp/proof/artifacts/up9-release-admission-preview-ui-proof.png"
+    }
+  },
+  "local_rollout": {
+    "backend": "uvicorn on 127.0.0.1:18082 with AMOF_GENERATED_BUILDS_ROOT=/tmp/up9-release-proof-store",
+    "ui": "Next production server in node:20 container on 127.0.0.1:13003",
+    "scope": "local-only"
+  },
+  "out_of_scope_held": [
+    "actual release-admitted mutation",
+    "actual deploy/release execution",
+    "cloud-dev",
+    "non-local rollout"
+  ]
+}

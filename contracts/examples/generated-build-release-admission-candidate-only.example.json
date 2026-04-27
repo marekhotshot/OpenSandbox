@@ -1,0 +1,44 @@
+{
+  "result_kind": "generated_build_release_admission_preview",
+  "candidate_id": "example-python-api-bbbbbbbbbbbb",
+  "candidate_status": "candidate_only",
+  "artifact_ref": {
+    "artifact_path": ".amof/generated-builds/example-python/api/artifact.json",
+    "repo_path": "/workspace/repos/example-python",
+    "service": "api",
+    "image_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "target_ecosystem": "example-python",
+  "target_service": "api",
+  "image_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "artifact_proof_status": "runtime_proven",
+  "candidate_admission_status": "candidate_only",
+  "release_admission_preview_status": "release_candidate_only",
+  "would_create_release_admission": false,
+  "would_create_deploy_admission": false,
+  "reasons": [
+    "candidate_record_present",
+    "runtime_proven",
+    "candidate_only"
+  ],
+  "missing_prerequisites": [
+    "release_target",
+    "source_ref_confirmation",
+    "deploy_pull_reference_confirmation",
+    "chart_contract_review",
+    "operator_preview_only_acknowledgement"
+  ],
+  "refusal_conditions": [],
+  "evidence_summary": {
+    "build_contract_kind": "generated",
+    "runtime_family": "python",
+    "confidence": "accepted",
+    "template_id": "python-uvicorn-distroless-v1",
+    "has_build_proof": true,
+    "has_runtime_proof": true,
+    "liveness_signal": "port_open",
+    "risk_flags": []
+  },
+  "preview_context": {},
+  "evaluated_at": "2026-04-27T10:30:00Z"
+}
