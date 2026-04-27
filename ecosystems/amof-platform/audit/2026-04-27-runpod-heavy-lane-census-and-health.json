@@ -1,0 +1,87 @@
+{
+  "slice": "runpod-existing-substrate-to-amof-owned-heavy-lane-long-run",
+  "result": "bounded_heavy_lane_profile_and_health_surface_implemented_but_live_planning_proof_blocked",
+  "scope": "one AMOF-owned RunPod heavy lane only; no cloud-dev redesign, no deploy/release work, no master integration, no generalized provider platform",
+  "existing_substrate_census": {
+    "runpod_api_key": "configured",
+    "pods": {
+      "count": 0,
+      "amof_managed_count": 0
+    },
+    "templates": [
+      {
+        "id": "4dnxg7h6lw",
+        "name": "amof-mvp-pytorch-cuda121",
+        "image": "runpod/pytorch:2.4.0-py3.11-cuda12.1.1-devel-ubuntu22.04",
+        "ports": [
+          "22/tcp",
+          "8888/http"
+        ],
+        "reusable": true
+      }
+    ],
+    "serverless_openai_endpoints": {
+      "count": 0,
+      "reusable": false
+    },
+    "api_key_pattern": "RUNPOD_API_KEY from operator-managed environment; key not printed in evidence"
+  },
+  "canonical_profile": {
+    "profile_id": "runner_code_heavy",
+    "provider": "runpod",
+    "model": "MiniMaxAI/MiniMax-M2.5",
+    "roles": [
+      "runner_code_heavy",
+      "long_context_reviewer"
+    ],
+    "endpoint_env": "RUNPOD_OPENAI_BASE_URL",
+    "api_key_env": "RUNPOD_API_KEY",
+    "health_path": "/models",
+    "max_context_tokens": 32768,
+    "hard_timeout_seconds": 7200,
+    "max_cost_per_run_usd": 5.0,
+    "idle_ttl_minutes": 120,
+    "allow_master": false,
+    "allow_direct_git_write": false
+  },
+  "minimal_integration": {
+    "backend_files": [
+      "repos/amof/scripts/amof/api/services/runpod_heavy_lane.py",
+      "repos/amof/scripts/amof/api/routers/runpod.py",
+      "repos/amof/tests/test_runpod_heavy_lane.py"
+    ],
+    "endpoints": [
+      "GET /api/v1/runpod/heavy-lane/profile",
+      "GET /api/v1/runpod/heavy-lane/health"
+    ],
+    "health_behavior": "No inference call. Performs account census and optional authenticated GET /models only when RUNPOD_OPENAI_BASE_URL is configured."
+  },
+  "live_health_result": {
+    "status": "unusable",
+    "usable": false,
+    "missing_prerequisites": [
+      "RUNPOD_OPENAI_BASE_URL",
+      "runpod_openai_endpoint"
+    ],
+    "reasons": [
+      "canonical_profile_selected",
+      "no_active_pods",
+      "runpod_api_key_configured",
+      "runpod_template_available"
+    ]
+  },
+  "planning_proof": {
+    "attempted": false,
+    "reason": "Kill criteria met before model invocation: no OpenAI-compatible endpoint and no RUNPOD_OPENAI_BASE_URL."
+  },
+  "patch_proof": {
+    "attempted": false,
+    "reason": "Skipped because planning proof could not run."
+  },
+  "tests": {
+    "command": "PYTHONPATH=scripts /tmp/amof-up9-15-venv/bin/python -m pytest tests/test_runpod_heavy_lane.py tests/test_runner_local_overrides.py tests/test_provider_failure_attribution.py -q",
+    "result": "43 passed"
+  },
+  "decision": "replay_later",
+  "next_slice": "runpod-heavy-lane-endpoint-provision-and-planning-proof"
+}

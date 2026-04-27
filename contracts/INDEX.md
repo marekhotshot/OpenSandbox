@@ -15,6 +15,7 @@ Status values used here: `canonical`, `wave`, `reservoir`, `placeholder`, `noise
 ### Inference and authority
 - [inference-authority-layer.md](inference-authority-layer.md)
 - [control-plane-agent-settings-parity.md](control-plane-agent-settings-parity.md)
+- [runpod-heavy-lane-profile.md](runpod-heavy-lane-profile.md)
 
 ### Orchestrator runtime, runs, and persistence
 - [orchestrator-run-progress-surface.md](orchestrator-run-progress-surface.md)
