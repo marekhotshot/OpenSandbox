@@ -1,0 +1,62 @@
+{
+  "slice": "ultra-plan-9-generated-build-contract-phase-13-candidate-write-local-store-prototype",
+  "result": "local_candidate_store_write_path_implemented_tested_and_pushed_as_feature_branch",
+  "scope": "local generated-build candidate storage/write only; no backend/UI mutation, no deploy/release wiring, no deploy-admitted writes",
+  "implementation_commit": {
+    "repo": "repos/amof",
+    "branch": "feat/UP9-13",
+    "source_sha": "b68208cb2f70f04e2c2f5027f682cc2193988fa3",
+    "push": "success",
+    "pr_url": "https://github.com/marekhotshot/amof/pull/new/feat/UP9-13",
+    "main_promotion": "blocked",
+    "main_promotion_blocker": "Clean root baseline no longer tracks ecosystems/amof-platform/ecosystem.yaml, so root scripts/amof.py promote-main cannot resolve ecosystem amof-platform. Feature branch was pushed for PR instead."
+  },
+  "files_changed": [
+    "scripts/amof/generated_build/__init__.py",
+    "scripts/amof/generated_build/candidate.py",
+    "tests/test_generated_build_detector.py"
+  ],
+  "candidate_store": {
+    "record_path": ".amof/generated-builds/candidates/records/<candidate_id>.json",
+    "active_pointer_path": ".amof/generated-builds/candidates/active/<ecosystem>/<service>.json",
+    "audit_receipt_path": ".amof/generated-builds/candidates/audit/<candidate_id>.json",
+    "original_artifact_mutated": false
+  },
+  "write_action": {
+    "action": "generated_build.promote_candidate.v1",
+    "function": "promote_candidate(request, context=None)",
+    "success_result": "candidate_created",
+    "success_admission_status": "candidate_only"
+  },
+  "refusals_tested": [
+    "operator_confirmation_digest_mismatch",
+    "existing_build_contract_present",
+    "artifact_status_below_runtime_proven",
+    "missing_operator_confirmation",
+    "active_candidate_exists_without_supersede"
+  ],
+  "tests": {
+    "command": "PYTHONPATH=scripts .venv/bin/python -m pytest tests/test_generated_build_detector.py tests/test_command_builder_runtime.py -q",
+    "result": "56 passed"
+  },
+  "manual_smoke": {
+    "result": "candidate_created",
+    "candidate_id": "example-api-eeeeeeeeeeee",
+    "candidate_record_written": true,
+    "active_pointer_written": true,
+    "audit_receipt_written": true,
+    "original_artifact_status": "runtime_proven"
+  },
+  "out_of_scope_held": [
+    "backend mutation endpoint",
+    "UI execution",
+    "deploy/release wiring",
+    "deploy-admitted writes",
+    "cloud-dev",
+    "artifact execution"
+  ],
+  "next_slice": {
+    "id": "ultra-plan-9-generated-build-contract-phase-14-candidate-write-backend-design-or-root-promote-main-repair",
+    "summary": "Either repair root promote-main ecosystem manifest availability on clean baseline, or design the backend mutation boundary for candidate writes before implementation."
+  }
+}

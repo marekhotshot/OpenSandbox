@@ -1,0 +1,26 @@
+{
+  "action": "generated_build.promote_candidate.v1",
+  "result": "refused",
+  "artifact_ref": {
+    "artifact_path": ".amof/generated-builds/node/root/artifact.json",
+    "repo_path": "/workspace/repos/example-node",
+    "service": "root",
+    "image_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "target_ecosystem": "example-node",
+  "target_service": "web",
+  "admission_status": "refused",
+  "artifact_proof_status": "runtime_proven",
+  "reasons": [
+    "generated_artifact_exists",
+    "existing_build_contract_detected"
+  ],
+  "missing_prerequisites": [
+    "existing_build_contract_retirement_decision"
+  ],
+  "refusal_conditions": [
+    "existing_build_contract_present"
+  ],
+  "audit_receipt_path": "ecosystems/example-node/audit/generated-build-candidate-refused-20260427T080000Z.json",
+  "created_at": "2026-04-27T08:00:00Z"
+}

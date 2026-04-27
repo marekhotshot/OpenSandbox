@@ -55,6 +55,9 @@ Status values used here: `canonical`, `wave`, `reservoir`, `placeholder`, `noise
 - [generated-build-runtime-detector-matrix.md](generated-build-runtime-detector-matrix.md)
 - [generated-build-admission-policy.md](generated-build-admission-policy.md)
 - [generated-build-admission-policy.schema.json](generated-build-admission-policy.schema.json)
+- [generated-build-candidate-write-contract.md](generated-build-candidate-write-contract.md)
+- [generated-build-candidate-write-request.schema.json](generated-build-candidate-write-request.schema.json)
+- [generated-build-candidate-write-result.schema.json](generated-build-candidate-write-result.schema.json)
 - [examples/generated-build-contract-python-fastapi.example.json](examples/generated-build-contract-python-fastapi.example.json)
 - [examples/generated-build-contract-node-express.example.json](examples/generated-build-contract-node-express.example.json)
 - [examples/generated-build-contract-go-stdlib.example.json](examples/generated-build-contract-go-stdlib.example.json)
@@ -62,6 +65,9 @@ Status values used here: `canonical`, `wave`, `reservoir`, `placeholder`, `noise
 - [examples/generated-build-admission-candidate-only.example.json](examples/generated-build-admission-candidate-only.example.json)
 - [examples/generated-build-admission-existing-build-refused.example.json](examples/generated-build-admission-existing-build-refused.example.json)
 - [examples/generated-build-admission-deploy-admitted.example.json](examples/generated-build-admission-deploy-admitted.example.json)
+- [examples/generated-build-candidate-write-request.example.json](examples/generated-build-candidate-write-request.example.json)
+- [examples/generated-build-candidate-write-result.example.json](examples/generated-build-candidate-write-result.example.json)
+- [examples/generated-build-candidate-write-refused.example.json](examples/generated-build-candidate-write-refused.example.json)
 
 ### Boundary
 - [opensandbox-first-boundary.md](opensandbox-first-boundary.md)

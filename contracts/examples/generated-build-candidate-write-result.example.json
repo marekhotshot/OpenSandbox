@@ -1,0 +1,27 @@
+{
+  "action": "generated_build.promote_candidate.v1",
+  "result": "candidate_created",
+  "candidate_id": "gbc-example-python-api-20260427T080000Z",
+  "artifact_ref": {
+    "artifact_path": ".amof/generated-builds/python/python/artifact.json",
+    "repo_path": "/tmp/up9-3-fixtures/python",
+    "service": "python",
+    "image_digest": "sha256:6a56b61c3853815f209d52575dcb0146dbe99ace810dc601e35cdfa2e1d9bc6c"
+  },
+  "target_ecosystem": "example-python",
+  "target_service": "api",
+  "admission_status": "candidate_only",
+  "artifact_proof_status": "runtime_proven",
+  "reasons": [
+    "runtime_proven",
+    "operator_confirmed",
+    "candidate_record_created"
+  ],
+  "missing_prerequisites": [
+    "deploy_pull_reference_confirmation",
+    "source_ref_confirmation"
+  ],
+  "refusal_conditions": [],
+  "audit_receipt_path": "ecosystems/example-python/audit/generated-build-candidate-gbc-example-python-api-20260427T080000Z.json",
+  "created_at": "2026-04-27T08:00:00Z"
+}

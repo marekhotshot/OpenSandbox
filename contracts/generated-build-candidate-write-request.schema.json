@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://amof.dev/contracts/generated-build-candidate-write-request.schema.json",
+  "title": "Generated Build Candidate Write Request",
+  "type": "object",
+  "required": [
+    "action",
+    "artifact_ref",
+    "target_ecosystem",
+    "target_service",
+    "operator_confirmation"
+  ],
+  "properties": {
+    "action": {
+      "type": "string",
+      "const": "generated_build.promote_candidate.v1"
+    },
+    "artifact_ref": {
+      "type": "object",
+      "required": ["artifact_path", "repo_path", "service"],
+      "properties": {
+        "artifact_path": { "type": "string" },
+        "repo_path": { "type": "string" },
+        "service": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "target_ecosystem": { "type": "string", "minLength": 1 },
+    "target_service": { "type": "string", "minLength": 1 },
+    "supersede_candidate_id": { "type": "string" },
+    "operator_confirmation": {
+      "type": "object",
+      "required": [
+        "confirmed_by",
+        "confirmed_at",
+        "confirmed_image_digest",
+        "confirmed_runtime_family",
+        "confirmed_template_id",
+        "confirmed_source_repo",
+        "confirmed_entrypoint",
+        "acknowledgements"
+      ],
+      "properties": {
+        "confirmed_by": { "type": "string", "minLength": 1 },
+        "confirmed_at": { "type": "string", "format": "date-time" },
+        "confirmed_image_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "confirmed_runtime_family": { "type": "string" },
+        "confirmed_template_id": { "type": "string" },
+        "confirmed_source_repo": { "type": "string" },
+        "confirmed_entrypoint": { "type": "string" },
+        "acknowledgements": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "runtime_proven_is_not_deploy_admission",
+              "candidate_only_is_not_deploy_admitted",
+              "existing_build_precedence_checked",
+              "no_release_or_deploy_wiring_created"
+            ]
+          },
+          "uniqueItems": true,
+          "minItems": 4
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,78 @@
+{
+  "slice": "ultra-plan-9-generated-build-contract-phase-12-admission-candidate-write-design",
+  "result": "candidate_write_boundary_designed_with_request_result_schemas_no_mutation_implemented",
+  "scope": "design first generated-build admission mutation boundary only; no deploy/release wiring, no UI execution, no cloud-dev, no artifact execution",
+  "artifacts_created": [
+    "contracts/generated-build-candidate-write-contract.md",
+    "contracts/generated-build-candidate-write-request.schema.json",
+    "contracts/generated-build-candidate-write-result.schema.json",
+    "contracts/examples/generated-build-candidate-write-request.example.json",
+    "contracts/examples/generated-build-candidate-write-result.example.json",
+    "contracts/examples/generated-build-candidate-write-refused.example.json"
+  ],
+  "artifacts_modified": [
+    "contracts/INDEX.md"
+  ],
+  "action_model": {
+    "action": "generated_build.promote_candidate.v1",
+    "purpose": "Persist a runtime_proven generated-build artifact as a candidate_only generated build contract candidate for one ecosystem/service.",
+    "writes_allowed": [
+      "candidate record",
+      "audit receipt"
+    ],
+    "writes_forbidden": [
+      "deploy/release state",
+      "chart values",
+      "lifecycle build/deploy records",
+      "generated Dockerfiles",
+      "artifact proof status"
+    ]
+  },
+  "preconditions": [
+    "stored artifact exists",
+    "artifact validates against generated-build-contract.schema.json",
+    "artifact.status == runtime_proven",
+    "operator-confirmed digest matches build_proof.image_digest",
+    "admission preview for same artifact/context is candidate_only",
+    "existing-build precedence has no conflict",
+    "no active candidate for same ecosystem/service unless superseding"
+  ],
+  "refusal_conditions": [
+    "artifact_not_found",
+    "artifact_schema_invalid",
+    "artifact_status_below_runtime_proven",
+    "operator_confirmation_missing",
+    "operator_confirmation_digest_mismatch",
+    "existing_build_contract_present",
+    "active_candidate_exists_without_supersede",
+    "candidate_store_write_failed",
+    "audit_write_failed"
+  ],
+  "state_transition": {
+    "from": "readonly evidence artifact (runtime_proven)",
+    "to": "candidate_only candidate record",
+    "artifact_status_changes": false,
+    "deploy_admission_created": false,
+    "release_admission_created": false
+  },
+  "rollback_supersession": {
+    "revert_action": "generated_build.revert_candidate.v1",
+    "supersession": "generated_build.promote_candidate.v1 with supersede_candidate_id",
+    "delete_original_artifact": false,
+    "delete_original_audit_receipt": false
+  },
+  "schema_validation": {
+    "request_example_valid": true,
+    "success_result_example_valid": true,
+    "refused_result_example_valid": true
+  },
+  "out_of_scope_held": [
+    "backend mutation implementation",
+    "UI execution",
+    "deploy/release wiring",
+    "deploy-admitted write boundary",
+    "cloud-dev",
+    "runtime proof execution"
+  ],
+  "next_slice": "ultra-plan-9-generated-build-contract-phase-13-candidate-write-local-store-prototype"
+}

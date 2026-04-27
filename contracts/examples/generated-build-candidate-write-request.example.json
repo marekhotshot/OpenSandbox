@@ -1,0 +1,25 @@
+{
+  "action": "generated_build.promote_candidate.v1",
+  "artifact_ref": {
+    "artifact_path": ".amof/generated-builds/python/python/artifact.json",
+    "repo_path": "/tmp/up9-3-fixtures/python",
+    "service": "python"
+  },
+  "target_ecosystem": "example-python",
+  "target_service": "api",
+  "operator_confirmation": {
+    "confirmed_by": "operator@example.com",
+    "confirmed_at": "2026-04-27T08:00:00Z",
+    "confirmed_image_digest": "sha256:6a56b61c3853815f209d52575dcb0146dbe99ace810dc601e35cdfa2e1d9bc6c",
+    "confirmed_runtime_family": "python",
+    "confirmed_template_id": "python-uvicorn-distroless-v1",
+    "confirmed_source_repo": "/tmp/up9-3-fixtures/python",
+    "confirmed_entrypoint": "uvicorn app:app --host 0.0.0.0 --port 8000",
+    "acknowledgements": [
+      "runtime_proven_is_not_deploy_admission",
+      "candidate_only_is_not_deploy_admitted",
+      "existing_build_precedence_checked",
+      "no_release_or_deploy_wiring_created"
+    ]
+  }
+}

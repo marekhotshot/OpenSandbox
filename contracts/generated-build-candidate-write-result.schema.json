@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://amof.dev/contracts/generated-build-candidate-write-result.schema.json",
+  "title": "Generated Build Candidate Write Result",
+  "type": "object",
+  "required": [
+    "action",
+    "result",
+    "artifact_ref",
+    "target_ecosystem",
+    "target_service",
+    "admission_status",
+    "artifact_proof_status",
+    "reasons",
+    "missing_prerequisites",
+    "refusal_conditions",
+    "audit_receipt_path",
+    "created_at"
+  ],
+  "properties": {
+    "action": { "type": "string", "const": "generated_build.promote_candidate.v1" },
+    "result": { "type": "string", "enum": ["candidate_created", "refused"] },
+    "candidate_id": { "type": "string" },
+    "artifact_ref": {
+      "type": "object",
+      "required": ["artifact_path", "repo_path", "service", "image_digest"],
+      "properties": {
+        "artifact_path": { "type": "string" },
+        "repo_path": { "type": "string" },
+        "service": { "type": "string" },
+        "image_digest": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "target_ecosystem": { "type": "string" },
+    "target_service": { "type": "string" },
+    "admission_status": { "type": "string", "enum": ["candidate_only", "refused"] },
+    "artifact_proof_status": { "type": "string", "enum": ["runtime_proven", "build_proven", "proposed", "refused"] },
+    "reasons": { "type": "array", "items": { "type": "string" } },
+    "missing_prerequisites": { "type": "array", "items": { "type": "string" } },
+    "refusal_conditions": { "type": "array", "items": { "type": "string" } },
+    "audit_receipt_path": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "superseded_candidate_id": { "type": "string" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "result": { "const": "candidate_created" } }, "required": ["result"] },
+      "then": { "required": ["candidate_id"] }
+    },
+    {
+      "if": { "properties": { "result": { "const": "refused" } }, "required": ["result"] },
+      "then": { "properties": { "refusal_conditions": { "minItems": 1 } } }
+    }
+  ],
+  "additionalProperties": false
+}
