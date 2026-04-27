@@ -1,0 +1,70 @@
+{
+  "slice": "runpod-heavy-lane-endpoint-provision-and-planning-proof",
+  "result": "endpoint_provisioned_but_worker_exited_before_openai_health_passed",
+  "scope": "one RunPod OpenAI-compatible endpoint attempt for AMOF heavy lane; no UI work, no master integration, no deploy/release work, no broad provider architecture",
+  "endpoint_capable_runtime_decision": {
+    "existing_pytorch_template_reused": false,
+    "reason_existing_template_not_enough": "Existing template amof-mvp-pytorch-cuda121 exposes Jupyter/SSH and is reusable substrate, but it is not an OpenAI-compatible inference endpoint.",
+    "chosen_runtime": "RunPod Serverless vLLM worker",
+    "image": "runpod/worker-vllm:stable-cuda12.1.0",
+    "model": "MiniMaxAI/MiniMax-M2.5",
+    "max_model_len": 8192,
+    "gpu_type": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+    "gpu_count": 4,
+    "workers_min": 0,
+    "workers_max": 1,
+    "idle_timeout_seconds": 120
+  },
+  "provisioning": {
+    "template_created": {
+      "id": "yy3ytzil4a",
+      "name": "amof-minimax-m25-vllm-20260427114503"
+    },
+    "endpoint_created": {
+      "id": "vllm-lzf43qly83gkad",
+      "name": "amof-minimax-m25-vllm-20260427114503",
+      "openai_base_url_shape": "https://api.runpod.ai/v2/<endpoint-id>/openai/v1"
+    },
+    "startup_observation": {
+      "worker_id": "q3ilvd7mgyqwr6",
+      "desired_status": "EXITED",
+      "cost_per_hour_usd": 7.56,
+      "models_probe": "timed out with no bytes after 20 seconds",
+      "worker_runtime": "worker did not reach usable OpenAI-compatible /models response"
+    }
+  },
+  "endpoint_proof": {
+    "models_discovery_passed": false,
+    "chat_completion_attempted": false,
+    "chat_completion_reason": "Skipped because /models never became healthy.",
+    "amof_heavy_lane_health_flipped_to_usable": false
+  },
+  "planning_proof": {
+    "attempted": false,
+    "reason": "Skipped by kill criteria: endpoint was not healthy/OpenAI-compatible."
+  },
+  "patch_proof": {
+    "attempted": false,
+    "reason": "Skipped because planning proof did not pass."
+  },
+  "cleanup": {
+    "endpoint_deleted": true,
+    "template_deleted": true,
+    "remaining_endpoints": 0,
+    "remaining_templates": [
+      {
+        "id": "4dnxg7h6lw",
+        "name": "amof-mvp-pytorch-cuda121"
+      }
+    ],
+    "remaining_pods": 0
+  },
+  "cost_guardrail_verdict": {
+    "approx_cost": "bounded to a short failed worker startup; exact billing should be checked in RunPod console",
+    "hard_cap_breached": false,
+    "zombie_resources_left": false
+  },
+  "decision": "replay_later",
+  "blocker": "RunPod Serverless vLLM worker for MiniMax M2.5 on the selected 4x RTX PRO 6000 endpoint exited before /models became healthy. Need worker logs or a known-good vLLM template/runtime for MiniMax before retrying.",
+  "next_slice": "runpod-minimax-worker-log-forensics-or-known-good-vllm-template"
+}
