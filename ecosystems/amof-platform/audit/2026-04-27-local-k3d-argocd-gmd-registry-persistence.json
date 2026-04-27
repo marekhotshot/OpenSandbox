@@ -1,0 +1,28 @@
+{
+  "slice": "local-k3d-argocd-gitops-ref-persistence",
+  "result": "local_k3d_argocd_and_gmd_registry_refs_persisted_and_runtime_proven",
+  "scope": "local k3d registry mirror persistence only; no cloud-dev, no feature work, no RunPod work, no UI changes",
+  "argocd_source_of_truth": "repos/amof/infrastructure/gitops/argocd/local-k3d-image-overrides.sh",
+  "gmd_source_of_truth": [
+    "repos/amof/infrastructure/gitops/gmd/applicationset.yaml",
+    "repos/amof/infrastructure/gitops/gmd/chart/values.yaml",
+    "repos/amof/infrastructure/gitops/gmd/chart/templates/loadgenerator.yaml",
+    "repos/amof/infrastructure/gitops/gmd/chart/templates/opentelemetry-collector.yaml"
+  ],
+  "image_refs_persisted": {
+    "argocd": "k3d-amof-registry:5000/mirror/quay.io/argoproj/argocd:v3.3.8",
+    "dex": "k3d-amof-registry:5000/mirror/ghcr.io/dexidp/dex:v2.43.0",
+    "redis": "k3d-amof-registry:5000/mirror/public.ecr.aws/docker/library/redis:8.2.3-alpine",
+    "busybox": "k3d-amof-registry:5000/mirror/docker.io/library/busybox:gmd-b3255e7d",
+    "gmd_dev_repository": "k3d-amof-registry:5000/gmd",
+    "gmd_dev_tag": "gmd-dev-c9857ee5"
+  },
+  "runtime_proof": {
+    "argocd_pods_running": 7,
+    "loadgenerator_status": "Running",
+    "loadgenerator_init_image": "k3d-amof-registry:5000/mirror/docker.io/library/busybox:gmd-b3255e7d",
+    "loadgenerator_main_image": "k3d-amof-registry:5000/gmd/loadgenerator:gmd-dev-c9857ee5"
+  },
+  "blocker": null,
+  "next_slice": "local-k3d-gitops-sync-health-proof"
+}
