@@ -1,0 +1,59 @@
+{
+  "slice": "ultra-plan-9-candidate-promotion-operator-lane-closeout-long-run",
+  "result": "operator_ui_confirmation_boundary_designed_and_local_only_candidate_promotion_ui_proven",
+  "scope": "local-only generated-build candidate promotion operator lane; no deploy/release wiring, no cloud-dev, no deploy-admitted writes, no non-local storage",
+  "artifacts_created": [
+    "contracts/generated-build-candidate-promotion-operator-ui.md"
+  ],
+  "artifacts_modified": [
+    "contracts/INDEX.md"
+  ],
+  "ui_action_model": {
+    "surface": "generated-build artifact detail",
+    "mutation_endpoint": "POST /api/v1/control/generated-builds/candidates/promote",
+    "readonly_candidate_inspection": [
+      "GET /api/v1/generated-builds/candidates",
+      "GET /api/v1/generated-builds/candidates/{candidate_id}"
+    ],
+    "state_distinctions_preserved": [
+      "artifact proof status",
+      "admission preview status",
+      "candidate write state",
+      "deploy/release truth"
+    ]
+  },
+  "safety_copy_required": [
+    "Candidate promotion is not deploy admission.",
+    "Candidate promotion is not release admission."
+  ],
+  "implementation": {
+    "repo": "repos/amof-ui",
+    "files": [
+      "src/hooks/useGeneratedBuilds.ts",
+      "src/components/generated-builds-page.tsx"
+    ],
+    "mutation_path": "POST /api/v1/control/generated-builds/candidates/promote",
+    "readonly_candidate_path": "GET /api/v1/generated-builds/candidates"
+  },
+  "proof": {
+    "build": "docker run node:20 npm run build",
+    "browser": {
+      "result": "passed",
+      "safety_copy_visible": true,
+      "forbidden_exact_buttons_absent": true,
+      "success_seen": true,
+      "replay_seen": true,
+      "existing_conflict_refusal_seen": true,
+      "digest_mismatch_refusal_seen": true,
+      "candidate_state_visible": true,
+      "screenshot": ".amof-tmp/proof/artifacts/up9-operator-candidate-ui-proof.png"
+    }
+  },
+  "out_of_scope_held": [
+    "deploy/release wiring",
+    "cloud-dev",
+    "deploy-admitted execution",
+    "new generated-build proof ladder work",
+    "non-local storage"
+  ]
+}
