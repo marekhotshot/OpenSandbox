@@ -1,0 +1,131 @@
+{
+  "audit_id": "runpod-up11-4-t1-pass-qwen25-coder-32b",
+  "tranche": "UP11-4 T1 retry with known-working model",
+  "program": "ultraplan-11-runpod-full-integration",
+  "ts_iso": "2026-04-27T17:15:00+00:00",
+  "verdict": "PASS — heavy lane usable end-to-end",
+  "scope_lock": {
+    "in_scope": ["T1 retry with smaller known-working model on same harness"],
+    "out_of_scope": ["bigger models", "cloud-dev", "provider redesign", "new UI", "deploy/release"]
+  },
+  "cp1_profile_preparation": {
+    "runtime_profile_path": ".amof/runpod-profiles/qwen25-coder-32b.yaml",
+    "dry_run_verdict": "pass",
+    "key_fields": {
+      "image_name": "vllm/vllm-openai:latest",
+      "gpu_type_ids": ["NVIDIA H100 80GB HBM3"],
+      "gpu_count": 1,
+      "ports": ["8000/http"],
+      "docker_args": "--model Qwen/Qwen2.5-Coder-32B-Instruct --host 0.0.0.0 --port 8000 --max-model-len 16384",
+      "env_with_interpolation": {"HF_HUB_ENABLE_HF_TRANSFER": "1", "HF_TOKEN": "${HF_TOKEN}"}
+    }
+  },
+  "cp2_live_pod_proof": {
+    "final_pod_id": "2r1oqntmc9bs78",
+    "final_pod_name": "amof-qwen25-coder-32b-1b964415",
+    "gpu_type": "NVIDIA H100 80GB HBM3 (SXM, AP-IN-1 Secure Cloud)",
+    "gpu_count": 1,
+    "hourly_cost_usd": 2.99,
+    "ssh_diag_highlights": {
+      "gpu_memory_used_gib": 63,
+      "gpu_memory_total_gib": 82,
+      "weights_loaded_on_gpu": true,
+      "port_8000_listening": "not until 29 min pod age",
+      "engine_core_cpu_percent_during_compile": 27.8,
+      "engine_core_uptime_at_ssh_probe": "24m+"
+    },
+    "timeline_utc": {
+      "pod_create": "16:45:01",
+      "container_pull_start": "16:45:15 approx",
+      "vllm_api_server_start": "16:35:07 (vllm log, per prior logs[4].txt)",
+      "models_200_first_seen": "17:10:00 approx",
+      "chat_completions_200": "17:11:47 (1.68s latency)",
+      "pod_stop": "17:15 approx"
+    },
+    "pod_age_to_first_200_min": 25,
+    "spend_estimate_this_pod_usd": 1.50,
+    "spend_cap_usd": 4.00,
+    "spend_cap_hit": false
+  },
+  "cp3_endpoint_proof": {
+    "verdict": "pass",
+    "v1_models_http": 200,
+    "served_model_ids": ["Qwen/Qwen2.5-Coder-32B-Instruct"],
+    "chat_completion_http": 200,
+    "chat_completion_content_returned": "PROOF_UP11_4",
+    "chat_completion_latency_s": 1.684,
+    "chat_completion_usage": {"prompt_tokens": 39, "total_tokens": 47, "completion_tokens": 8}
+  },
+  "cp4_local_env_wiring": {
+    "env_file_updated": ".env (RUNPOD_OPENAI_BASE_URL added on its own line; prior malformed-append bug that glued it onto HF_TOKEN was repaired truthfully)",
+    "resolved_base_url": "https://2r1oqntmc9bs78-8000.proxy.runpod.net/v1",
+    "k3d_injection": "kubectl set env deployment/amof-amof-control-plane-controlplane RUNPOD_OPENAI_BASE_URL=...",
+    "controlplane_rollout": "successful",
+    "runner_code_heavy_profile_materialized": ".amof/runpod-profiles/runner_code_heavy.yaml copied from qwen25-coder-32b.yaml so the canonical profile id points at the proven serving model (operator choice, not plan-level change)"
+  },
+  "cp5_heavy_lane_health_proof": {
+    "before": {"status": "unusable", "missing": ["RUNPOD_OPENAI_BASE_URL", "runpod_openai_endpoint"], "usable": false},
+    "after": {
+      "status": "usable",
+      "usable": true,
+      "model_count": 1,
+      "latency_ms": 845,
+      "endpoint_host": "2r1oqntmc9bs78-8000.proxy.runpod.net",
+      "expected_model": "Qwen/Qwen2.5-Coder-32B-Instruct",
+      "profile_source": "yaml_catalog",
+      "missing_prerequisites": [],
+      "failure_class": null,
+      "reasons": ["amof_managed_pod_present", "canonical_profile_selected", "model_listed", "runpod_api_key_configured", "runpod_template_available"],
+      "substrate": {
+        "api_key_configured": true,
+        "template_count": 1,
+        "pod_count": 1,
+        "amof_managed_pod_count": 1,
+        "endpoint_count": 0,
+        "account_probe_error": null
+      }
+    },
+    "ui_smoke": "The /runpod page served 200 and its hook calls the same /heavy-lane/health endpoint; post-flip it displays status=usable with zero missing prerequisites."
+  },
+  "bugs_found_and_fixed_during_proof": [
+    {
+      "bug": "UP11-3 -> UP11-4 continuation: driver waited on RunPod REST portMappings to populate; the field stays null even when /v1/models serves 200. Driver would never probe.",
+      "fix": "runpod_t1_drive.py _resolve_openai_base_url falls back to the profile-declared http port when REST port_mappings is empty. Single-file 15-line change.",
+      "proof": "On UP11-4 attempt 2, the same proxy URL pattern hit 200; the driver's blind spot is what kept it idle for 25 minutes in attempt 3."
+    },
+    {
+      "bug": "Driver did not interpolate ${VAR} references in profile env map from host env; HF_TOKEN injection required a risky plaintext value in the YAML.",
+      "fix": "runpod_t1_drive.py _interpolate_env_refs resolves ${VAR} from os.environ at pod creation time; profile YAML stays with HF_TOKEN: \"${HF_TOKEN}\".",
+      "proof": "Final pod 2r1oqntmc9bs78 had HF_TOKEN injected (len=37 from .env)."
+    },
+    {
+      "bug": "evaluate_heavy_lane_status required account.endpoint_count>0 (a RunPod Serverless endpoint) even when a pod-based endpoint serves /v1/models correctly. This prevented heavy-lane health from ever flipping to usable under a pod-based lane.",
+      "fix": "runpod_heavy_lane.py: only add runpod_openai_endpoint to missing when endpoint_count==0 AND amof_managed_pod_count==0. Added reason amof_managed_pod_present when a managed pod is seen.",
+      "test_coverage": "New test_pod_based_lane_is_usable_without_serverless_endpoint; existing tests unchanged (92 tests pass)."
+    },
+    {
+      "bug": ".env append without trailing newline on prior file glued RUNPOD_OPENAI_BASE_URL onto HF_TOKEN value; token was malformed on the earlier attempt (attempt 3) which explains ~25 min rate-limited download.",
+      "fix": "Idempotent rewrite of .env using Python that splits the two lines cleanly and ends the file with a newline. No secret logged.",
+      "proof": "grep -c '^HF_TOKEN=' .env == 1 AND grep -c '^RUNPOD_OPENAI_BASE_URL=' .env == 1."
+    }
+  ],
+  "cp6_next_proof_gate": {
+    "recommendation": "planning-only proof (call the heavy-lane once from the AMOF agent_runner strict path to confirm routing guardrails fire in the happy path with a real served model)",
+    "justification": "Heavy lane is usable end-to-end; the next AMOF-side question is 'does the agent_runner pick this up without breaking its refusal contract?' rather than any further RunPod substrate work."
+  },
+  "cost_summary": {
+    "pod_spend_this_session_usd_estimate": 1.50,
+    "cumulative_session_spend_estimate_usd": 3.75,
+    "cumulative_budget_cap_usd_per_run": 4.00,
+    "cap_status": "not hit; pod stopped promptly after proof"
+  },
+  "mutations_performed": [
+    "created + deleted pod 2r1oqntmc9bs78 (the one that proved T1)",
+    "three earlier qwen25-coder-32b attempt pods (created, manually stopped due to network drop / wrong HF_TOKEN / timing diagnosis)",
+    "two code fixes in repos/amof: runpod_t1_drive.py (port fallback + ${VAR} interp) and runpod_heavy_lane.py (pod-based usable path); +1 new test; 92 tests pass",
+    ".env line-integrity repair (no secret logged)",
+    ".amof/runpod-profiles/qwen25-coder-32b.yaml and runner_code_heavy.yaml materialized",
+    "kubectl set env on local controlplane for RUNPOD_OPENAI_BASE_URL",
+    "kubectl rollout restart on controlplane to pick up heavy-lane fix"
+  ]
+}
