@@ -1,0 +1,116 @@
+{
+  "audit_id": "runpod-t1-pod-endpoint-proof",
+  "tranche": "UP11-3 T1 live pod-based endpoint proof",
+  "program": "ultraplan-11-runpod-full-integration",
+  "ts_iso_start": "2026-04-27T14:38:20.970200+00:00",
+  "ts_iso_end": "2026-04-27T14:52:16+00:00",
+  "verdict": "fail",
+  "classification": "replay-later with profile change (not replay same profile)",
+  "scope_lock": {
+    "in_scope": ["T1 live endpoint proof only"],
+    "out_of_scope": ["new RunPod features", "provider redesign", "cloud-dev", "deploy/release", "extra UI work"]
+  },
+  "cp1_profile_activation": {
+    "source_example": "repos/amof/docs/contracts/examples/runpod-profiles/gpt-oss-120b-vllm-single-h100.yaml",
+    "runtime_copy": ".amof/runpod-profiles/gpt-oss-120b.yaml",
+    "dry_run_verdict": "pass (parse + plan clean, follow-up path warning expected)",
+    "profile_resolves_via_live_surface": true
+  },
+  "cp2_live_pod_proof_execution": {
+    "pod_id": "16mfbjql06k2xp",
+    "pod_name": "amof-gpt-oss-120b-28e02671",
+    "machine_id": "b9dyys94hlbk",
+    "image": "vllm/vllm-openai:latest (vLLM 0.20.0)",
+    "gpu_type": "NVIDIA H100 80GB HBM3",
+    "gpu_count": 1,
+    "hourly_cost_usd": 2.99,
+    "docker_start_cmd": ["--model", "openai/gpt-oss-120b", "--host", "0.0.0.0", "--port", "8000", "--max-model-len", "8192", "--gpu-memory-utilization", "0.92"],
+    "declared_port": "8000/http",
+    "resolved_endpoint_attempted": "https://16mfbjql06k2xp-8000.proxy.runpod.net/v1",
+    "spend_usd": 0.60,
+    "spend_cap_usd": 4.00,
+    "spend_cap_hit": false
+  },
+  "cp2_first_attempt_rest_schema_bug": {
+    "symptom": "POST /pods returned HTTP 400 with {\"error\":\"Extra input keys provided in request body\",\"problems\":[\"key provided in request body which is not in input schema: 'dockerArgs'\"]}",
+    "root_cause": "RunPod REST v1 /pods schema uses dockerStartCmd (list of strings) not dockerArgs (string); our T1 body builder emitted dockerArgs",
+    "repair_landed_to_main": {
+      "commit": "d3cdea2 -> promoted as 1423172",
+      "repo": "amof",
+      "ticket": "UP11-3",
+      "candidate_branch": "feat/UP11-3-runpod-dockerStartCmd-fix",
+      "file_changes": ["scripts/amof/api/services/runpod.py (shlex.split on docker_args -> dockerStartCmd list)", "tests/test_runpod_service.py (two assertions updated, 82 tests pass)"]
+    },
+    "post_repair_result": "second attempt created pod 16mfbjql06k2xp successfully"
+  },
+  "cp3_endpoint_proof": {
+    "verdict": "fail",
+    "runpod_container_timeline_z": {
+      "14:40:20": "create container + Pulling from vllm/vllm-openai",
+      "14:45:04": "Pull complete; Status: Downloaded newer image for vllm/vllm-openai:latest",
+      "14:45:07": "start container for vllm/vllm-openai:latest: begin (attempt 1)",
+      "14:50:27": "start container for vllm/vllm-openai:latest: begin (attempt 2)",
+      "14:51:01": "start container for vllm/vllm-openai:latest: begin (attempt 3)",
+      "14:51:35": "start container for vllm/vllm-openai:latest: begin (attempt 4)",
+      "14:52:09": "start container for vllm/vllm-openai:latest: begin (attempt 5)",
+      "14:52:15": "stop container (operator-triggered via UI Delete + parallel REST DELETE)",
+      "14:52:16": "remove container"
+    },
+    "vllm_progress_observed_before_crash": [
+      "vLLM v0.20.0 initialized",
+      "Resolved architecture: GptOssForCausalLM",
+      "Parse safetensors files: 100% (15/15)",
+      "no /v1/models response; proxy returned HTTP 502 throughout; never 200"
+    ],
+    "crash_classification": "rapid container crash-restart loop AFTER image pull complete; five start attempts in ~7 minutes",
+    "likely_root_causes_ranked": [
+      "KV-cache OOM on a single 80GB H100 for gpt-oss-120b at max-model-len=8192 (MoE activations + cache bookkeeping)",
+      "GptOssForCausalLM implementation gap in vLLM 0.20.0 (very new architecture may need a newer image tag or vllm-openai:latest pinned to a specific version)",
+      "mxfp4 quantization kernel path missing or misconfigured on H100 80GB"
+    ],
+    "not_classifiable_from_data": "RunPod REST v1 has no /pods/{id}/logs endpoint and the container's stderr beyond the manually-captured vLLM startup snippet was not persisted; so the exact crash reason cannot be pinned without either another run with log capture or the RunPod web console history",
+    "models_probe_result": "never 200",
+    "completion_probe_result": "not attempted (precondition failed)"
+  },
+  "cp4_local_env_wiring": {
+    "executed": false,
+    "reason": "endpoint proof failed; no valid URL to wire. Local .env RUNPOD_OPENAI_BASE_URL stays unset by design."
+  },
+  "cp5_heavy_lane_health_proof": {
+    "status_before": "unusable (missing RUNPOD_OPENAI_BASE_URL)",
+    "status_after": "unusable (missing RUNPOD_OPENAI_BASE_URL)",
+    "delta": "none; usable flip did not occur because the upstream model would not serve"
+  },
+  "cp6_closure": {
+    "result": "T1 failed",
+    "exact_blocker": "gpt-oss-120b on a single H100 80GB via stock vllm/vllm-openai:latest + --max-model-len 8192 crash-loops before /v1/models is reachable. Root cause is most likely KV-cache OOM or vLLM 0.20.0 gpt-oss support incomplete; without RunPod stderr capture the exact vLLM error line cannot be named from this run alone.",
+    "kill_criteria_status": {
+      "spend_cap_4_usd": "not hit (~$0.60 burned)",
+      "proxy_models_200_within_45min": "hit - never got a 200",
+      "endpoint_flaky_or_unusable": "hit - container crash-restart loop"
+    },
+    "operator_followup_for_next_slice": [
+      "Pick a smaller / better-supported model for the baseline proof (DO NOT keep gpt-oss-120b on 1x H100). Candidates in program shortlist: Qwen2.5-Coder-32B (fits 80GB comfortably, well-known vLLM support), or gpt-oss-20b if it exists, or a vLLM example model like meta-llama/Llama-3.1-8B-Instruct for a pure transport sanity check",
+      "OR keep gpt-oss-120b but move to 2x H100 or H200 141GB and capture stderr via the RunPod web console (REST has no logs endpoint)"
+    ]
+  },
+  "cost_incurred_usd_this_session": 0.60,
+  "mutations_performed": [
+    "created pod 16mfbjql06k2xp via live RunPod REST (12 min lifetime)",
+    "deleted pod via HTTP 204 (operator UI Delete + parallel REST call; both resolved the same container)",
+    "code fix landed to amof main: d3cdea2 -> promoted as 1423172 (dockerStartCmd translation)",
+    "wrote this audit"
+  ],
+  "ui_operator_actions_observed": {
+    "gc_dry_run_via_ui": "expected to report pod 16mfbjql06k2xp as terminal_state:EXITED zombie (T4 guard) with actions=[report_only]; dry_run never deletes",
+    "delete_from_ui": "POST/DELETE /api/v1/runpod/pods/16mfbjql06k2xp -> 204; container stopped 14:52:15Z on the RunPod side"
+  },
+  "next_slice_name": "UP11-4 T1 retry with a known-working model",
+  "next_slice_scope_hint": [
+    "Keep the exact same harness (profile YAML + driver + runbook + $4 cap + 45min kill)",
+    "Swap model to Qwen/Qwen2.5-Coder-32B-Instruct on 1x H100 80GB (smaller, well-supported by vLLM 0.20.0, proven publicly)",
+    "Profile delta: image_name + gpu_type_ids unchanged; docker_args becomes '--model Qwen/Qwen2.5-Coder-32B-Instruct --host 0.0.0.0 --port 8000 --max-model-len 16384'",
+    "Success criterion unchanged: /v1/models returns 200 with the model listed AND one /v1/chat/completions test succeeds",
+    "Only after that proves the transport, reconsider gpt-oss-120b (which needs 2x H100 or H200+) as a separate slice"
+  ]
+}
