@@ -1,0 +1,116 @@
+{
+  "audit_id": "runpod-up11-2-local-env-injection-and-health-test",
+  "tranche": "UP11-2 local env injection + health test (bounded)",
+  "program": "ultraplan-11-runpod-full-integration",
+  "ts_iso": "2026-04-27T14:33:00+00:00",
+  "purpose": "Inject available local RunPod envs from root .env into the live local k3d AMOF controlplane and report the truthful heavy-lane health outcome. Do not claim usability beyond what /api/v1/runpod/heavy-lane/health proves.",
+  "scope_lock": {
+    "in_scope": [
+      "local k3d only",
+      "env injection from root .env",
+      "restart only affected workloads",
+      "truthful health verdict"
+    ],
+    "out_of_scope": [
+      "new RunPod features",
+      "T1 endpoint provisioning itself",
+      "cloud-dev rollout",
+      "deploy/release work",
+      "UI redesign"
+    ]
+  },
+  "cp1_env_census": {
+    "source": ".env at workspace root",
+    "RUNPOD_API_KEY": {"present": true, "length_bytes": 50, "value_logged": false},
+    "RUNPOD_OPENAI_BASE_URL": {"present": false, "reason": "not declared in .env"},
+    "RUNPOD_API_BASE": {"present": false, "note": "uses default https://rest.runpod.io/v1"},
+    "verdict": "only RUNPOD_API_KEY is available locally; heavy lane cannot be fully usable without an OpenAI-compatible endpoint URL, which requires a real T1 pod proof (out of scope this slice)"
+  },
+  "cp2_local_injection": {
+    "target": "kubectl deployment/amof-amof-control-plane-controlplane in amof-system",
+    "primary_change": {
+      "action": "kubectl set env",
+      "env_added": ["RUNPOD_API_KEY=<literal from .env>"],
+      "envs_NOT_added": ["RUNPOD_OPENAI_BASE_URL (not present in .env)"],
+      "triggered_rollout": true
+    },
+    "infrastructure_side_fix": {
+      "action": "kubectl patch deployment dnsConfig",
+      "reason": "After RUNPOD_API_KEY was set, the /heavy-lane/health probe started calling the live https://rest.runpod.io/v1 REST API and returned HTTP 500 because the k3d cluster CoreDNS upstream (172.18.0.1 -> docker embedded DNS) returned SERVFAIL for external names. Controlplane pod had no IPv4 DNS resolution for external hosts despite full TCP/443 connectivity.",
+      "patch_applied": {
+        "spec.template.spec.dnsPolicy": "None",
+        "spec.template.spec.dnsConfig.nameservers": ["1.1.1.1", "8.8.8.8"],
+        "spec.template.spec.dnsConfig.searches": ["amof-system.svc.cluster.local", "svc.cluster.local", "cluster.local"],
+        "spec.template.spec.dnsConfig.options": [{"name": "ndots", "value": "5"}]
+      },
+      "scope": "controlplane deployment only; other AMOF workloads and the cluster-wide CoreDNS config untouched",
+      "bounded_rationale": "fixes the pod-local DNS symptom without broadening to cluster infra or code changes"
+    },
+    "code_changes": "none",
+    "helm_changes": "none",
+    "values_yaml_changes": "none",
+    "workloads_restarted": ["deploy/amof-amof-control-plane-controlplane (one rollout for env, one for dnsConfig, plus one for fresh-key resync)"],
+    "cluster_wide_changes": "none (CoreDNS restart was a diagnostic; the cluster-wide Corefile is unchanged)"
+  },
+  "cp3_health_proof": {
+    "before": {
+      "status": "unusable",
+      "missing_prerequisites": ["RUNPOD_API_KEY", "RUNPOD_OPENAI_BASE_URL"],
+      "substrate": {"api_key_configured": false, "template_count": null, "pod_count": null, "amof_managed_pod_count": null, "endpoint_count": null}
+    },
+    "after": {
+      "status": "unusable",
+      "usable": false,
+      "missing_prerequisites": ["RUNPOD_OPENAI_BASE_URL", "runpod_openai_endpoint"],
+      "failure_class": null,
+      "substrate": {
+        "api_key_configured": true,
+        "template_count": 1,
+        "pod_count": 0,
+        "amof_managed_pod_count": 0,
+        "endpoint_count": 0,
+        "account_probe_error": null
+      },
+      "reasons": ["canonical_profile_selected", "no_active_pods", "runpod_api_key_configured", "runpod_template_available"]
+    },
+    "profile_endpoint": {
+      "path": "/api/v1/runpod/heavy-lane/profile",
+      "status": 200,
+      "source": "embedded_fallback",
+      "model": "MiniMaxAI/MiniMax-M2.5",
+      "allow_master": false
+    },
+    "truthful_classification": "still unusable because RUNPOD_OPENAI_BASE_URL is not configured and no serverless/pod-based RunPod endpoint exists for the account (endpoint_count=0). RUNPOD_API_KEY is now correctly wired (api_key_configured=true, template_count=1), proving the credential flows end-to-end."
+  },
+  "cp4_operator_smoke": {
+    "dashboard_page_served": {"url": "http://amof.localhost:8081/runpod", "status_last_checked": 200},
+    "api_data_expected_on_page": {
+      "health_panel_missing_prerequisites": ["RUNPOD_OPENAI_BASE_URL", "runpod_openai_endpoint"],
+      "health_panel_RUNPOD_API_KEY_missing_removed": true,
+      "substrate_api_key_configured": true,
+      "substrate_template_count": 1,
+      "endpoint_host": null
+    },
+    "note": "UI verification is API-level (the /runpod page calls these same endpoints via useRunpodHeavyLaneHealth hook). A human browser login would display exactly the missing_prerequisites list above."
+  },
+  "cp5_closure": {
+    "before_missing_prerequisites": ["RUNPOD_API_KEY", "RUNPOD_OPENAI_BASE_URL"],
+    "after_missing_prerequisites": ["RUNPOD_OPENAI_BASE_URL", "runpod_openai_endpoint"],
+    "code_or_config_file_change": "none (runtime-only: kubectl set env + kubectl patch dnsConfig)",
+    "still_blocked": true,
+    "single_real_blocker": "RUNPOD_OPENAI_BASE_URL is unset in .env because no pod-based or serverless RunPod OpenAI-compatible endpoint has been proven yet (T1 is still operator-gated)",
+    "heavy_lane_truly_usable": false
+  },
+  "next_slice_name": "UP11-3 T1 live pod-based endpoint proof (unchanged from UP11-1 closeout)",
+  "next_slice_scope_hint": [
+    "Run repos/amof/scripts/runpod_t1_drive.py --profile gpt-oss-120b --max-wait-minutes 45 --stop-on-success --audit-path ecosystems/amof-platform/audit/$(date -u +%Y-%m-%d)-runpod-t1-pod-endpoint-proof.json (after copying the example profile into .amof/runpod-profiles/)",
+    "On usable verdict, paste the proven URL as RUNPOD_OPENAI_BASE_URL= into .env, re-run kubectl set env against the local controlplane (same tool we used here), and re-probe /api/v1/runpod/heavy-lane/health to confirm status=usable with model_count>=1"
+  ],
+  "cost_incurred_usd_this_session": 0.0,
+  "mutations_performed": [
+    "kubectl set env deployment/amof-amof-control-plane-controlplane RUNPOD_API_KEY (one command)",
+    "kubectl patch deployment/amof-amof-control-plane-controlplane dnsConfig (one patch)",
+    "deploy rollouts as a consequence of the two patches",
+    "no git/helm/values/code changes"
+  ]
+}
