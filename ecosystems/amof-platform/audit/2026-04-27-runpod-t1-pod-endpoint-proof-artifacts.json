@@ -1,0 +1,67 @@
+{
+  "audit_id": "runpod-t1-pod-endpoint-proof-artifacts",
+  "tranche": "T1",
+  "program": "ultraplan-11-runpod-full-integration",
+  "ts_iso": "2026-04-27T13:40:00+00:00",
+  "purpose": "Land T1 artifacts so the operator can run one pod-based OpenAI-compatible endpoint proof without any new agent spend during this session.",
+  "proof_status": "artifacts_ready_operator_gated",
+  "rationale": "Actually creating a RunPod pod and waiting 10-30 minutes for vLLM to download and serve gpt-oss-120b is a human-operator action: it spends ~$2/h and requires interactive monitoring of download/startup logs. This session delivers the full driver, profile, and runbook so the operator can run the proof with one command and capture an audit.",
+  "code_changes": [
+    {
+      "path": "repos/amof/scripts/amof/api/services/runpod.py",
+      "change": "Added optional docker_args field to RunpodProfile; parsed in parse_profile (follow-up path accepts; template path rejects); emitted as dockerArgs in _build_create_body.",
+      "reason": "Current profile shape cannot express a vLLM-serving pod because it has no container command path; template_id-based profiles are baked upstream, and we do not yet own a vLLM template."
+    },
+    {
+      "path": "repos/amof/tests/test_runpod_service.py",
+      "change": "Added 4 tests: followup_path_accepts_docker_args, template_path_rejects_docker_args, docker_args_defaults_to_none, create_body_followup_path_with_docker_args_emits_dockerArgs, create_body_template_first_does_not_emit_dockerArgs.",
+      "test_result": "41 tests pass (was 36)"
+    }
+  ],
+  "artifacts_landed": [
+    {
+      "path": "repos/amof/docs/contracts/examples/runpod-profiles/gpt-oss-120b-vllm-single-h100.yaml",
+      "role": "canonical example profile for T1 proof",
+      "key_fields": {
+        "image_name": "vllm/vllm-openai:latest",
+        "gpu_type_ids": ["NVIDIA H100 80GB HBM3"],
+        "ports": ["8000/http"],
+        "docker_args": "--model openai/gpt-oss-120b --host 0.0.0.0 --port 8000 --max-model-len 8192 --gpu-memory-utilization 0.92",
+        "ttl_minutes": 120
+      }
+    },
+    {
+      "path": "repos/amof/scripts/runpod_t1_drive.py",
+      "role": "operator driver: create pod, poll /models, stop on success, emit audit",
+      "flags": ["--profile", "--max-wait-minutes", "--poll-interval-seconds", "--stop-on-success", "--delete-on-success", "--dry-run", "--audit-path"]
+    },
+    {
+      "path": "repos/amof/docs/operations/runpod-t1-pod-proof-runbook.md",
+      "role": "operator runbook: preconditions, procedure, kill criteria, continue criteria"
+    }
+  ],
+  "operator_command_summary": [
+    "cp repos/amof/docs/contracts/examples/runpod-profiles/gpt-oss-120b-vllm-single-h100.yaml .amof/runpod-profiles/gpt-oss-120b.yaml",
+    "cd repos/amof && set -a && source ../../.env && set +a",
+    "python3 scripts/runpod_t1_drive.py --profile gpt-oss-120b --dry-run",
+    "python3 scripts/runpod_t1_drive.py --profile gpt-oss-120b --max-wait-minutes 45 --stop-on-success --audit-path ../../ecosystems/amof-platform/audit/$(date -u +%Y-%m-%d)-runpod-t1-pod-endpoint-proof.json"
+  ],
+  "kill_criteria_encoded_in_runbook": [
+    "Cannot schedule H100 80GB in SECURE within 15 minutes",
+    "vLLM cannot load gpt-oss-120b within max-wait-minutes",
+    "/models returns wrong model id",
+    "Accumulated spend crosses $4.00 without verdict: usable"
+  ],
+  "continue_criteria_encoded_in_runbook": [
+    "verdict: usable recorded in T1 audit",
+    "GET /api/v1/runpod/heavy-lane/health returns status: usable against the live pod",
+    "audit captures pod_id, hourly_cost_usd, first-token latency, explicit stop action"
+  ],
+  "cost_incurred_usd_this_session": 0.0,
+  "mutations_performed_this_session": [
+    "repo code: runpod.py docker_args field",
+    "repo tests: +5 docker_args tests",
+    "repo docs: gpt-oss-120b profile YAML + runbook + driver script"
+  ],
+  "next_tranche": "T2 - Profile YAML catalog (can proceed in parallel with operator driving T1)"
+}

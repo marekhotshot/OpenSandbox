@@ -1,0 +1,180 @@
+{
+  "audit_id": "runpod-ultraplan-11-program-closeout",
+  "program": "ultraplan-11-runpod-full-integration",
+  "ts_iso": "2026-04-27T15:30:00+00:00",
+  "scope": "Complete execution log of tranches T0-T11 from the program plan at .cursor/plans/ultraplan-11-runpod-full-integration_391d613d.plan.md",
+  "tranches": {
+    "T0": {
+      "status": "completed",
+      "description": "Readonly baseline verify",
+      "evidence": "ecosystems/amof-platform/audit/2026-04-27-runpod-t0-baseline-verify.json",
+      "summary": "All four claimed truths verified: API key works, REST API works (pods/templates/endpoints 200), template 4dnxg7h6lw present as amof-mvp-pytorch-cuda121, pod lifecycle code importable and exercisable. No mutations."
+    },
+    "T1": {
+      "status": "artifacts_ready_operator_gated",
+      "description": "Pod-based endpoint proof artifacts",
+      "evidence": "ecosystems/amof-platform/audit/2026-04-27-runpod-t1-pod-endpoint-proof-artifacts.json",
+      "summary": "Extended RunpodProfile with optional docker_args field; added gpt-oss-120b-vllm-single-h100 example profile; added operator driver script scripts/runpod_t1_drive.py; added runbook at docs/operations/runpod-t1-pod-proof-runbook.md. Actual pod creation is a separate operator-gated action (spends ~$2/h H100 time).",
+      "code_changes": [
+        "repos/amof/scripts/amof/api/services/runpod.py: docker_args field + _build_create_body emits dockerArgs",
+        "repos/amof/docs/contracts/examples/runpod-profiles/gpt-oss-120b-vllm-single-h100.yaml",
+        "repos/amof/scripts/runpod_t1_drive.py",
+        "repos/amof/docs/operations/runpod-t1-pod-proof-runbook.md"
+      ]
+    },
+    "T2": {
+      "status": "completed",
+      "description": "Profile YAML catalog",
+      "summary": "Promoted HeavyLaneProfile dataclass to YAML-backed catalog. Extended RunpodProfile with lane/routing fields (profile_kind, intended_roles, model, runtime, gpu_class, health_path, openai_base_url_template, max_context_tokens, idle_ttl_minutes, hard_timeout_seconds, max_cost_per_run_usd, hourly_cost_usd_cap, teardown_policy, applicability, required_secrets, allow_master, allow_direct_git_write). Added list_profiles() service helper + project_profile() projection. Added GET /api/v1/runpod/profiles endpoint. resolve_profile() now prefers .amof/runpod-profiles/runner_code_heavy.yaml; falls back to embedded defaults.",
+      "code_changes": [
+        "repos/amof/scripts/amof/api/services/runpod.py: PROFILE_KINDS, TEARDOWN_POLICIES, ALLOWED_APPLICABILITIES; lane fields on RunpodProfile; list_profiles; project_profile",
+        "repos/amof/scripts/amof/api/services/runpod_heavy_lane.py: resolve_profile YAML-first with fallback",
+        "repos/amof/scripts/amof/api/routers/runpod.py: GET /profiles",
+        "repos/amof/docs/contracts/examples/runpod-profiles/runner_code_heavy.yaml"
+      ]
+    },
+    "T3": {
+      "status": "completed",
+      "description": "Lifecycle ownership hardening",
+      "summary": "Added RunpodSiblingConflict error and sibling-pod refusal in create_pod (409 if same-profile pod is RUNNING/STARTING/RESUMING/PENDING). Added RunpodClient.resolve_endpoint, health_check_endpoint, mark_usable. Wired GET /api/v1/runpod/pods/{id}/health and POST /api/v1/runpod/pods/{id}/mark-usable.",
+      "code_changes": [
+        "repos/amof/scripts/amof/api/services/runpod.py: RunpodSiblingConflict; sibling check; resolve_endpoint; health_check_endpoint; mark_usable",
+        "repos/amof/scripts/amof/api/routers/runpod.py: /pods/{id}/health, /pods/{id}/mark-usable, 409 translate"
+      ]
+    },
+    "T4": {
+      "status": "completed",
+      "description": "Zombie GC sweep",
+      "summary": "Added RunpodClient.garbage_collect (default dry_run=True). Catches EXITED/DEAD/TERMINATED/FAILED pods and pods past TTL by overshoot_seconds (default 3600). Added POST /api/v1/runpod/gc and POST /api/v1/runpod/ttl/enforce endpoints.",
+      "code_changes": [
+        "repos/amof/scripts/amof/api/services/runpod.py: ZOMBIE_STATES, garbage_collect",
+        "repos/amof/scripts/amof/api/routers/runpod.py: /gc, /ttl/enforce"
+      ]
+    },
+    "T5": {
+      "status": "completed",
+      "description": "Cost/budget enforcement",
+      "summary": "Added GPU_HOURLY_RATES_USD table aligned with program pricing snapshot. Added estimate_hourly_cost_usd and estimate_pod_uptime_cost_usd. Added RunpodBudgetCapExceeded (HTTP 402) + preflight in create_pod. profile projection now includes estimated_hourly_cost_usd.",
+      "code_changes": [
+        "repos/amof/scripts/amof/api/services/runpod.py: GPU_HOURLY_RATES_USD, RunpodBudgetCapExceeded, estimate_hourly_cost_usd, estimate_pod_uptime_cost_usd, create_pod preflight",
+        "repos/amof/scripts/amof/api/routers/runpod.py: 402 translate"
+      ]
+    },
+    "T6": {
+      "status": "completed",
+      "description": "Audit receipts consolidation",
+      "summary": "Added collect_runpod_activity helper that reads .amof/audit/runpod-pods.jsonl and summarizes per-op counts + events in a time window. _build_release_record now calls it for the current release window (between previous tag commit time and now). amof release <bump> now records runpod_activity in the release audit file alongside commit subjects and file lists.",
+      "code_changes": [
+        "repos/amof/scripts/amof/api/services/runpod.py: collect_runpod_activity",
+        "repos/amof/scripts/amof/commands/release.py: _get_tag_commit_timestamp_iso, _collect_runpod_activity_for_release, _build_release_record adds runpod_activity field"
+      ]
+    },
+    "T7": {
+      "status": "completed",
+      "description": "Agent-runner routing enforcement",
+      "summary": "Added strict mode to _resolve_runner_runpod_clients. When strict=True: (a) refuses if heavy-lane health not usable via evaluate_heavy_lane_status, (b) drops runners not in profile YAML's intended_roles, (c) refuses if profile declares allow_master=True. Production call site in run_agent_for_ui passes strict=True. Default strict=False preserves the existing Phase R1 test contract.",
+      "code_changes": [
+        "repos/amof/scripts/amof/api/services/agent_runner.py: strict/health_status/profile_loader params; T7 refusal gates; call site strict=True"
+      ]
+    },
+    "T8": {
+      "status": "completed",
+      "description": "Minimal operator UI",
+      "summary": "Added /runpod page with four readonly panels (Heavy lane health, Profile catalog, AMOF-managed pods, GC actions). Mutation buttons behind Dialog confirms: Stop (single confirm), Delete (destructive), Create pod (2-step confirm). Added useRunpod hook with typed data shapes. Added Server icon + sidebar nav entry gated by operatorOnly. No dashboards.",
+      "code_changes": [
+        "repos/amof-ui/src/hooks/useRunpod.ts",
+        "repos/amof-ui/src/app/runpod/page.tsx",
+        "repos/amof-ui/src/components/app-sidebar.tsx"
+      ]
+    },
+    "T9": {
+      "status": "completed",
+      "description": "Cloud-dev admission + release probe",
+      "summary": "Added runpod-auth secret mount (api-key + openai-base-url) to values-cloud-dev.yaml controlPlane.secretEnv. Added runpod.lifecycleManagement values knob (default 'write' on local, 'readonly' on cloud-dev + prod-dev). Router _require_write_mode refuses mutating endpoints when AMOF_RUNPOD_LIFECYCLE_MANAGEMENT=readonly. Added runpod_probe() in runpod_heavy_lane.py implementing release-runtime-validation-gate.md §21-§23 exactly (GET /models only, never /chat/completions, structured pass/fail with failure_class).",
+      "code_changes": [
+        "repos/amof/infrastructure/helm/amof-stack/values-cloud-dev.yaml: runpod-auth secretEnv + runpod.lifecycleManagement=readonly",
+        "repos/amof/infrastructure/helm/amof-stack/values-prod-dev.yaml: runpod.lifecycleManagement=readonly",
+        "repos/amof/infrastructure/helm/amof-stack/charts/amof-control-plane/values.yaml: runpod.lifecycleManagement default",
+        "repos/amof/infrastructure/helm/amof-stack/charts/amof-control-plane/templates/configmap.yaml: AMOF_RUNPOD_LIFECYCLE_MANAGEMENT env",
+        "repos/amof/scripts/amof/api/routers/runpod.py: _require_write_mode on create/start/stop/delete/mark_usable/gc(non-dry)/ttl-enforce(non-dry)",
+        "repos/amof/scripts/amof/api/services/runpod_heavy_lane.py: runpod_probe"
+      ]
+    },
+    "T10": {
+      "status": "completed",
+      "description": "Second profile generalization",
+      "summary": "Added long_context_reviewer profile targeting DeepSeek-V4-Flash on 2x H200. Tests pin that two profiles coexist without cross-state (sibling check scoped per-profile; list_amof_pods returns both).",
+      "code_changes": [
+        "repos/amof/docs/contracts/examples/runpod-profiles/long_context_reviewer.yaml"
+      ]
+    },
+    "T11": {
+      "status": "completed",
+      "description": "Optional serverless lane",
+      "summary": "Added profile_kind='serverless_openai_compatible'. Parse relaxed to accept template_id=None+image_name=None, gpu_count=0, container_disk_gb=0, cloud_type=SERVERLESS. Requires model + openai_base_url_template. create_pod raises RunpodProfileError if called with a serverless profile (no pod to create). UI distinguishes serverless rows with a badge and shows 'no pod' instead of create button. Example profile at runner_code_heavy_serverless.yaml.",
+      "code_changes": [
+        "repos/amof/scripts/amof/api/services/runpod.py: serverless branch in parse_profile; create_pod refusal",
+        "repos/amof/docs/contracts/examples/runpod-profiles/runner_code_heavy_serverless.yaml",
+        "repos/amof-ui/src/app/runpod/page.tsx: serverless row variant"
+      ]
+    }
+  },
+  "test_summary": {
+    "runpod_service_tests": {"file": "tests/test_runpod_service.py", "count": 85, "new_this_program": 49, "all_passing": true},
+    "runpod_heavy_lane_tests": {"file": "tests/test_runpod_heavy_lane.py", "count": 9, "new_this_program": 5, "all_passing": true},
+    "runner_overrides_tests": {"file": "tests/test_runner_local_overrides.py", "count": 25, "new_this_program": 7, "all_passing": true},
+    "total_runpod_related": 119,
+    "full_suite_note": "The 15 test errors in the broader suite (test_api_health_routes etc.) are pre-existing ModuleNotFoundError for 'fastapi' in this python env; unchanged by this program."
+  },
+  "new_api_endpoints": [
+    "GET  /api/v1/runpod/heavy-lane/profile   (existing)",
+    "GET  /api/v1/runpod/heavy-lane/health    (existing)",
+    "GET  /api/v1/runpod/profiles             (T2 new)",
+    "POST /api/v1/runpod/pods                 (existing; T3 sibling refusal + T5 cost preflight + T9 write-mode)",
+    "GET  /api/v1/runpod/pods                 (existing)",
+    "GET  /api/v1/runpod/pods/{id}            (existing)",
+    "POST /api/v1/runpod/pods/{id}/start      (existing; T9 write-mode)",
+    "POST /api/v1/runpod/pods/{id}/stop       (existing; T9 write-mode)",
+    "DEL  /api/v1/runpod/pods/{id}            (existing; T9 write-mode)",
+    "GET  /api/v1/runpod/pods/{id}/health     (T3 new)",
+    "POST /api/v1/runpod/pods/{id}/mark-usable (T3 new; T9 write-mode)",
+    "POST /api/v1/runpod/gc                   (T4 new; T9 write-mode when dry_run=false)",
+    "POST /api/v1/runpod/ttl/enforce          (T4 new; T9 write-mode when dry_run=false)"
+  ],
+  "new_guardrails": [
+    "T3 sibling-pod refusal (409): same-profile live pod refuses new create",
+    "T5 hourly budget cap (402): gpu_class rate * gpu_count must fit under hourly_cost_usd_cap",
+    "T7 strict routing: agent_runner refuses RunPod client when health unusable, role not in intended_roles, or profile allows master",
+    "T9 readonly lifecycle: AMOF_RUNPOD_LIFECYCLE_MANAGEMENT=readonly refuses mutations on cloud-dev/prod-dev",
+    "T11 serverless no-pod: create_pod refuses serverless profile_kind"
+  ],
+  "new_profile_catalog": [
+    "gpt-oss-120b-vllm-single-h100.yaml (T1, baseline single-GPU proof)",
+    "runner_code_heavy.yaml (T2, canonical MiniMax M2.5 multi-GPU)",
+    "long_context_reviewer.yaml (T10, DeepSeek-V4-Flash 2x H200)",
+    "runner_code_heavy_serverless.yaml (T11, optional serverless fallback)"
+  ],
+  "cost_incurred_usd": 0.0,
+  "mutations_performed": [
+    "repo code: runpod.py, runpod_heavy_lane.py, routers/runpod.py, agent_runner.py, commands/release.py",
+    "repo tests: test_runpod_service.py (+49), test_runpod_heavy_lane.py (+5), test_runner_local_overrides.py (+7)",
+    "repo docs: 4 profile YAML examples + T1 runbook",
+    "repo UI: useRunpod hook + /runpod page + sidebar nav",
+    "helm: values-cloud-dev.yaml, values-prod-dev.yaml, charts/amof-control-plane/values.yaml, charts/amof-control-plane/templates/configmap.yaml",
+    "ecosystem audit: T0 + T1 + this closeout"
+  ],
+  "operator_followups": [
+    "Run T1 operator driver (scripts/runpod_t1_drive.py) to convert 'artifacts ready' into 'pod-based endpoint proven' with real /models 200",
+    "After T1 success, set RUNPOD_OPENAI_BASE_URL in .env and confirm GET /api/v1/runpod/heavy-lane/health reports status:usable",
+    "Create runpod-auth secret in cloud-dev k8s when ready for Phase B/C cloud-dev RunPod consumption",
+    "Copy .amof/runpod-profiles/runner_code_heavy.yaml from the docs example so heavy-lane health resolves from disk"
+  ],
+  "program_verdict": "complete_with_operator_followups",
+  "references": {
+    "program_plan": ".cursor/plans/ultraplan-11-runpod-full-integration_391d613d.plan.md",
+    "contract_canonical": "contracts/runpod-heavy-lane-profile.md",
+    "contract_release_gate": "repos/amof/contracts/release-runtime-validation-gate.md",
+    "T0_audit": "ecosystems/amof-platform/audit/2026-04-27-runpod-t0-baseline-verify.json",
+    "T1_artifacts_audit": "ecosystems/amof-platform/audit/2026-04-27-runpod-t1-pod-endpoint-proof-artifacts.json"
+  }
+}

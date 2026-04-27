@@ -1,0 +1,90 @@
+{
+  "audit_id": "runpod-t0-baseline-verify",
+  "tranche": "T0",
+  "program": "ultraplan-11-runpod-full-integration",
+  "ts_iso": "2026-04-27T13:33:12.504271+00:00",
+  "purpose": "Readonly end-to-end baseline verify of the four claimed RunPod substrate truths before any T1+ implementation.",
+  "probe_script": ".amof-tmp/runpod-t0-probe.py",
+  "env_ingest": {
+    "source": "workspace .env",
+    "RUNPOD_API_KEY": "present (length=50, never logged)",
+    "RUNPOD_API_BASE": "default https://rest.runpod.io/v1",
+    "RUNPOD_OPENAI_BASE_URL": "unset (expected; T1 unblock prerequisite)"
+  },
+  "claims_verified": {
+    "api_key_works": {
+      "claim": "API key works",
+      "status": "pass",
+      "evidence": {
+        "settings_ok": true,
+        "api_key_configured": true,
+        "probe_auth_failures": 0
+      }
+    },
+    "rest_api_works": {
+      "claim": "REST API works",
+      "status": "pass",
+      "evidence": {
+        "pods_GET": {"status_code": 200, "latency_ms": 678, "count": 0},
+        "templates_GET": {"status_code": 200, "latency_ms": 402, "count": 1},
+        "endpoints_GET": {"status_code": 200, "latency_ms": 380, "count": 0}
+      }
+    },
+    "template_exists": {
+      "claim": "Template exists",
+      "status": "pass",
+      "evidence": {
+        "target_template_id": "4dnxg7h6lw",
+        "observed_template_name": "amof-mvp-pytorch-cuda121",
+        "template_4dnxg7h6lw_present": true
+      }
+    },
+    "pod_lifecycle_exists": {
+      "claim": "Basic pod lifecycle exists",
+      "status": "pass",
+      "evidence": {
+        "RunpodClient_instantiates": true,
+        "list_amof_pods_returns_list": true,
+        "list_pods_returns_list": true,
+        "project_pod_status_ok": true,
+        "enforce_ttl_importable": true,
+        "code_paths_verified": [
+          "repos/amof/scripts/amof/api/services/runpod.py::RunpodClient",
+          "repos/amof/scripts/amof/api/services/runpod.py::enforce_ttl",
+          "repos/amof/scripts/amof/api/services/runpod_heavy_lane.py::resolve_profile",
+          "repos/amof/scripts/amof/api/services/runpod_heavy_lane.py::evaluate_heavy_lane_status"
+        ]
+      }
+    }
+  },
+  "heavy_lane_status_at_t0": {
+    "status": "unusable",
+    "reason": "RUNPOD_OPENAI_BASE_URL unset and no RunPod endpoint provisioned for the account",
+    "missing_prerequisites": ["RUNPOD_OPENAI_BASE_URL", "runpod_openai_endpoint"],
+    "substrate": {
+      "api_key_configured": true,
+      "template_count": 1,
+      "pod_count": 0,
+      "amof_managed_pod_count": 0,
+      "endpoint_count": 0,
+      "account_probe_error": null
+    },
+    "guardrails_echoed": {
+      "opt_in_only": true,
+      "heavy_only": true,
+      "allow_master": false,
+      "allow_direct_git_write": false,
+      "hard_timeout_seconds": 7200,
+      "max_cost_per_run_usd": 5.0,
+      "idle_ttl_minutes": 120
+    }
+  },
+  "verdict": {
+    "all_four_baseline_truths_verified": true,
+    "program_may_proceed_to_t1": true,
+    "t1_blocker": "no pod-based OpenAI-compatible endpoint exists yet (expected; T1 exists to fix this)"
+  },
+  "cost_incurred_usd": 0.0,
+  "mutations_performed": [],
+  "next_tranche": "T1 - pod-based endpoint proof"
+}
