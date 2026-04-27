@@ -1,0 +1,187 @@
+{
+  "audit_id": "runpod-up11-1-main-land-and-local-rollout",
+  "tranche": "UP11-1 landing and staged rollout",
+  "program": "ultraplan-11-runpod-full-integration",
+  "ts_iso": "2026-04-27T14:20:00+00:00",
+  "purpose": "Land completed Ultraplan 11 program to canonical main, roll out to local k3d, prove operator surface, and decide cloud-dev posture without rolling out write-mode ahead of a real T1 endpoint proof.",
+  "scope_lock": {
+    "in_scope": [
+      "canonical landing to main",
+      "local k3d rollout",
+      "operator surface proof",
+      "cloud-dev posture decision"
+    ],
+    "out_of_scope": [
+      "new RunPod features",
+      "cloud-dev write-mode activation",
+      "T1 model proof itself",
+      "broad cloud-dev redesign",
+      "unrelated AMOF work"
+    ]
+  },
+  "cp1_main_landing": {
+    "status": "complete",
+    "tool": "amof promote-main --push (for amof + amof-ui); plain push (for workspace/opensandbox audit-only commit)",
+    "repos_landed": [
+      {
+        "repo": "amof",
+        "candidate_branch": "feat/UP11-1-runpod-program-land",
+        "source_sha": "0f75bcb8a1caebff934495d5e84539ef08f83b94",
+        "promotion_bundle_id": "3f044566d4abd05749f69d1ea901321677a75328576edab70c22ba679fbf3fdc",
+        "promotion_id": "promote-3f044566d4abd057",
+        "previous_main_sha": "a846a500b6383695a4c86b90cc2505bdfda5782b",
+        "result_main_sha": "2f3f1b2245d366b698a8fb2cf34c4a641db6827a",
+        "pushed_to_remote": true,
+        "file_count": 18
+      },
+      {
+        "repo": "amof-ui",
+        "candidate_branch": "feat/UP11-1-runpod-ui",
+        "source_sha": "973cb97a6280bef132aaf4b0ab165c7d004a41fc",
+        "promotion_bundle_id": "b0516f2f396fd0a38227fc58953ae48278bf1dd24c2240d7c15b70cf15d641ab",
+        "promotion_id": "promote-b0516f2f396fd0a3",
+        "result_main_sha": "47df424414d42cc8363f39fa6e7e36c3b9fc0ca5",
+        "pushed_to_remote": true,
+        "file_count": 3
+      },
+      {
+        "repo": "opensandbox (workspace)",
+        "candidate_branch": "feat/UP11-1-runpod-audit",
+        "source_sha": "e4859a119d46133f2954fbf555b7ca9dd5a2366c",
+        "method": "fast-forward merge to main then plain push",
+        "previous_main_sha": "3943cbda8afd82f8bb49f02074f346cdf97fa697",
+        "result_main_sha": "e4859a119d46133f2954fbf555b7ca9dd5a2366c",
+        "reason_no_promote_main": "promote-main refuses paths under ecosystems/*/audit by design; audits are docs-only pushes per existing pattern",
+        "pushed_to_remote": true,
+        "file_count": 3
+      }
+    ]
+  },
+  "cp2_local_k3d_rollout": {
+    "status": "complete",
+    "cluster": "k3d-amof (context k3d-amof)",
+    "namespace": "amof-system",
+    "image_build": {
+      "tag": "up11-1-land-202604271612",
+      "controlplane_image": "k3d-amof-registry:5000/amof-controlplane:up11-1-land-202604271612",
+      "controlplane_digest": "sha256:cf99d14d9ddfb35d53ac4da550097d0801bc8b98236e8d56f023b56b868681ab",
+      "dashboard_image": "k3d-amof-registry:5000/amof-dashboard:up11-1-land-202604271612",
+      "dashboard_digest": "sha256:233c6bab91a24501184a50599cae19b74980248f4e71f6595f4aa93aab13520d",
+      "build_context": "workspace root (/home/hotshot/work/amof-platform) for controlplane; repos/amof-ui for dashboard",
+      "registry_alias_fix": "k3d node resolves images via k3d-amof-registry:5000 (not host.k3d.internal:5000). Helm repository values overridden accordingly."
+    },
+    "helm_upgrade": {
+      "release": "amof",
+      "namespace": "amof-system",
+      "revision": 28,
+      "chart": "amof-platform-0.1.0",
+      "overrides_applied": [
+        "amof-control-plane.controlPlane.image.repository=k3d-amof-registry:5000/amof-controlplane",
+        "amof-control-plane.controlPlane.image.tag=up11-1-land-202604271612",
+        "amof-control-plane.dashboard.image.repository=k3d-amof-registry:5000/amof-dashboard",
+        "amof-control-plane.dashboard.image.tag=up11-1-land-202604271612"
+      ],
+      "reuse_values": true
+    },
+    "workspace_hostpath_sync": {
+      "reason": "PYTHONPATH resolves /workspace/repos/amof/scripts before /app/scripts, so the running code is the k3d-node-local workspace snapshot, not the image layer.",
+      "method": "tar stream via kubectl exec into the controlplane deployment",
+      "paths_synced": ["scripts", "ecosystems", ".amof", "repos/amof", "repos/amof-ui"],
+      "excludes": [".git", ".next", "node_modules", ".turbo", ".pytest_cache", "__pycache__", "*.pyc"]
+    },
+    "post_deploy_restart": "kubectl rollout restart deploy/amof-amof-control-plane-controlplane (successful)"
+  },
+  "cp3_operator_surface_proof": {
+    "status": "complete",
+    "openapi_paths_registered": [
+      "/api/v1/runpod/heavy-lane/profile",
+      "/api/v1/runpod/heavy-lane/health",
+      "/api/v1/runpod/profiles",
+      "/api/v1/runpod/pods",
+      "/api/v1/runpod/pods/{pod_id}/health",
+      "/api/v1/runpod/pods/{pod_id}/mark-usable",
+      "/api/v1/runpod/pods/{pod_id}",
+      "/api/v1/runpod/pods/{pod_id}/start",
+      "/api/v1/runpod/pods/{pod_id}/stop",
+      "/api/v1/runpod/gc",
+      "/api/v1/runpod/ttl/enforce"
+    ],
+    "control_plane_surface_mirrored_under": "/api/v1/control/runpod/*",
+    "probe_evidence": {
+      "heavy_lane_profile": {"status": 200, "source": "embedded_fallback", "model": "MiniMaxAI/MiniMax-M2.5", "allow_master": false},
+      "heavy_lane_health": {"status": "unusable", "usable": false, "missing_prerequisites": ["RUNPOD_API_KEY", "RUNPOD_OPENAI_BASE_URL"], "failure_class": null},
+      "profiles": {"http": 503, "detail": "Runpod is not configured. Set RUNPOD_API_KEY before listing profiles."},
+      "gc_dry_run": {"http": 503, "detail": "Runpod is not configured. Set RUNPOD_API_KEY (and optionally RUNPOD_API_BASE)."}
+    },
+    "dashboard_page": {
+      "url": "http://amof.localhost:8081/runpod",
+      "status": 200,
+      "chunk_referenced": "/_next/static/chunks/app/runpod/page-9643bb6d236baac7.js",
+      "auth_guard_active": true,
+      "note": "The page renders the 'Checking platform session' spinner pre-auth; once the operator logs in, the full /runpod page (Health, Profiles, Pods, GC panels) becomes active."
+    },
+    "configmap_runpod_lifecycle": {
+      "configmap": "amof-amof-control-plane-controlplane-config",
+      "value": "write",
+      "interpretation": "local profile allows pod lifecycle mutations (consistent with values.yaml default and values-local.yaml)"
+    },
+    "lane_usability_verdict": "heavy lane is still UNUSABLE, correctly, because RUNPOD_API_KEY and RUNPOD_OPENAI_BASE_URL are not wired inside the control plane pod. This matches the pre-T1-proof reality; operator surface is ready but a real /models endpoint has not been proven yet."
+  },
+  "cp4_cloud_dev_rollout_decision": {
+    "decision": "NO live helm upgrade against cloud-dev in this tranche",
+    "rationale": [
+      "T1 pod-based endpoint proof is not complete",
+      "Heavy lane is unusable locally; same would be true on cloud-dev",
+      "Cloud-dev kubeconfig context is not present in the workspace kubeconfig (current-context is k3d-amof only); no write path exists from this session anyway",
+      "Landing the config into main is sufficient: the next operator-triggered cloud-dev deploy will pick up the readonly posture automatically"
+    ],
+    "code_posture_already_in_main": {
+      "infrastructure/helm/amof-stack/values-cloud-dev.yaml": {
+        "amof-control-plane.runpod.lifecycleManagement": "readonly",
+        "amof-control-plane.controlPlane.secretEnv.RUNPOD_API_KEY": {"secretName": "runpod-auth", "key": "api-key", "optional": true},
+        "amof-control-plane.controlPlane.secretEnv.RUNPOD_OPENAI_BASE_URL": {"secretName": "runpod-auth", "key": "openai-base-url", "optional": true}
+      },
+      "infrastructure/helm/amof-stack/values-prod-dev.yaml": {
+        "amof-control-plane.runpod.lifecycleManagement": "readonly"
+      },
+      "infrastructure/helm/amof-stack/charts/amof-control-plane/values.yaml": {
+        "runpod.lifecycleManagement": "write (default for local only)"
+      }
+    },
+    "effective_behavior_when_deployed": [
+      "Cloud-dev control plane refuses POST/DELETE on /api/v1/runpod/pods (HTTP 403)",
+      "GC and TTL enforce with dry_run=false refuse; dry_run=true still works (readonly visibility)",
+      "Heavy lane stays unusable until operator manually creates the runpod-auth secret AND a real T1 endpoint proof exists"
+    ],
+    "operator_followups_before_cloud_dev_write_mode": [
+      "Run repos/amof/scripts/runpod_t1_drive.py and capture a real /models 200 with a known pod_id",
+      "Set RUNPOD_OPENAI_BASE_URL in .env with the proven URL",
+      "Create the cloud-dev runpod-auth secret: kubectl create secret generic runpod-auth --from-literal=api-key=... --from-literal=openai-base-url=...",
+      "Copy repos/amof/docs/contracts/examples/runpod-profiles/runner_code_heavy.yaml to the runtime .amof/runpod-profiles/ before flipping lifecycleManagement to write"
+    ]
+  },
+  "cp5_closure": {
+    "landed_on_main": true,
+    "local_rollout_complete": true,
+    "cloud_dev_readonly_rollout_complete": false,
+    "cloud_dev_readonly_rollout_deferred": true,
+    "cloud_dev_readonly_rollout_deferred_reason": "No live cloud-dev helm upgrade this tranche because T1 endpoint proof is missing and cloud-dev kubeconfig is not attached to this workspace; readonly posture is codified in main and will apply on the next cloud-dev deploy",
+    "heavy_lane_truly_usable": false,
+    "heavy_lane_usable_blocker": "RUNPOD_OPENAI_BASE_URL unset and no pod-based /models endpoint proven (T1 still operator-gated)"
+  },
+  "next_slice_name": "UP11-2 T1 live pod-based endpoint proof",
+  "next_slice_scope_hint": [
+    "Run repos/amof/scripts/runpod_t1_drive.py --profile gpt-oss-120b with --stop-on-success (single pod, ~$2-4 budget, 45 min kill timer)",
+    "Capture the verdict in an audit receipt at ecosystems/amof-platform/audit/YYYY-MM-DD-runpod-t1-pod-endpoint-proof.json",
+    "After usable verdict, set RUNPOD_OPENAI_BASE_URL in local .env, restart local control plane, confirm /api/v1/runpod/heavy-lane/health reports status=usable against the local stack",
+    "Only then reconsider cloud-dev write-mode admission"
+  ],
+  "cost_incurred_usd_this_session": 0.0,
+  "mutations_performed": [
+    "git: 3 promote-main pushes to main (amof, amof-ui, opensandbox)",
+    "docker: 2 image builds + pushes to k3d-amof registry (controlplane, dashboard)",
+    "helm: 2 upgrades on amof release in amof-system namespace (rev 27 then rev 28)",
+    "kubectl: 2 tar-syncs into /workspace on the controlplane pod hostPath; 1 rollout restart",
+    "audit: this closeout file"
+  ]
+}
