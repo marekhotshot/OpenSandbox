@@ -1,0 +1,32 @@
+{
+  "slice": "local-k3d-builder-registry-regression-and-auth-badge-truth-fix",
+  "result": "both_local_k3d_regressions_fixed_and_proven_live",
+  "scope": "local-k3d only; no RunPod, cloud-dev, deploy/release, or broad UI redesign",
+  "task_1_builder_registry": {
+    "regression_cause": "AMOF_CLUSTER_BUILDER_IMAGE was rendered to host.k3d.internal:5000/amof-cluster-builder:<tag>, which k3d nodes cannot resolve via in-cluster DNS. Live deployment env confirmed host.k3d.internal:5000/amof-cluster-builder:up8-wave7-builder-buildkit-host-20260425224728.",
+    "source_of_truth_paths": [
+      "repos/amof/infrastructure/helm/amof-stack/values-local.yaml (umbrella build.cluster.image.repository + controlPlane/dashboard/agent/registry)",
+      "repos/amof/infrastructure/helm/amof-stack/charts/amof-control-plane/values-local.yaml (subchart build.cluster.image.repository + controlPlane/dashboard/agent/registry)",
+      "repos/amof/scripts/cluster-builder-docker-wrapper.sh (buildkitd insecure registry list)"
+    ],
+    "fix_applied": "Switched all *-local.yaml repository values from host.k3d.internal:5000/* to k3d-amof-registry:5000/* (cluster-builder, controlplane, dashboard, agent, registry.url). Added k3d-amof-registry:5000 to cluster-builder-docker-wrapper.sh buildkitd insecure registry list. Live AMOF_CLUSTER_BUILDER_IMAGE env updated via kubectl set env on deploy/amof-amof-control-plane-controlplane.",
+    "image_mirrored": "localhost:5000/amof-cluster-builder:up8-wave7-builder-buildkit-host-20260425224728 -> k3d-amof-registry:5000/amof-cluster-builder:up8-wave7-builder-buildkit-host-20260425224728",
+    "in_cluster_pull_proof": "docker exec k3d-amof-server-0 crictl pull k3d-amof-registry:5000/amof-cluster-builder:up8-wave7-builder-buildkit-host-20260425224728 -> Image is up to date for sha256:675221cbe37e0c9a60a5f26442a05bfe0f8ef234728253a7b91dd236df8fd1f5"
+  },
+  "task_2_auth_badge_truth": {
+    "regression_cause": "repos/amof-ui/src/components/app-header.tsx fell through to the literal string 'Authenticated' whenever user?.email was undefined, including when the local lab runs auth-disabled (apiSession.auth_enabled=false, authenticated=false, can_access_console=true). Header therefore falsely implied a real session.",
+    "fix_applied": "When apiSession.auth_enabled === false, identityLabel now reads 'Auth disabled (local lab)' instead of 'Authenticated'. Behavior unchanged: console access remains permitted because /api/v1/auth/session still reports can_access_console=true. Only the wording was corrected.",
+    "rebuilt_image": "k3d-amof-registry:5000/amof-dashboard:up9-19a-auth-badge-truth-20260428070351",
+    "rolled_workload": "deploy/amof-amof-control-plane-dashboard"
+  },
+  "live_proof": {
+    "controlplane_env": "AMOF_CLUSTER_BUILDER_IMAGE=k3d-amof-registry:5000/amof-cluster-builder:up8-wave7-builder-buildkit-host-20260425224728",
+    "in_cluster_builder_pull": "ok",
+    "auth_session": {"auth_enabled": false, "authenticated": false, "permissions": {"can_access_console": true, "can_operate": true}},
+    "header_innertext_at_1600w": "amof-platform / main / dev / Ecosystems / Auth disabled (local lab) / AMOF 1.5.0-rc.2 beta.2 / Supabase Media / amof.dev / Sign Out",
+    "contains_authenticated_literal": false,
+    "console_access_still_works": true
+  },
+  "out_of_scope_held": ["RunPod work", "cloud-dev rollout", "deploy/release", "broad UI redesign"],
+  "next_slice": "local-k3d-builder-real-cluster-build-job-end-to-end-proof"
+}
